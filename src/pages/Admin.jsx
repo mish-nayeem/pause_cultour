@@ -1,0 +1,367 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import AdminLogin from './AdminLogin.jsx'
+import {
+  getSession,
+  signOut,
+  fetchOrders,
+  fetchAdminProducts,
+  updateOrderStatus,
+  computeStats,
+  dailySeries,
+  topProducts,
+} from '../lib/admin.js'
+import './admin.css'
+
+const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
+
+function taka(n) {
+  return '৳ ' + Number(n).toLocaleString()
+}
+
+function shortDate(iso) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+}
+
+// Inline sparkline — avoids pulling in a charting library for one graph.
+function Sparkline({ series }) {
+  const w = 620
+  const h = 150
+  const pad = 6
+  const max = Math.max(1, ...series.map((d) => d.value))
+
+  const pts = series.map((d, i) => {
+    const x = pad + (i / Math.max(1, series.length - 1)) * (w - pad * 2)
+    const y = h - pad - (d.value / max) * (h - pad * 2)
+    return [x, y]
+  })
+
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')
+  const area = `${line} L ${pts[pts.length - 1][0].toFixed(1)} ${h - pad} L ${pts[0][0].toFixed(1)} ${h - pad} Z`
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="spark" preserveAspectRatio="none">
+      <path d={area} fill="var(--cobalt)" fillOpacity="0.08" />
+      <path d={line} fill="none" stroke="var(--cobalt)" strokeWidth="1.8" />
+      {pts.map((p, i) => (
+        <circle key={i} cx={p[0]} cy={p[1]} r="2.2" fill="var(--cobalt)" />
+      ))}
+    </svg>
+  )
+}
+
+export default function Admin() {
+  const [session, setSession] = useState(null)
+  const [checkingAuth, setCheckingAuth] = useState(true)
+
+  const [tab, setTab] = useState('overview')
+  const [orders, setOrders] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [savingId, setSavingId] = useState(null)
+  const [expanded, setExpanded] = useState(null)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    getSession().then((s) => {
+      setSession(s)
+      setCheckingAuth(false)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    let active = true
+    setLoading(true)
+    setLoadError('')
+
+    Promise.all([fetchOrders(), fetchAdminProducts()]).then(([o, p]) => {
+      if (!active) return
+      if (o.error) {
+        setLoadError(
+          "Couldn't load orders. Make sure you ran the admin SQL policies in Supabase."
+        )
+      }
+      setOrders(o.orders)
+      setProducts(p.products)
+      setLoading(false)
+    })
+
+    return () => { active = false }
+  }, [session])
+
+  const stats = useMemo(() => computeStats(orders), [orders])
+  const series = useMemo(() => dailySeries(orders, 14), [orders])
+  const top = useMemo(() => topProducts(orders, 5), [orders])
+
+  const filteredOrders = useMemo(() => {
+    if (!search.trim()) return orders
+    const q = search.trim().toLowerCase()
+    return orders.filter(
+      (o) =>
+        o.id.toLowerCase().includes(q) ||
+        o.customer_name.toLowerCase().includes(q) ||
+        o.customer_phone.includes(q)
+    )
+  }, [orders, search])
+
+  async function handleStatusChange(orderId, status) {
+    setSavingId(orderId)
+    const { error } = await updateOrderStatus(orderId, status)
+    setSavingId(null)
+
+    if (error) {
+      setLoadError("Couldn't update that order's status. Try again.")
+      return
+    }
+
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)))
+  }
+
+  async function handleSignOut() {
+    await signOut()
+    setSession(null)
+    setOrders([])
+    setProducts([])
+  }
+
+  if (checkingAuth) {
+    return <div className="admin-boot mono">Checking access…</div>
+  }
+
+  if (!session) {
+    return <AdminLogin onSignedIn={setSession} />
+  }
+
+  const windowValue = series.reduce((s, d) => s + d.value, 0)
+  const windowOrders = series.reduce((s, d) => s + d.orders, 0)
+
+  return (
+    <div className="admin">
+      <aside className="side">
+        <div className="side-brand">
+          <span className="display">PAUSE</span>
+          <span className="mono side-sub">ADMIN</span>
+        </div>
+
+        <nav className="side-nav mono">
+          <button className={tab === 'overview' ? 'on' : ''} onClick={() => setTab('overview')}>
+            Overview
+          </button>
+          <button className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>
+            Orders
+            {stats.pending > 0 && <span className="badge">{stats.pending}</span>}
+          </button>
+          <button className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>
+            Products
+          </button>
+        </nav>
+
+        <div className="side-foot mono">
+          <Link to="/">View storefront →</Link>
+          <button onClick={handleSignOut} className="signout">Sign out</button>
+        </div>
+      </aside>
+
+      <main className="main">
+        <header className="top">
+          <div>
+            <h1 className="display">
+              {tab === 'overview' && 'Overview'}
+              {tab === 'orders' && 'Orders'}
+              {tab === 'products' && 'Products'}
+            </h1>
+            <div className="top-sub mono">{session.user?.email}</div>
+          </div>
+          <div className="top-date mono">
+            {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </div>
+        </header>
+
+        {loadError && <div className="err-banner mono">{loadError}</div>}
+        {loading && <div className="loading mono">Loading…</div>}
+
+        {!loading && tab === 'overview' && (
+          <>
+            <div className="stat-row">
+              <div className="stat">
+                <div className="stat-label mono">TOTAL ORDERS</div>
+                <div className="stat-value display">{stats.totalOrders}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-label mono">PENDING</div>
+                <div className="stat-value display">{stats.pending}</div>
+                <div className="stat-note mono">{taka(stats.pendingValue)} to collect</div>
+              </div>
+              <div className="stat">
+                <div className="stat-label mono">DELIVERED</div>
+                <div className="stat-value display">{stats.delivered}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-label mono">CANCELLED</div>
+                <div className="stat-value display">{stats.cancelled}</div>
+              </div>
+            </div>
+
+            <section className="panel">
+              <div className="panel-head">
+                <div>
+                  <div className="panel-label mono">COLLECTED REVENUE</div>
+                  <div className="big display">{taka(stats.revenue)}</div>
+                  <div className="panel-note mono">
+                    From delivered orders only · {windowOrders} order{windowOrders === 1 ? '' : 's'} in
+                    last 14 days ({taka(windowValue)} placed)
+                  </div>
+                </div>
+              </div>
+              <Sparkline series={series} />
+              <div className="spark-axis mono">
+                <span>{shortDate(series[0].date.toISOString())}</span>
+                <span>{shortDate(series[series.length - 1].date.toISOString())}</span>
+              </div>
+            </section>
+
+            <div className="two-col">
+              <section className="panel">
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>RECENT ORDERS</div>
+                {orders.length === 0 && <div className="empty mono">No orders yet.</div>}
+                {orders.slice(0, 6).map((o) => (
+                  <div className="mini-row" key={o.id}>
+                    <div>
+                      <div className="mini-id mono">{o.id}</div>
+                      <div className="mini-name">{o.customer_name}</div>
+                    </div>
+                    <div className="mini-right">
+                      <div className="mono">{taka(o.subtotal)}</div>
+                      <span className={`pill ${o.status} mono`}>{o.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </section>
+
+              <section className="panel">
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>TOP SELLERS</div>
+                {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
+                {top.map((p, i) => (
+                  <div className="mini-row" key={p.name}>
+                    <div>
+                      <div className="mini-id mono">{String(i + 1).padStart(2, '0')}</div>
+                      <div className="mini-name">{p.name}</div>
+                    </div>
+                    <div className="mini-right">
+                      <div className="mono">{p.units} sold</div>
+                      <div className="mono dim">{taka(p.value)}</div>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            </div>
+          </>
+        )}
+
+        {!loading && tab === 'orders' && (
+          <section className="panel">
+            <div className="orders-head">
+              <input
+                className="search mono"
+                placeholder="Search order ID, name or phone…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <div className="mono dim">{filteredOrders.length} of {orders.length}</div>
+            </div>
+
+            {filteredOrders.length === 0 && <div className="empty mono">No matching orders.</div>}
+
+            <div className="table">
+              {filteredOrders.map((o) => (
+                <div className="trow-wrap" key={o.id}>
+                  <div className="trow" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>
+                    <div className="tc mono id">{o.id}</div>
+                    <div className="tc name">{o.customer_name}</div>
+                    <div className="tc mono">{o.customer_phone}</div>
+                    <div className="tc mono dim">{shortDate(o.created_at)}</div>
+                    <div className="tc mono price">{taka(o.subtotal)}</div>
+                    <div className="tc">
+                      <select
+                        className={`status-select ${o.status} mono`}
+                        value={o.status}
+                        disabled={savingId === o.id}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                      >
+                        {STATUSES.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {expanded === o.id && (
+                    <div className="tdetail">
+                      <div className="tdetail-col">
+                        <div className="dlabel mono">ITEMS</div>
+                        {(o.order_items || []).map((it) => (
+                          <div className="ditem" key={it.id}>
+                            <span>{it.product_name} · {it.size} × {it.qty}</span>
+                            <span className="mono">{taka(it.price * it.qty)}</span>
+                          </div>
+                        ))}
+                        {(!o.order_items || o.order_items.length === 0) && (
+                          <div className="mono dim">No line items recorded.</div>
+                        )}
+                      </div>
+                      <div className="tdetail-col">
+                        <div className="dlabel mono">DELIVERY</div>
+                        <div className="daddr">{o.customer_address}</div>
+                        <div className="daddr mono dim">{o.customer_area}</div>
+                        {o.customer_note && (
+                          <>
+                            <div className="dlabel mono" style={{ marginTop: '14px' }}>NOTE</div>
+                            <div className="daddr">{o.customer_note}</div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!loading && tab === 'products' && (
+          <section className="panel">
+            <div className="panel-note mono" style={{ marginBottom: '20px' }}>
+              Products are edited in Supabase → Table Editor → products. This view is read-only.
+            </div>
+
+            {products.length === 0 && <div className="empty mono">No products in the catalog.</div>}
+
+            <div className="table">
+              {products.map((p) => (
+                <div className="trow prow" key={p.id}>
+                  <div className="pthumb">
+                    {Array.isArray(p.images) && p.images[0] && <img src={p.images[0]} alt="" />}
+                  </div>
+                  <div className="tc name">{p.name}</div>
+                  <div className="tc mono dim">{p.variant}</div>
+                  <div className="tc mono">{taka(p.price)}</div>
+                  <div className="tc mono dim">
+                    {Array.isArray(p.sizes) ? p.sizes.join(' · ') : ''}
+                  </div>
+                  <div className="tc mono">
+                    {Array.isArray(p.sizes_out) && p.sizes_out.length > 0 && (
+                      <span className="out-tag">{p.sizes_out.length} size out</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  )
+}
