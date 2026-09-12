@@ -22,6 +22,11 @@ export default function AdminLogin({ onSignedIn }) {
 
     setSubmitting(false)
 
+    if (signInError?.message === 'not_admin') {
+      setError('This account does not have admin access.')
+      return
+    }
+
     if (signInError || !session) {
       setError('Login failed — check your email and password.')
       return
