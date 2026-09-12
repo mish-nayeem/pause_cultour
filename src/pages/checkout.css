@@ -54,6 +54,13 @@
   font-style: normal;
 }
 
+.field .hint {
+  font-size: 11px;
+  color: var(--steel);
+  margin-top: 6px;
+  font-style: normal;
+}
+
 .payment-note {
   display: flex;
   align-items: center;
