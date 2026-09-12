@@ -1,9 +1,25 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
-import { products } from '../data/products.js'
+import { fetchProducts } from '../lib/products.js'
 import './home.css'
 
 export default function Home() {
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    fetchProducts().then(({ products, error }) => {
+      if (!active) return
+      setProducts(products)
+      setLoadError(Boolean(error))
+      setLoading(false)
+    })
+    return () => { active = false }
+  }, [])
+
   const featured = products.find((p) => p.featured)
   const rest = products.filter((p) => !p.featured)
 
@@ -45,37 +61,53 @@ export default function Home() {
         <a href="#" className="view-all mono">VIEW ALL →</a>
       </div>
 
-      <div className="grid">
-        {featured && (
-          <Link to={`/product/${featured.id}`} className="card featured">
-            <div className="thumb">
-              <img src={featured.images[0]} alt={featured.name} />
-              {featured.isNew && <div className="new-tag mono"><span className="rec"></span>NEW</div>}
-              <div className="duration-tag mono">৳ {featured.price.toLocaleString()}</div>
-              <div className="sku-tag mono">{featured.sku}</div>
-            </div>
-            <div className="card-info">
-              <div className="name">{featured.name}</div>
-              <div className="price mono">{featured.variant}</div>
-            </div>
-          </Link>
-        )}
+      {loading && <p className="mono" style={{ padding: '40px' }}>Loading catalog…</p>}
 
-        {rest.map((p) => (
-          <Link to={`/product/${p.id}`} className="card" key={p.id}>
-            <div className="thumb">
-              <img src={p.images[0]} alt={p.name} />
-              {p.isNew && <div className="new-tag mono"><span className="rec"></span>NEW</div>}
-              <div className="duration-tag mono">৳ {p.price.toLocaleString()}</div>
-              <div className="sku-tag mono">{p.sku}</div>
-            </div>
-            <div className="card-info">
-              <div className="name">{p.name}</div>
-              <div className="price mono">{p.variant}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {!loading && loadError && (
+        <p className="mono" style={{ padding: '40px' }}>
+          Couldn't load products right now. Check your Supabase connection and refresh.
+        </p>
+      )}
+
+      {!loading && !loadError && products.length === 0 && (
+        <p className="mono" style={{ padding: '40px' }}>
+          No products yet — add some from the Supabase Table Editor.
+        </p>
+      )}
+
+      {!loading && !loadError && products.length > 0 && (
+        <div className="grid">
+          {featured && (
+            <Link to={`/product/${featured.id}`} className="card featured">
+              <div className="thumb">
+                <img src={featured.images[0]} alt={featured.name} />
+                {featured.isNew && <div className="new-tag mono"><span className="rec"></span>NEW</div>}
+                <div className="duration-tag mono">৳ {featured.price.toLocaleString()}</div>
+                <div className="sku-tag mono">{featured.sku}</div>
+              </div>
+              <div className="card-info">
+                <div className="name">{featured.name}</div>
+                <div className="price mono">{featured.variant}</div>
+              </div>
+            </Link>
+          )}
+
+          {rest.map((p) => (
+            <Link to={`/product/${p.id}`} className="card" key={p.id}>
+              <div className="thumb">
+                <img src={p.images[0]} alt={p.name} />
+                {p.isNew && <div className="new-tag mono"><span className="rec"></span>NEW</div>}
+                <div className="duration-tag mono">৳ {p.price.toLocaleString()}</div>
+                <div className="sku-tag mono">{p.sku}</div>
+              </div>
+              <div className="card-info">
+                <div className="name">{p.name}</div>
+                <div className="price mono">{p.variant}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
 
       <footer>
         <div>
