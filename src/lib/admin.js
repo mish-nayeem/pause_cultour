@@ -1,5 +1,18 @@
 import { supabase } from './supabaseClient.js'
 
+// ---------- Admin allowlist ----------
+
+// Only this email can open the admin panel. Set it in .env as VITE_ADMIN_EMAIL.
+// This check is convenience, not security — the real enforcement lives in the
+// Supabase RLS policies, which reject queries from any other logged-in account
+// even if someone bypasses this file. Both must name the same address.
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || '').trim().toLowerCase()
+
+export function isAdminEmail(email) {
+  if (!ADMIN_EMAIL) return false
+  return (email || '').trim().toLowerCase() === ADMIN_EMAIL
+}
+
 // ---------- Auth ----------
 
 export async function signIn(email, password) {
@@ -8,6 +21,14 @@ export async function signIn(email, password) {
     console.error('[Supabase] signIn failed:', error.message)
     return { session: null, error }
   }
+
+  // A valid Supabase account that isn't the admin gets signed straight back out,
+  // so no non-admin session is ever left sitting in local storage.
+  if (!isAdminEmail(data.session?.user?.email)) {
+    await supabase.auth.signOut()
+    return { session: null, error: { message: 'not_admin' } }
+  }
+
   return { session: data.session, error: null }
 }
 
@@ -17,7 +38,15 @@ export async function signOut() {
 
 export async function getSession() {
   const { data } = await supabase.auth.getSession()
-  return data.session
+  const session = data.session
+
+  // Guards against a stale or hand-crafted session for a non-admin account.
+  if (session && !isAdminEmail(session.user?.email)) {
+    await supabase.auth.signOut()
+    return null
+  }
+
+  return session
 }
 
 // ---------- Orders ----------
