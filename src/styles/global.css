@@ -1,0 +1,40 @@
+:root {
+  --paper: #EDEAE1;
+  --paper-dim: #E2DFD5;
+  --ink: #16160F;
+  --cobalt: #2A4DFF;
+  --steel: #8B8A82;
+  --steel-line: #C9C6BA;
+  --signal: #FF4426;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.display {
+  font-family: 'Anton', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}

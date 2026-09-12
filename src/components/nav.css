@@ -1,0 +1,40 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 40px;
+  background: rgba(237, 234, 225, 0.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.site-header .logo {
+  font-size: 26px;
+  text-decoration: none;
+}
+
+.site-header nav ul {
+  display: flex;
+  list-style: none;
+  gap: 36px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+
+.site-header nav a {
+  text-decoration: none;
+}
+
+.site-header nav a.cart::before {
+  content: '● ';
+  color: var(--signal);
+}
+
+@media (max-width: 860px) {
+  .site-header { padding: 16px 20px; }
+  .site-header nav ul { gap: 18px; font-size: 11px; }
+}

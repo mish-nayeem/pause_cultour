@@ -1,0 +1,114 @@
+.checkout-page .section-head {
+  padding: 44px 40px 24px;
+}
+
+.checkout-body {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 56px;
+  padding: 8px 40px 100px;
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-form .field-label {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-bottom: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+.field span {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--steel);
+  margin-bottom: 8px;
+}
+.field input,
+.field textarea {
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  padding: 12px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  resize: vertical;
+}
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--cobalt);
+}
+.field .err {
+  font-size: 11px;
+  color: var(--signal);
+  margin-top: 6px;
+  font-style: normal;
+}
+
+.payment-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  border: 1px solid var(--steel-line);
+  padding: 12px 14px;
+  margin: 8px 0 24px;
+}
+.payment-note .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--signal);
+}
+
+.place-order {
+  padding: 17px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font-size: 13.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.order-summary {
+  align-self: start;
+  border: 1px solid var(--steel-line);
+  padding: 26px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--steel-line);
+}
+.summary-line .steel { color: var(--steel); }
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+.summary-row.total {
+  margin-top: 6px;
+  padding-top: 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+@media (max-width: 860px) {
+  .checkout-page .section-head { padding: 32px 20px 20px; }
+  .checkout-body { grid-template-columns: 1fr; padding: 8px 20px 60px; gap: 32px; }
+}
