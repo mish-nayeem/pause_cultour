@@ -1,0 +1,81 @@
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--ink);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--paper);
+  padding: 40px 32px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-brand {
+  font-size: 30px;
+  margin-bottom: 4px;
+}
+
+.login-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  margin-bottom: 32px;
+}
+
+.login-card .fl {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-bottom: 7px;
+}
+
+.login-card .fi {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 12px 13px;
+  font-size: 13.5px;
+  color: var(--ink);
+  margin-bottom: 20px;
+  border-radius: 0;
+}
+
+.login-card .fi:focus {
+  outline: none;
+  border-color: var(--cobalt);
+}
+
+.login-err {
+  font-size: 12px;
+  color: var(--signal);
+  margin-bottom: 16px;
+}
+
+.login-btn {
+  padding: 15px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-note {
+  font-size: 10.5px;
+  color: var(--steel);
+  line-height: 1.55;
+  margin-top: 22px;
+}
