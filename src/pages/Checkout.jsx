@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
+import { sendOrderConfirmation } from '../lib/email.js'
 import './checkout.css'
 
 export default function Checkout() {
@@ -11,6 +12,7 @@ export default function Checkout() {
   const [form, setForm] = useState({
     name: '',
     phone: '',
+    email: '',
     address: '',
     area: '',
     note: '',
@@ -39,6 +41,11 @@ export default function Checkout() {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Name is required'
     if (!/^01[3-9]\d{8}$/.test(form.phone.trim())) errs.phone = 'Enter a valid Bangladeshi number (e.g. 017XXXXXXXX)'
+    // Email is optional for COD, but a typo'd address means a lost confirmation,
+    // so it's validated when the field isn't empty.
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) {
+      errs.email = 'Enter a valid email, or leave it blank'
+    }
     if (!form.address.trim()) errs.address = 'Address is required'
     if (!form.area.trim()) errs.area = 'City / area is required'
     setErrors(errs)
@@ -58,6 +65,7 @@ export default function Checkout() {
       id: orderId,
       customer_name: form.name,
       customer_phone: form.phone,
+      customer_email: form.email.trim() || null,
       customer_address: form.address,
       customer_area: form.area,
       customer_note: form.note || null,
@@ -96,6 +104,11 @@ export default function Checkout() {
       placedAt: new Date().toISOString(),
     }
 
+    // Awaited so the confirmation page isn't reached before the mail is queued,
+    // but this never throws — a mail failure can't block the order. Only the id
+    // is sent; the function reads the order back from the database itself.
+    await sendOrderConfirmation(orderId)
+
     setSubmitting(false)
     clearCart()
     navigate('/order-confirmed', { state: { order } })
@@ -127,6 +140,19 @@ export default function Checkout() {
               <span className="mono">Phone number</span>
               <input name="phone" value={form.phone} onChange={handleChange} placeholder="017XXXXXXXX" />
               {errors.phone && <em className="err mono">{errors.phone}</em>}
+            </label>
+
+            <label className="field">
+              <span className="mono">Email (optional)</span>
+              <input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+              />
+              <em className="hint mono">We'll email your order confirmation here.</em>
+              {errors.email && <em className="err mono">{errors.email}</em>}
             </label>
 
             <label className="field">
