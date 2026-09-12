@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
-import { products } from '../data/products.js'
+import { fetchProductById } from '../lib/products.js'
 import { useCart } from '../context/CartContext.jsx'
 import './product.css'
 
@@ -9,15 +9,58 @@ export default function Product() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addItem } = useCart()
-  const product = products.find((p) => p.id === id) || products[0]
+
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
   const [activeImg, setActiveImg] = useState(0)
-  const [activeSize, setActiveSize] = useState(product.sizes[0])
+  const [activeSize, setActiveSize] = useState(null)
   const [justAdded, setJustAdded] = useState(false)
 
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setNotFound(false)
+    fetchProductById(id).then(({ product, error }) => {
+      if (!active) return
+      if (error || !product) {
+        setNotFound(true)
+      } else {
+        setProduct(product)
+        setActiveSize(product.sizes[0] || null)
+        setActiveImg(0)
+      }
+      setLoading(false)
+    })
+    return () => { active = false }
+  }, [id])
+
   function handleAddToCart() {
+    if (!product || !activeSize) return
     addItem(product, activeSize, 1)
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 1600)
+  }
+
+  if (loading) {
+    return (
+      <>
+        <Nav />
+        <p className="mono" style={{ padding: '40px' }}>Loading product…</p>
+      </>
+    )
+  }
+
+  if (notFound || !product) {
+    return (
+      <>
+        <Nav />
+        <div style={{ padding: '40px' }}>
+          <p className="mono" style={{ marginBottom: '16px' }}>Couldn't find that product.</p>
+          <Link to="/" className="back-link mono">← BACK TO SHOP</Link>
+        </div>
+      </>
+    )
   }
 
   return (
