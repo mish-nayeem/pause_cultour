@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
+import { IconLock } from './Icons.jsx'
 import './nav.css'
 
 export default function Nav() {
@@ -14,6 +15,11 @@ export default function Nav() {
           <li><a href="#">DROPS</a></li>
           <li><a href="#">ADVICE</a></li>
           <li><Link to="/cart" className="cart">CART ({count})</Link></li>
+          <li>
+            <Link to="/admin" className="admin-link" title="Admin" aria-label="Admin">
+              <IconLock width="14" height="14" />
+            </Link>
+          </li>
         </ul>
       </nav>
     </header>
