@@ -11,6 +11,23 @@ import {
   dailySeries,
   topProducts,
 } from '../lib/admin.js'
+import {
+  IconGrid,
+  IconBag,
+  IconTag,
+  IconBox,
+  IconTruck,
+  IconCheck,
+  IconX,
+  IconCash,
+  IconSearch,
+  IconChevron,
+  IconExternal,
+  IconLogout,
+  IconTrend,
+  IconStar,
+  IconClock,
+} from '../components/Icons.jsx'
 import './admin.css'
 
 const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
@@ -147,20 +164,22 @@ export default function Admin() {
 
         <nav className="side-nav mono">
           <button className={tab === 'overview' ? 'on' : ''} onClick={() => setTab('overview')}>
-            Overview
+            <span className="nav-left"><IconGrid />Overview</span>
           </button>
           <button className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>
-            Orders
+            <span className="nav-left"><IconBag />Orders</span>
             {stats.pending > 0 && <span className="badge">{stats.pending}</span>}
           </button>
           <button className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>
-            Products
+            <span className="nav-left"><IconTag />Products</span>
           </button>
         </nav>
 
         <div className="side-foot mono">
-          <Link to="/">View storefront →</Link>
-          <button onClick={handleSignOut} className="signout">Sign out</button>
+          <Link to="/"><IconExternal width="13" height="13" />View storefront</Link>
+          <button onClick={handleSignOut} className="signout">
+            <IconLogout width="13" height="13" />Sign out
+          </button>
         </div>
       </aside>
 
@@ -186,20 +205,32 @@ export default function Admin() {
           <>
             <div className="stat-row">
               <div className="stat">
-                <div className="stat-label mono">TOTAL ORDERS</div>
+                <div className="stat-top">
+                  <span className="stat-ico"><IconBox /></span>
+                  <div className="stat-label mono">TOTAL ORDERS</div>
+                </div>
                 <div className="stat-value display">{stats.totalOrders}</div>
               </div>
               <div className="stat">
-                <div className="stat-label mono">PENDING</div>
+                <div className="stat-top">
+                  <span className="stat-ico warn"><IconClock /></span>
+                  <div className="stat-label mono">PENDING</div>
+                </div>
                 <div className="stat-value display">{stats.pending}</div>
                 <div className="stat-note mono">{taka(stats.pendingValue)} to collect</div>
               </div>
               <div className="stat">
-                <div className="stat-label mono">DELIVERED</div>
+                <div className="stat-top">
+                  <span className="stat-ico good"><IconCheck /></span>
+                  <div className="stat-label mono">DELIVERED</div>
+                </div>
                 <div className="stat-value display">{stats.delivered}</div>
               </div>
               <div className="stat">
-                <div className="stat-label mono">CANCELLED</div>
+                <div className="stat-top">
+                  <span className="stat-ico bad"><IconX /></span>
+                  <div className="stat-label mono">CANCELLED</div>
+                </div>
                 <div className="stat-value display">{stats.cancelled}</div>
               </div>
             </div>
@@ -207,13 +238,14 @@ export default function Admin() {
             <section className="panel">
               <div className="panel-head">
                 <div>
-                  <div className="panel-label mono">COLLECTED REVENUE</div>
+                  <div className="panel-label mono"><IconCash width="13" height="13" />COLLECTED REVENUE</div>
                   <div className="big display">{taka(stats.revenue)}</div>
                   <div className="panel-note mono">
                     From delivered orders only · {windowOrders} order{windowOrders === 1 ? '' : 's'} in
                     last 14 days ({taka(windowValue)} placed)
                   </div>
                 </div>
+                <div className="panel-tag mono"><IconTrend width="13" height="13" />14 DAYS</div>
               </div>
               <Sparkline series={series} />
               <div className="spark-axis mono">
@@ -224,7 +256,9 @@ export default function Admin() {
 
             <div className="two-col">
               <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>RECENT ORDERS</div>
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
+                  <IconTruck width="13" height="13" />RECENT ORDERS
+                </div>
                 {orders.length === 0 && <div className="empty mono">No orders yet.</div>}
                 {orders.slice(0, 6).map((o) => (
                   <div className="mini-row" key={o.id}>
@@ -241,7 +275,9 @@ export default function Admin() {
               </section>
 
               <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>TOP SELLERS</div>
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
+                  <IconStar width="13" height="13" />TOP SELLERS
+                </div>
                 {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
                 {top.map((p, i) => (
                   <div className="mini-row" key={p.name}>
@@ -263,12 +299,15 @@ export default function Admin() {
         {!loading && tab === 'orders' && (
           <section className="panel">
             <div className="orders-head">
-              <input
-                className="search mono"
-                placeholder="Search order ID, name or phone…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <div className="search-wrap">
+                <IconSearch width="14" height="14" />
+                <input
+                  className="search mono"
+                  placeholder="Search order ID, name or phone…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
               <div className="mono dim">{filteredOrders.length} of {orders.length}</div>
             </div>
 
@@ -295,6 +334,9 @@ export default function Admin() {
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>
+                    </div>
+                    <div className={`tc chev ${expanded === o.id ? 'open' : ''}`}>
+                      <IconChevron width="14" height="14" />
                     </div>
                   </div>
 
