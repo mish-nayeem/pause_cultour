@@ -11,6 +11,7 @@ import {
   dailySeries,
   topProducts,
 } from '../lib/admin.js'
+import { sendStatusUpdate } from '../lib/email.js'
 import {
   IconGrid,
   IconBag,
@@ -126,14 +127,21 @@ export default function Admin() {
   async function handleStatusChange(orderId, status) {
     setSavingId(orderId)
     const { error } = await updateOrderStatus(orderId, status)
-    setSavingId(null)
 
     if (error) {
+      setSavingId(null)
       setLoadError("Couldn't update that order's status. Try again.")
       return
     }
 
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)))
+
+    // Emails the customer if the new status is one worth telling them about.
+    // The status change is already saved, so a mail failure is logged and
+    // otherwise ignored rather than shown as a failed update.
+    await sendStatusUpdate(orderId, status)
+
+    setSavingId(null)
   }
 
   async function handleSignOut() {
