@@ -110,8 +110,6 @@ export default function HeroManager() {
         These are the full-screen images on the homepage — they rotate every 5
         seconds. The label is just your own name for the slide; it isn't shown
         on the site. Hidden slides stay here but don't appear in the rotation.
-        Upload wide photos around 2400 × 1350; anything narrower gets cropped to
-        fill the screen, and "Keep …" decides which part survives the crop.
       </div>
 
       {error && <div className="err-banner mono">{error}</div>}
@@ -127,6 +125,15 @@ export default function HeroManager() {
           {busy ? 'Working…' : '+ Upload image'}
           <input type="file" accept="image/*" onChange={handleUpload} disabled={busy} />
         </label>
+      </div>
+
+      {/* Sits next to the upload button rather than in the intro text, so it's
+          read at the moment the file is being chosen. */}
+      <div className="hm-size-note mono">
+        <strong>Image size:</strong> upload a wide landscape photo, around
+        2400 × 1350 px (16:9). The hero fills the whole screen, so taller or
+        narrower images will be cropped — use the "Keep …" setting on each
+        slide to choose which part stays in frame.
       </div>
 
       {loading && <div className="empty mono">Loading…</div>}
