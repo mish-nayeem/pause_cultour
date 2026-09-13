@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
+import { cld } from '../lib/cloudinary.js'
 import './cart.css'
 
 export default function Cart() {
@@ -31,7 +32,7 @@ export default function Cart() {
               {items.map((item) => (
                 <div className="cart-line" key={`${item.id}-${item.size}`}>
                   <div className="line-thumb">
-                    <img src={item.image} alt={item.name} />
+                    <img src={cld(item.image, { w: 200 })} alt={item.name} />
                   </div>
                   <div className="line-info">
                     <div className="line-sku mono">{item.sku}</div>
