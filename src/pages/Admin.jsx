@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AdminLogin from './AdminLogin.jsx'
 import {
@@ -12,6 +12,8 @@ import {
   topProducts,
 } from '../lib/admin.js'
 import { sendStatusUpdate } from '../lib/email.js'
+import { cld } from '../lib/cloudinary.js'
+import ProductForm from '../components/ProductForm.jsx'
 import {
   IconGrid,
   IconBag,
@@ -80,6 +82,7 @@ export default function Admin() {
   const [savingId, setSavingId] = useState(null)
   const [expanded, setExpanded] = useState(null)
   const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState(null) // null | 'new' | product row
 
   useEffect(() => {
     getSession().then((s) => {
@@ -88,26 +91,29 @@ export default function Admin() {
     })
   }, [])
 
-  useEffect(() => {
-    if (!session) return
-    let active = true
+  // Pulled out of the effect so the product form can refresh the list after a
+  // save or delete without duplicating the fetch logic.
+  const reload = useCallback(async () => {
     setLoading(true)
     setLoadError('')
 
-    Promise.all([fetchOrders(), fetchAdminProducts()]).then(([o, p]) => {
-      if (!active) return
-      if (o.error) {
-        setLoadError(
-          "Couldn't load orders. Make sure you ran the admin SQL policies in Supabase."
-        )
-      }
-      setOrders(o.orders)
-      setProducts(p.products)
-      setLoading(false)
-    })
+    const [o, p] = await Promise.all([fetchOrders(), fetchAdminProducts()])
 
-    return () => { active = false }
-  }, [session])
+    if (o.error) {
+      setLoadError(
+        "Couldn't load orders. Make sure you ran the admin SQL policies in Supabase."
+      )
+    }
+
+    setOrders(o.orders)
+    setProducts(p.products)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    reload()
+  }, [session, reload])
 
   const stats = useMemo(() => computeStats(orders), [orders])
   const series = useMemo(() => dailySeries(orders, 14), [orders])
@@ -381,19 +387,39 @@ export default function Admin() {
           </section>
         )}
 
-        {!loading && tab === 'products' && (
+        {!loading && tab === 'products' && editing && (
+          <ProductForm
+            existing={editing === 'new' ? null : editing}
+            onCancel={() => setEditing(null)}
+            onDone={() => {
+              setEditing(null)
+              reload()
+            }}
+          />
+        )}
+
+        {!loading && tab === 'products' && !editing && (
           <section className="panel">
-            <div className="panel-note mono" style={{ marginBottom: '20px' }}>
-              Products are edited in Supabase → Table Editor → products. This view is read-only.
+            <div className="orders-head">
+              <div className="panel-note mono">
+                Click a product to edit it. Images upload straight to Cloudinary.
+              </div>
+              <button className="add-product mono" onClick={() => setEditing('new')}>
+                + Add product
+              </button>
             </div>
 
             {products.length === 0 && <div className="empty mono">No products in the catalog.</div>}
 
             <div className="table">
               {products.map((p) => (
-                <div className="trow prow" key={p.id}>
+                <div
+                  className="trow prow clickable"
+                  key={p.id}
+                  onClick={() => setEditing(p)}
+                >
                   <div className="pthumb">
-                    {Array.isArray(p.images) && p.images[0] && <img src={p.images[0]} alt="" />}
+                    {Array.isArray(p.images) && p.images[0] && <img src={cld(p.images[0], { w: 120 })} alt="" />}
                   </div>
                   <div className="tc name">{p.name}</div>
                   <div className="tc mono dim">{p.variant}</div>
