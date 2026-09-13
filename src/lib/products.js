@@ -10,6 +10,7 @@ function mapRow(row) {
     variant: row.variant,
     price: row.price,
     drop: row.drop_name,
+    category: row.category || '',
     isNew: row.is_new,
     featured: row.featured,
     images: row.images || [],
