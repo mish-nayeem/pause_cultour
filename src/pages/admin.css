@@ -524,3 +524,20 @@
   .tc.chev { display: none; }
   .pthumb { display: none; }
 }
+
+/* ---------- Product management ---------- */
+
+.add-product {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 10px 18px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-product:hover { background: var(--cobalt); }
+
+.trow.prow.clickable { cursor: pointer; }
