@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { fetchProducts } from '../lib/products.js'
+import { cld } from '../lib/cloudinary.js'
 import './home.css'
 
 export default function Home() {
@@ -80,7 +81,7 @@ export default function Home() {
           {featured && (
             <Link to={`/product/${featured.id}`} className="card featured">
               <div className="thumb">
-                <img src={featured.images[0]} alt={featured.name} />
+                <img src={cld(featured.images[0], { w: 900 })} alt={featured.name} />
                 {featured.isNew && <div className="new-tag mono"><span className="rec"></span>NEW</div>}
                 <div className="duration-tag mono">৳ {featured.price.toLocaleString()}</div>
                 <div className="sku-tag mono">{featured.sku}</div>
@@ -95,7 +96,7 @@ export default function Home() {
           {rest.map((p) => (
             <Link to={`/product/${p.id}`} className="card" key={p.id}>
               <div className="thumb">
-                <img src={p.images[0]} alt={p.name} />
+                <img src={cld(p.images[0], { w: 500 })} alt={p.name} />
                 {p.isNew && <div className="new-tag mono"><span className="rec"></span>NEW</div>}
                 <div className="duration-tag mono">৳ {p.price.toLocaleString()}</div>
                 <div className="sku-tag mono">{p.sku}</div>
