@@ -12,6 +12,7 @@ const BLANK = {
   variant: '',
   price: '',
   drop: 'DROP 02',
+  category: 'T-SHIRTS',
   isNew: false,
   featured: false,
   images: [],
@@ -36,6 +37,7 @@ function fromRow(row) {
     variant: row.variant,
     price: String(row.price),
     drop: row.drop_name,
+    category: row.category || '',
     isNew: row.is_new,
     featured: row.featured,
     images: row.images ?? [],
@@ -113,6 +115,7 @@ export default function ProductForm({ existing, onDone, onCancel }) {
     if (!p.price || Number(p.price) <= 0) return 'Enter a price above 0'
     if (p.images.length === 0) return 'Add at least one image'
     if (p.sizes.length === 0) return 'Add at least one size'
+    if (!p.category.trim()) return 'Category is required (e.g. T-SHIRTS)'
     return ''
   }
 
@@ -242,6 +245,16 @@ export default function ProductForm({ existing, onDone, onCancel }) {
         <label className="pf-field">
           <span className="mono">DROP</span>
           <input value={p.drop} onChange={(e) => set('drop', e.target.value)} placeholder="DROP 02" />
+        </label>
+
+        <label className="pf-field">
+          <span className="mono">CATEGORY</span>
+          <input
+            value={p.category}
+            onChange={(e) => set('category', e.target.value.toUpperCase())}
+            placeholder="T-SHIRTS"
+          />
+          <em className="pf-hint mono">Shows in the shop menu. Reuse exact names to group items.</em>
         </label>
       </div>
 
