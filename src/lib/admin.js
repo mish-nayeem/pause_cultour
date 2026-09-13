@@ -2,15 +2,35 @@ import { supabase } from './supabaseClient.js'
 
 // ---------- Admin allowlist ----------
 
-// Only this email can open the admin panel. Set it in .env as VITE_ADMIN_EMAIL.
+// Only this email can open the admin panel. Set it in .env locally and in the
+// Vercel project's Environment Variables for the deployed site.
 // This check is convenience, not security — the real enforcement lives in the
 // Supabase RLS policies, which reject queries from any other logged-in account
 // even if someone bypasses this file. Both must name the same address.
 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || '').trim().toLowerCase()
 
 export function isAdminEmail(email) {
-  if (!ADMIN_EMAIL) return false
-  return (email || '').trim().toLowerCase() === ADMIN_EMAIL
+  const candidate = (email || '').trim().toLowerCase()
+
+  if (!ADMIN_EMAIL) {
+    // Surfaces the most common cause — the env var never reached the build —
+    // instead of failing with an unexplained "no access" message.
+    console.error(
+      '[Admin] VITE_ADMIN_EMAIL is not set. Add it to .env (and restart the dev ' +
+      'server), or to the Vercel Environment Variables and redeploy.'
+    )
+    return false
+  }
+
+  const match = candidate === ADMIN_EMAIL
+
+  if (!match) {
+    console.warn(
+      `[Admin] Email mismatch. Signed in as "${candidate}", expected "${ADMIN_EMAIL}".`
+    )
+  }
+
+  return match
 }
 
 // ---------- Auth ----------
@@ -156,4 +176,55 @@ export function topProducts(orders, limit = 5) {
     })
 
   return [...tally.values()].sort((a, b) => b.units - a.units).slice(0, limit)
+}
+
+// ---------- Product write operations ----------
+
+// The UI keeps products in the camelCase shape the storefront uses; the table
+// is snake_case. Converting here keeps the form components unaware of the
+// column names.
+function toRow(p) {
+  return {
+    id: p.id,
+    sku: p.sku,
+    name: p.name,
+    variant: p.variant,
+    price: Number(p.price),
+    drop_name: p.drop,
+    is_new: Boolean(p.isNew),
+    featured: Boolean(p.featured),
+    images: p.images ?? [],
+    description: p.description ?? '',
+    sizes: p.sizes ?? [],
+    sizes_out: p.sizesOut ?? [],
+    specs: p.specs ?? [],
+  }
+}
+
+export async function saveProduct(product, isNewRecord) {
+  const row = toRow(product)
+
+  const query = isNewRecord
+    ? supabase.from('products').insert(row)
+    : supabase.from('products').update(row).eq('id', row.id)
+
+  const { error } = await query
+
+  if (error) {
+    console.error('[Supabase] saveProduct failed:', error.message)
+    return { error }
+  }
+
+  return { error: null }
+}
+
+export async function deleteProduct(id) {
+  const { error } = await supabase.from('products').delete().eq('id', id)
+
+  if (error) {
+    console.error('[Supabase] deleteProduct failed:', error.message)
+    return { error }
+  }
+
+  return { error: null }
 }
