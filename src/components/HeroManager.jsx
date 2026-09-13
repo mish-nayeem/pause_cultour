@@ -59,6 +59,13 @@ export default function HeroManager() {
     }
   }
 
+  async function setFocus(slide, focus) {
+    setBusy(true)
+    await updateHeroSlide(slide.id, { focus })
+    await load()
+    setBusy(false)
+  }
+
   async function toggleActive(slide) {
     setBusy(true)
     await updateHeroSlide(slide.id, { active: !slide.active })
@@ -103,6 +110,8 @@ export default function HeroManager() {
         These are the full-screen images on the homepage — they rotate every 5
         seconds. The label is just your own name for the slide; it isn't shown
         on the site. Hidden slides stay here but don't appear in the rotation.
+        Upload wide photos around 2400 × 1350; anything narrower gets cropped to
+        fill the screen, and "Keep …" decides which part survives the crop.
       </div>
 
       {error && <div className="err-banner mono">{error}</div>}
@@ -155,6 +164,20 @@ export default function HeroManager() {
               <span>{i + 1}</span>
               <button onClick={() => move(i, 1)} disabled={i === slides.length - 1 || busy}>→</button>
             </div>
+
+            <select
+              className="hm-focus mono"
+              value={s.focus || 'center'}
+              disabled={busy}
+              onChange={(e) => setFocus(s, e.target.value)}
+              title="Which part of the photo to keep when it's cropped"
+            >
+              <option value="top">Keep top</option>
+              <option value="center">Keep middle</option>
+              <option value="bottom">Keep bottom</option>
+              <option value="left">Keep left</option>
+              <option value="right">Keep right</option>
+            </select>
 
             <button className="hm-toggle mono" onClick={() => toggleActive(s)} disabled={busy}>
               {s.active ? 'Visible' : 'Hidden'}
