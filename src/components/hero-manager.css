@@ -45,7 +45,7 @@
 
 .hm-row {
   display: grid;
-  grid-template-columns: 96px 1fr 110px 92px 34px;
+  grid-template-columns: 96px 1fr 110px 116px 92px 34px;
   gap: 14px;
   align-items: center;
   padding: 12px 0;
@@ -164,6 +164,20 @@
     gap: 10px;
   }
   .hm-thumb { width: 76px; height: 48px; }
-  .hm-order, .hm-toggle { grid-column: 2 / -1; }
+  .hm-order, .hm-toggle, .hm-focus { grid-column: 2 / -1; }
   .hm-order { justify-content: flex-start; gap: 10px; }
 }
+
+.hm-focus {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 7px 8px;
+  cursor: pointer;
+  border-radius: 0;
+  width: 100%;
+}
+
+.hm-focus:focus { outline: none; border-color: var(--cobalt); }
