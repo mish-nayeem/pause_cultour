@@ -121,6 +121,13 @@ export default function Admin() {
   const series = useMemo(() => dailySeries(orders, 14), [orders])
   const top = useMemo(() => topProducts(orders, 5), [orders])
 
+  // Drawn from the catalog so the product form offers the names already in
+  // use, rather than letting each new product invent its own spelling.
+  const productCategories = useMemo(
+    () => [...new Set(products.map((p) => p.category).filter(Boolean))].sort(),
+    [products]
+  )
+
   const filteredOrders = useMemo(() => {
     if (!search.trim()) return orders
     const q = search.trim().toLowerCase()
@@ -396,6 +403,7 @@ export default function Admin() {
         {!loading && tab === 'products' && editing && (
           <ProductForm
             existing={editing === 'new' ? null : editing}
+            categories={productCategories}
             onCancel={() => setEditing(null)}
             onDone={() => {
               setEditing(null)
