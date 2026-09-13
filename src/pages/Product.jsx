@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { fetchProductById } from '../lib/products.js'
+import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
 import './product.css'
 
@@ -74,7 +75,7 @@ export default function Product() {
       <div className="pdp">
         <div className="media">
           <div className="main-frame">
-            <img src={product.images[activeImg]} alt={product.name} />
+            <img src={cld(product.images[activeImg], { w: 900 })} alt={product.name} />
             <div className="frame-badge mono"><span className="dot"></span> FRAME 00214 / PAUSED</div>
             <div className="play-static">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -100,7 +101,7 @@ export default function Product() {
                 className={`t ${i === activeImg ? 'active' : ''}`}
                 onClick={() => setActiveImg(i)}
               >
-                <img src={img} alt="" />
+                <img src={cld(img, { w: 160 })} alt="" />
               </div>
             ))}
           </div>
