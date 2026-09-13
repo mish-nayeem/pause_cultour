@@ -14,6 +14,7 @@ import {
 import { sendStatusUpdate } from '../lib/email.js'
 import { cld } from '../lib/cloudinary.js'
 import ProductForm from '../components/ProductForm.jsx'
+import HeroManager from '../components/HeroManager.jsx'
 import {
   IconGrid,
   IconBag,
@@ -30,6 +31,7 @@ import {
   IconTrend,
   IconStar,
   IconClock,
+  IconImage,
 } from '../components/Icons.jsx'
 import './admin.css'
 
@@ -187,6 +189,9 @@ export default function Admin() {
           <button className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>
             <span className="nav-left"><IconTag />Products</span>
           </button>
+          <button className={tab === 'hero' ? 'on' : ''} onClick={() => setTab('hero')}>
+            <span className="nav-left"><IconImage />Homepage</span>
+          </button>
         </nav>
 
         <div className="side-foot mono">
@@ -204,6 +209,7 @@ export default function Admin() {
               {tab === 'overview' && 'Overview'}
               {tab === 'orders' && 'Orders'}
               {tab === 'products' && 'Products'}
+              {tab === 'hero' && 'Homepage hero'}
             </h1>
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
@@ -437,6 +443,7 @@ export default function Admin() {
             </div>
           </section>
         )}
+        {tab === 'hero' && <HeroManager />}
       </main>
     </div>
   )
