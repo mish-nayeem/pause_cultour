@@ -1,50 +1,129 @@
-.site-header {
+/* The nav is a floating pill, centred like a badge over the page rather than a
+   full-width bar — it reads as part of the artwork on the hero, and still holds
+   its shape on the inner pages. */
+
+.nav-wrap {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 20px 0;
+  pointer-events: none;
+}
+
+/* On the hero, the nav floats over the image instead of pushing it down. */
+.nav-wrap.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.site-header {
+  pointer-events: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 22px 40px;
-  background: rgba(237, 234, 225, 0.92);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--steel-line);
+  gap: 28px;
+  background: var(--ink);
+  border-radius: 999px;
+  padding: 13px 26px;
 }
 
 .site-header .logo {
-  font-size: 26px;
+  font-size: 20px;
+  color: var(--paper);
   text-decoration: none;
+  font-style: italic;
+  letter-spacing: 0.02em;
 }
 
 .site-header nav ul {
   display: flex;
   list-style: none;
-  gap: 36px;
+  gap: 22px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  letter-spacing: 0.03em;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  align-items: center;
 }
 
 .site-header nav a {
+  color: var(--paper);
   text-decoration: none;
+  transition: opacity 0.18s ease;
 }
+
+.site-header nav a:hover { opacity: 0.62; }
+.site-header nav a.dim { opacity: 0.62; }
 
 .site-header nav a.cart::before {
   content: '● ';
   color: var(--signal);
 }
 
-/* Sits apart from the shop links — a quiet entry point, not a menu item. */
 .site-header nav a.admin-link {
   display: flex;
   align-items: center;
-  color: var(--steel);
-  padding-left: 4px;
+  color: rgba(237, 234, 225, 0.5);
 }
 
-.site-header nav a.admin-link:hover { color: var(--cobalt); }
+.site-header nav a.admin-link:hover { color: var(--cobalt); opacity: 1; }
+
+/* ---------- Category dropdown ---------- */
+
+.cat-menu {
+  pointer-events: auto;
+  margin-top: 8px;
+  max-width: 720px;
+  background: rgba(22, 22, 15, 0.72);
+  backdrop-filter: blur(10px);
+  border-radius: 26px;
+  padding: 16px 26px;
+  animation: cat-in 0.16s ease-out;
+}
+
+@keyframes cat-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cat-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 0;
+}
+
+.cat-inner button {
+  background: none;
+  border: none;
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: 3px 12px;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+/* Bullet separators, drawn rather than typed so they wrap cleanly. */
+.cat-inner button:not(:last-child)::after {
+  content: '•';
+  position: absolute;
+  right: -3px;
+  color: rgba(237, 234, 225, 0.45);
+}
+
+.cat-inner button:hover { color: var(--cobalt); }
 
 @media (max-width: 860px) {
-  .site-header { padding: 16px 20px; }
-  .site-header nav ul { gap: 18px; font-size: 11px; }
+  .nav-wrap { padding: 12px 12px 0; }
+  .site-header { gap: 14px; padding: 11px 16px; width: 100%; justify-content: space-between; }
+  .site-header .logo { font-size: 17px; }
+  .site-header nav ul { gap: 12px; font-size: 10.5px; }
+  .cat-menu { padding: 14px 16px; border-radius: 20px; width: 100%; }
+  .cat-inner button { font-size: 11px; padding: 3px 9px; }
 }
