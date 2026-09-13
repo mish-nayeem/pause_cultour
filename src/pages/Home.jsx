@@ -54,11 +54,15 @@ export default function Home() {
         {/* Every frame stays mounted and cross-fades, so switching slides
             doesn't flash a blank gap while the next image downloads. */}
         {slides.map((item, i) => (
+          // objectPosition: the hero always fills the screen, so a photo whose
+          // shape differs from the viewport gets cropped. This keeps the part
+          // the admin chose in frame instead of always trimming from the edges.
           <img
             key={item.id}
             src={cld(item.image_url, { w: 1800 })}
             alt=""
             className={`hero-img ${i === active ? 'on' : ''}`}
+            style={{ objectPosition: item.focus || 'center' }}
           />
         ))}
 
