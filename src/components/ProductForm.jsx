@@ -48,13 +48,15 @@ function fromRow(row) {
   }
 }
 
-export default function ProductForm({ existing, onDone, onCancel }) {
+export default function ProductForm({ existing, categories = [], onDone, onCancel }) {
   const isNewRecord = !existing
   const [p, setP] = useState(existing ? fromRow(existing) : BLANK)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState('')
   const fileRef = useRef(null)
 
   function set(field, value) {
@@ -247,15 +249,74 @@ export default function ProductForm({ existing, onDone, onCancel }) {
           <input value={p.drop} onChange={(e) => set('drop', e.target.value)} placeholder="DROP 02" />
         </label>
 
-        <label className="pf-field">
+        <div className="pf-field pf-cat-field">
           <span className="mono">CATEGORY</span>
-          <input
-            value={p.category}
-            onChange={(e) => set('category', e.target.value.toUpperCase())}
-            placeholder="T-SHIRTS"
-          />
-          <em className="pf-hint mono">Shows in the shop menu. Reuse exact names to group items.</em>
-        </label>
+
+          {/* Picking from existing names instead of typing keeps the shop menu
+              clean — a typo like T-SHIRT vs T-SHIRTS would otherwise split one
+              category into two. */}
+          <div className="pf-cats">
+            {[...new Set([...categories, p.category].filter(Boolean))].sort().map((c) => (
+              <button
+                type="button"
+                key={c}
+                className={`pf-cat ${p.category === c ? 'on' : ''}`}
+                onClick={() => set('category', c)}
+              >
+                <span className="pf-box" />
+                {c}
+              </button>
+            ))}
+
+            {!addingCategory && (
+              <button
+                type="button"
+                className="pf-cat new"
+                onClick={() => setAddingCategory(true)}
+              >
+                + New category
+              </button>
+            )}
+          </div>
+
+          {addingCategory && (
+            <div className="pf-newcat">
+              <input
+                className="mono"
+                autoFocus
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value.toUpperCase())}
+                placeholder="E.G. TRACKSUITS"
+              />
+              <button
+                type="button"
+                className="pf-newcat-add mono"
+                onClick={() => {
+                  if (!newCategory.trim()) return
+                  set('category', newCategory.trim())
+                  setNewCategory('')
+                  setAddingCategory(false)
+                }}
+              >
+                Use
+              </button>
+              <button
+                type="button"
+                className="pf-ghost mono"
+                onClick={() => {
+                  setNewCategory('')
+                  setAddingCategory(false)
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          <em className="pf-hint mono">
+            The product shows under this category in the shop menu.
+          </em>
+        </div>
       </div>
 
       <label className="pf-field">
