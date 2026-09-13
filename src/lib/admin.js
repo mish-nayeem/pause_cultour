@@ -191,6 +191,7 @@ function toRow(p) {
     variant: p.variant,
     price: Number(p.price),
     drop_name: p.drop,
+    category: p.category || null,
     is_new: Boolean(p.isNew),
     featured: Boolean(p.featured),
     images: p.images ?? [],
