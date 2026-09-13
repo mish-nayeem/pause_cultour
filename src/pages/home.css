@@ -21,8 +21,8 @@
 
 .hero-img.on { opacity: 1; }
 
-/* Darkens the top and bottom only, so the middle of the photo stays clean
-   while the nav and the scrubber text keep their contrast. */
+/* Darkens the top and bottom edges only, so the middle of the photo stays
+   clean while the nav keeps its contrast against a light image. */
 .hero-shade {
   position: absolute;
   inset: 0;
@@ -32,109 +32,59 @@
   pointer-events: none;
 }
 
-.frame-badge {
-  position: absolute;
-  top: 26px;
-  left: 32px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-  color: rgba(237, 234, 225, 0.85);
-  letter-spacing: 0.06em;
-}
-
-.frame-badge .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--signal);
-}
-
-/* ---------- Lookbook list ---------- */
-
-.lookbook {
-  position: absolute;
-  left: 32px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.lb-item {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: clamp(20px, 2.6vw, 34px);
-  line-height: 1.12;
-  color: var(--paper);
-  opacity: 0.28;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  text-align: left;
-}
-
-.lb-item:hover,
-.lb-item.on {
-  opacity: 1;
-  transform: translateX(4px);
-}
-
 /* ---------- View shop ---------- */
 
+/* Transparent so the photograph reads first — the button is an outline over
+   the image rather than a panel sitting on top of it. */
 .view-shop {
   position: absolute;
-  right: 32px;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   z-index: 5;
-  background: var(--paper);
-  color: var(--ink);
+  background: transparent;
+  color: var(--paper);
   text-decoration: none;
-  padding: 14px 26px;
+  border: 1px solid rgba(237, 234, 225, 0.75);
+  padding: 16px 38px;
   font-size: 12.5px;
-  letter-spacing: 0.08em;
-  transition: background 0.18s ease, color 0.18s ease;
+  letter-spacing: 0.12em;
+  backdrop-filter: blur(2px);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .view-shop:hover {
-  background: var(--cobalt);
-  color: var(--paper);
-}
-
-/* ---------- Hero footer scrubber ---------- */
-
-.hero-foot {
-  position: absolute;
-  left: 32px;
-  right: 32px;
-  bottom: 28px;
-  z-index: 5;
-}
-
-.scrub-track {
-  height: 2px;
-  background: rgba(237, 234, 225, 0.26);
-  margin-bottom: 12px;
-}
-
-.scrub-fill {
-  height: 100%;
   background: var(--paper);
-  transition: width 0.45s ease;
+  color: var(--ink);
+  border-color: var(--paper);
 }
 
-.scrub-meta {
+/* ---------- Slide dots ---------- */
+
+.hero-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  z-index: 5;
   display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: rgba(237, 234, 225, 0.82);
+  gap: 9px;
+}
+
+.hero-dots button {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(237, 234, 225, 0.7);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.hero-dots button.on {
+  background: var(--paper);
+  transform: scale(1.15);
 }
 
 /* ---------- Featured strip ---------- */
@@ -210,19 +160,8 @@
 
 @media (max-width: 860px) {
   .hero-full { height: 92vh; }
-  .frame-badge { top: 78px; left: 18px; font-size: 10px; }
-  .lookbook { left: 18px; gap: 0; }
-  .lb-item { font-size: 19px; }
-  .view-shop {
-    right: auto;
-    left: 18px;
-    top: auto;
-    bottom: 96px;
-    transform: none;
-    padding: 12px 22px;
-    font-size: 11.5px;
-  }
-  .hero-foot { left: 18px; right: 18px; bottom: 20px; }
+  .view-shop { padding: 14px 30px; font-size: 11.5px; letter-spacing: 0.1em; }
+  .hero-dots { bottom: 22px; }
   .feature-inner { grid-template-columns: 1fr; }
   .feature-copy { padding: 32px 20px 44px; }
 }
