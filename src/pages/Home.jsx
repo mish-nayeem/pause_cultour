@@ -3,21 +3,38 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchProducts } from '../lib/products.js'
+import { fetchHeroSlides } from '../lib/hero.js'
 import { cld } from '../lib/cloudinary.js'
 import './home.css'
 
-// Lookbook entries shown stacked on the hero. The active one is bright, the
-// others fade out — the same "you are here in the reel" idea as the scrubber.
-const LOOKBOOK = [
-  { label: 'AUTUMN 26 RANGE', image: 'https://picsum.photos/seed/pausehero1/1800/1200' },
-  { label: 'AUTUMN 26 LOOKBOOK', image: 'https://picsum.photos/seed/pausehero2/1800/1200' },
-  { label: 'PAUSE DHANMONDI', image: 'https://picsum.photos/seed/pausehero3/1800/1200' },
-  { label: 'PAUSE GULSHAN', image: 'https://picsum.photos/seed/pausehero4/1800/1200' },
-]
+const SLIDE_MS = 5000
 
 export default function Home() {
-  const [active, setActive] = useState(1)
+  const [slides, setSlides] = useState([])
+  const [active, setActive] = useState(0)
   const [featured, setFeatured] = useState(null)
+
+  // Hero slides live in the database so a new drop is an upload in the admin
+  // panel, not a code change and redeploy.
+  useEffect(() => {
+    let cancelled = false
+    fetchHeroSlides().then(({ slides }) => {
+      if (cancelled) return
+      setSlides(slides)
+      setActive(0)
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  // Auto-advance. Skipped entirely for a single slide so we don't run a timer
+  // that can never change anything.
+  useEffect(() => {
+    if (slides.length < 2) return
+    const timer = setInterval(() => {
+      setActive((i) => (i + 1) % slides.length)
+    }, SLIDE_MS)
+    return () => clearInterval(timer)
+  }, [slides.length])
 
   // Only the featured product is needed here — the full grid lives on /shop.
   useEffect(() => {
@@ -29,19 +46,17 @@ export default function Home() {
     return () => { cancelled = true }
   }, [])
 
-  const hero = LOOKBOOK[active]
-
   return (
     <>
       <section className="hero-full">
         <Nav overlay />
 
-        {/* Every frame stays mounted and cross-fades, so switching lookbooks
+        {/* Every frame stays mounted and cross-fades, so switching slides
             doesn't flash a blank gap while the next image downloads. */}
-        {LOOKBOOK.map((item, i) => (
+        {slides.map((item, i) => (
           <img
-            key={item.label}
-            src={cld(item.image, { w: 1800 })}
+            key={item.id}
+            src={cld(item.image_url, { w: 1800 })}
             alt=""
             className={`hero-img ${i === active ? 'on' : ''}`}
           />
@@ -49,39 +64,20 @@ export default function Home() {
 
         <div className="hero-shade" />
 
-        <div className="frame-badge mono">
-          <span className="dot" /> FRAME 00482 / PAUSED
-        </div>
-
-        <div className="lookbook">
-          {LOOKBOOK.map((item, i) => (
-            <button
-              key={item.label}
-              className={`lb-item display ${i === active ? 'on' : ''}`}
-              onMouseEnter={() => setActive(i)}
-              onFocus={() => setActive(i)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
         <Link to="/shop" className="view-shop mono">VIEW SHOP</Link>
 
-        <div className="hero-foot">
-          <div className="scrub-track">
-            <div
-              className="scrub-fill"
-              style={{ width: `${((active + 1) / LOOKBOOK.length) * 100}%` }}
-            />
+        {slides.length > 1 && (
+          <div className="hero-dots">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                className={i === active ? 'on' : ''}
+                onClick={() => setActive(i)}
+                aria-label={`Slide ${i + 1}`}
+              />
+            ))}
           </div>
-          <div className="scrub-meta mono">
-            <span>{hero.label}</span>
-            <span>
-              {String(active + 1).padStart(2, '0')} / {String(LOOKBOOK.length).padStart(2, '0')}
-            </span>
-          </div>
-        </div>
+        )}
       </section>
 
       {featured && (
