@@ -2,11 +2,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { cld } from '../lib/cloudinary.js'
+import usePageMeta from '../lib/usePageMeta.js'
 import './cart.css'
 
 export default function Cart() {
   const { items, updateQty, removeItem, subtotal } = useCart()
   const navigate = useNavigate()
+  usePageMeta('Cart')
 
   return (
     <>
