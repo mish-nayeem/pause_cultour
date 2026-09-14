@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# The admin panel has nothing useful for search engines and shouldn't appear
+# in results. It's still protected by login — this is tidiness, not security.
+Disallow: /admin
+Disallow: /checkout
+Disallow: /order-confirmed
+
+Sitemap: https://pause-cultour.vercel.app/sitemap.xml
