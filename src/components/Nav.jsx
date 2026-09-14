@@ -60,7 +60,7 @@ export default function Nav({ overlay = false }) {
               <Link to="/shop" className={catOpen ? 'dim' : ''}>SHOP</Link>
             </li>
             <li onMouseEnter={() => setCatOpen(false)}><Link to="/shop">DROPS</Link></li>
-            <li onMouseEnter={() => setCatOpen(false)}><a href="#">ADVICE</a></li>
+            <li onMouseEnter={() => setCatOpen(false)}><Link to="/size-guide">ADVICE</Link></li>
             <li onMouseEnter={() => setCatOpen(false)}>
               <Link to="/cart" className="cart">CART ({count})</Link>
             </li>
@@ -110,7 +110,7 @@ export default function Nav({ overlay = false }) {
 
           <div className="mob-links mono">
             <Link to="/shop">DROPS</Link>
-            <a href="#">ADVICE</a>
+            <Link to="/size-guide">ADVICE</Link>
             <Link to="/cart">CART ({count})</Link>
             <Link to="/admin" className="mob-admin">
               <IconLock width="13" height="13" /> ADMIN
