@@ -4,6 +4,7 @@ import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchHeroSlides } from '../lib/hero.js'
 import { cld } from '../lib/cloudinary.js'
+import usePageMeta from '../lib/usePageMeta.js'
 import './home.css'
 
 const SLIDE_MS = 5000
@@ -11,6 +12,8 @@ const SLIDE_MS = 5000
 export default function Home() {
   const [slides, setSlides] = useState([])
   const [active, setActive] = useState(0)
+
+  usePageMeta()
 
   // Hero slides live in the database so a new drop is an upload in the admin
   // panel, not a code change and redeploy.
