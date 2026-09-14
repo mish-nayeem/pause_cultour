@@ -1,0 +1,133 @@
+.info-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 40px 80px;
+}
+
+.info-head {
+  padding-bottom: 34px;
+  border-bottom: 1px solid var(--steel-line);
+  margin-bottom: 10px;
+}
+
+.info-head .label {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+  margin-bottom: 10px;
+}
+
+.info-head h1 {
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.02;
+  margin-bottom: 16px;
+}
+
+.info-intro {
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: #3a3a30;
+  max-width: 56ch;
+}
+
+/* ---------- Text blocks ---------- */
+
+.info-block {
+  padding: 30px 0;
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.info-block h2 {
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+
+.info-block p {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: #3a3a30;
+  max-width: 62ch;
+}
+
+/* ---------- Contact cards ---------- */
+
+.info-contact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 2px;
+  background: var(--steel-line);
+  margin: 30px 0;
+  border: 1px solid var(--steel-line);
+}
+
+.ct-card {
+  background: var(--paper);
+  padding: 22px 20px;
+  text-decoration: none;
+  color: var(--ink);
+  transition: background 0.15s ease;
+}
+
+.ct-card:hover { background: var(--paper-dim); }
+
+.ct-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  margin-bottom: 9px;
+}
+
+.ct-value {
+  font-size: 14.5px;
+  word-break: break-word;
+}
+
+/* ---------- Tables ---------- */
+
+/* Wrapped so a wide table scrolls sideways on a phone instead of forcing the
+   whole page to scroll horizontally. */
+.info-table-wrap {
+  overflow-x: auto;
+  margin-top: 4px;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 380px;
+}
+
+.info-table th {
+  text-align: left;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  font-weight: 400;
+  padding: 10px 14px 10px 0;
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.info-table td {
+  font-size: 13.5px;
+  padding: 12px 14px 12px 0;
+  border-bottom: 1px solid var(--steel-line);
+  color: #3a3a30;
+}
+
+.info-table td.first { color: var(--ink); }
+.info-table tr:last-child td { border-bottom: none; }
+
+.info-page .back-link {
+  display: inline-block;
+  margin-top: 34px;
+  font-size: 12px;
+  color: var(--steel);
+  text-decoration: none;
+}
+
+.info-page .back-link:hover { color: var(--ink); }
+
+@media (max-width: 860px) {
+  .info-page { padding: 26px 20px 60px; }
+  .info-block { padding: 24px 0; }
+}
