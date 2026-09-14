@@ -4,11 +4,13 @@ import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchProducts } from '../lib/products.js'
 import { cld } from '../lib/cloudinary.js'
+import usePageMeta from '../lib/usePageMeta.js'
 import './shop.css'
 
 export default function Shop() {
   const [params, setParams] = useSearchParams()
   const active = params.get('c') || 'ALL'
+  usePageMeta(active === 'ALL' ? 'Shop' : active)
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
