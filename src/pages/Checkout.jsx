@@ -61,7 +61,7 @@ export default function Checkout() {
     setSubmitting(true)
     setSubmitError('')
 
-    const orderId = 'PZ' + Math.floor(100000 + Math.random() * 900000)
+    const orderId = 'PC' + Math.floor(100000 + Math.random() * 900000)
 
     const { error: orderError } = await supabase.from('orders').insert({
       id: orderId,
