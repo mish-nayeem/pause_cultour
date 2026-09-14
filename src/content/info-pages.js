@@ -4,10 +4,10 @@
 // Anything in [SQUARE BRACKETS] is a placeholder you must replace with your
 // real details before launch.
 
-export const CONTACT_EMAIL = 'hello@pause.com'
-export const CONTACT_PHONE = '[01XXXXXXXXX]'
-export const INSTAGRAM = 'https://instagram.com/[your-handle]'
-export const FACEBOOK = 'https://facebook.com/[your-page]'
+export const CONTACT_EMAIL = 'pause.bd@gmail.com'
+export const CONTACT_PHONE = '+8801706188605'
+export const INSTAGRAM = 'https://www.instagram.com/pause.cultour?stkn=MXhlZTAxaG1qd3N4Ng=='
+export const FACEBOOK = 'https://www.facebook.com/pause.bd'
 export const TIKTOK = 'https://tiktok.com/@[your-handle]'
 
 export const INFO_PAGES = {
