@@ -4,11 +4,13 @@
 // Anything in [SQUARE BRACKETS] is a placeholder you must replace with your
 // real details before launch.
 
-export const CONTACT_EMAIL = 'hello@pause.com'
-export const CONTACT_PHONE = '[01XXXXXXXXX]'
-export const INSTAGRAM = 'https://instagram.com/[your-handle]'
-export const FACEBOOK = 'https://facebook.com/[your-page]'
-export const TIKTOK = 'https://tiktok.com/@[your-handle]'
+export const CONTACT_EMAIL = 'pause.bd@gmail.com'
+export const CONTACT_PHONE = '+8801706188605'
+export const INSTAGRAM = 'https://www.instagram.com/pause.cultour'
+export const FACEBOOK = 'https://www.facebook.com/pause.bd'
+// No TikTok account yet — the footer icon points here until there is one.
+// Either fill this in or remove the TikTok icon from src/components/Footer.jsx.
+export const TIKTOK = 'https://www.instagram.com/pause.cultour'
 
 export const INFO_PAGES = {
   contact: {
@@ -22,7 +24,7 @@ export const INFO_PAGES = {
         items: [
           { label: 'EMAIL', value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
           { label: 'PHONE / WHATSAPP', value: CONTACT_PHONE, href: `tel:${CONTACT_PHONE}` },
-          { label: 'INSTAGRAM', value: '@pause', href: INSTAGRAM },
+          { label: 'INSTAGRAM', value: '@pause.cultour', href: INSTAGRAM },
         ],
       },
       {
