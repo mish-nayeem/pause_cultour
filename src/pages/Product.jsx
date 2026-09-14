@@ -5,6 +5,7 @@ import Footer from '../components/Footer.jsx'
 import { fetchProductById } from '../lib/products.js'
 import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
+import usePageMeta from '../lib/usePageMeta.js'
 import './product.css'
 
 export default function Product() {
@@ -16,6 +17,11 @@ export default function Product() {
   const [notFound, setNotFound] = useState(false)
   const [activeSize, setActiveSize] = useState(null)
   const [justAdded, setJustAdded] = useState(false)
+
+  usePageMeta(
+    product?.name,
+    product ? `${product.name} — ${product.variant}, ৳${product.price}. ${product.description}` : undefined
+  )
 
   useEffect(() => {
     let active = true
