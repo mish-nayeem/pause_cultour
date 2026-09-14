@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://pause-cultour.vercel.app/</loc><priority>1.0</priority></url>
+  <url><loc>https://pause-cultour.vercel.app/shop</loc><priority>0.9</priority></url>
+  <url><loc>https://pause-cultour.vercel.app/size-guide</loc><priority>0.6</priority></url>
+  <url><loc>https://pause-cultour.vercel.app/delivery</loc><priority>0.6</priority></url>
+  <url><loc>https://pause-cultour.vercel.app/contact</loc><priority>0.6</priority></url>
+  <url><loc>https://pause-cultour.vercel.app/privacy</loc><priority>0.3</priority></url>
+  <url><loc>https://pause-cultour.vercel.app/terms</loc><priority>0.3</priority></url>
+  <url><loc>https://pause-cultour.vercel.app/refunds</loc><priority>0.3</priority></url>
+</urlset>
