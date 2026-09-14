@@ -82,3 +82,18 @@
   text-decoration: none;
   color: var(--steel);
 }
+
+/* Sits above the back link — the next useful action, not a way out. */
+.track-cta {
+  display: inline-block;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+  padding: 12px 22px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  margin-right: 18px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.track-cta:hover { background: var(--ink); color: var(--paper); }
