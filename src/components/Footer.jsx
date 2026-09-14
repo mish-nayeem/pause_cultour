@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient.js'
+import { INSTAGRAM, FACEBOOK, TIKTOK } from '../content/info-pages.js'
 import './footer.css'
 
 export default function Footer() {
@@ -87,34 +88,34 @@ export default function Footer() {
 
         <div className="foot-col">
           <div className="foot-label mono">SUPPORT</div>
-          <a href="#">Contact us</a>
-          <a href="#">Size guide</a>
-          <a href="#">Delivery info</a>
+          <Link to="/contact">Contact us</Link>
+          <Link to="/size-guide">Size guide</Link>
+          <Link to="/delivery">Delivery info</Link>
         </div>
 
         <div className="foot-col">
           <div className="foot-label mono">LEGAL</div>
-          <a href="#">Privacy policy</a>
-          <a href="#">Terms</a>
-          <a href="#">Refund policy</a>
+          <Link to="/privacy">Privacy policy</Link>
+          <Link to="/terms">Terms</Link>
+          <Link to="/refunds">Refund policy</Link>
         </div>
       </div>
 
       <div className="foot-base">
         <div className="socials">
-          <a href="#" aria-label="Instagram">
+          <a href={INSTAGRAM} target="_blank" rel="noreferrer" aria-label="Instagram">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.6">
               <rect x="3" y="3" width="18" height="18" rx="5" />
               <circle cx="12" cy="12" r="4" />
               <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
             </svg>
           </a>
-          <a href="#" aria-label="Facebook">
+          <a href={FACEBOOK} target="_blank" rel="noreferrer" aria-label="Facebook">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M15 3h-2.5A4.5 4.5 0 0 0 8 7.5V11H5v4h3v6h4v-6h3l1-4h-4V7.5a1 1 0 0 1 1-1H16V3Z" />
             </svg>
           </a>
-          <a href="#" aria-label="TikTok">
+          <a href={TIKTOK} target="_blank" rel="noreferrer" aria-label="TikTok">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M16 3c.5 2.5 2 4 4.5 4.2V11c-1.8 0-3.3-.5-4.5-1.4V15a6 6 0 1 1-6-6c.4 0 .7 0 1 .1v3.3A2.7 2.7 0 1 0 13 15V3h3Z" />
             </svg>
