@@ -4,11 +4,13 @@ import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { sendOrderConfirmation } from '../lib/email.js'
+import usePageMeta from '../lib/usePageMeta.js'
 import './checkout.css'
 
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()
   const navigate = useNavigate()
+  usePageMeta('Checkout')
   const [form, setForm] = useState({
     name: '',
     phone: '',
