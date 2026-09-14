@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { INFO_PAGES } from '../content/info-pages.js'
+import usePageMeta from '../lib/usePageMeta.js'
 import './info.css'
 
 export default function Info({ slug }) {
   const page = INFO_PAGES[slug]
+
+  usePageMeta(page?.title, page?.intro)
 
   // These pages are usually reached from the footer, which means the visitor is
   // already scrolled to the bottom when they click.
