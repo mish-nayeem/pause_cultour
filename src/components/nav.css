@@ -39,7 +39,7 @@
   letter-spacing: 0.02em;
 }
 
-.site-header nav ul {
+.desk-nav ul {
   display: flex;
   list-style: none;
   gap: 22px;
@@ -49,29 +49,60 @@
   align-items: center;
 }
 
-.site-header nav a {
+.site-header a {
   color: var(--paper);
   text-decoration: none;
   transition: opacity 0.18s ease;
 }
 
-.site-header nav a:hover { opacity: 0.62; }
-.site-header nav a.dim { opacity: 0.62; }
+.site-header a:hover { opacity: 0.62; }
+.site-header a.dim { opacity: 0.62; }
 
-.site-header nav a.cart::before {
+.site-header a.cart::before {
   content: '● ';
   color: var(--signal);
 }
 
-.site-header nav a.admin-link {
+.site-header a.admin-link {
   display: flex;
   align-items: center;
   color: rgba(237, 234, 225, 0.5);
 }
 
-.site-header nav a.admin-link:hover { color: var(--cobalt); opacity: 1; }
+.site-header a.admin-link:hover { color: var(--cobalt); opacity: 1; }
 
-/* ---------- Category dropdown ---------- */
+/* ---------- Mobile controls ---------- */
+
+/* Hidden on desktop; the media query below swaps which set is shown. */
+.mob-right { display: none; }
+
+.burger {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 26px;
+  height: 22px;
+}
+
+.burger span {
+  display: block;
+  height: 1.6px;
+  width: 100%;
+  background: var(--paper);
+  transition: transform 0.22s ease, opacity 0.18s ease;
+}
+
+/* Bars fold into an X so the button doubles as the close control. */
+.burger.on span:nth-child(1) { transform: translateY(5.6px) rotate(45deg); }
+.burger.on span:nth-child(2) { opacity: 0; }
+.burger.on span:nth-child(3) { transform: translateY(-5.6px) rotate(-45deg); }
+
+/* ---------- Desktop category dropdown ---------- */
 
 .cat-menu {
   pointer-events: auto;
@@ -119,11 +150,104 @@
 
 .cat-inner button:hover { color: var(--cobalt); }
 
+/* ---------- Mobile panel ---------- */
+
+.mob-panel {
+  pointer-events: auto;
+  display: none;
+  margin-top: 10px;
+  width: 100%;
+  background: rgba(22, 22, 15, 0.96);
+  backdrop-filter: blur(10px);
+  border-radius: 22px;
+  padding: 22px 22px 26px;
+  animation: cat-in 0.18s ease-out;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.mob-section {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--steel);
+  margin-bottom: 14px;
+}
+
+.mob-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(237, 234, 225, 0.16);
+}
+
+/* Tap targets are full chips rather than text links — a 12px word is hard to
+   hit accurately on a phone. */
+.mob-cats button {
+  background: rgba(237, 234, 225, 0.08);
+  border: none;
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.mob-cats button:active { background: var(--cobalt); }
+
+.mob-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 14px;
+}
+
+.mob-links a {
+  color: var(--paper);
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  padding: 12px 2px;
+}
+
+.mob-admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(237, 234, 225, 0.5) !important;
+  margin-top: 6px;
+  border-top: 1px solid rgba(237, 234, 225, 0.16);
+}
+
 @media (max-width: 860px) {
   .nav-wrap { padding: 12px 12px 0; }
-  .site-header { gap: 14px; padding: 11px 16px; width: 100%; justify-content: space-between; }
+
+  .site-header {
+    gap: 14px;
+    padding: 11px 18px;
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 999px;
+  }
+
   .site-header .logo { font-size: 17px; }
-  .site-header nav ul { gap: 12px; font-size: 10.5px; }
-  .cat-menu { padding: 14px 16px; border-radius: 20px; width: 100%; }
-  .cat-inner button { font-size: 11px; padding: 3px 9px; }
+
+  /* Swap: inline links out, hamburger in. */
+  .desk-nav { display: none; }
+  .cat-menu { display: none; }
+
+  .mob-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .mob-right .cart {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .mob-panel { display: block; }
 }
