@@ -1,0 +1,233 @@
+.track-page {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 40px 40px 80px;
+}
+
+.track-head {
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--steel-line);
+  margin-bottom: 30px;
+}
+
+.track-head .label {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+  margin-bottom: 10px;
+}
+
+.track-head h1 {
+  font-size: clamp(28px, 3.6vw, 40px);
+  line-height: 1.02;
+  margin-bottom: 14px;
+}
+
+.track-intro {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #3a3a30;
+  max-width: 54ch;
+}
+
+/* ---------- Form ---------- */
+
+.track-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+
+.tf-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.tf-field > span {
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  color: var(--steel);
+  margin-bottom: 8px;
+}
+
+.tf-field input {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 13px 14px;
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink);
+  border-radius: 0;
+}
+
+.tf-field input:focus { outline: none; border-color: var(--cobalt); }
+
+.tf-btn {
+  grid-column: 1 / -1;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 16px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.tf-btn:hover { background: var(--cobalt); }
+.tf-btn:disabled { opacity: 0.6; cursor: default; }
+
+.track-error {
+  margin-top: 20px;
+  border-left: 2px solid var(--signal);
+  background: rgba(255, 68, 38, 0.08);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* ---------- Result ---------- */
+
+.track-result {
+  margin-top: 34px;
+  border: 1px solid var(--steel-line);
+  padding: 24px;
+}
+
+.tr-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.tr-id {
+  font-size: 11.5px;
+  color: var(--steel);
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+}
+
+.tr-name { font-size: 16px; font-weight: 500; }
+.tr-total { font-size: 17px; white-space: nowrap; }
+
+/* ---------- Timeline ---------- */
+
+.timeline { padding: 26px 0 8px; }
+
+.tl-step {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 26px;
+}
+
+/* The connecting line is drawn from each dot to the next, so it stops
+   cleanly at the last stage instead of trailing off. */
+.tl-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  bottom: 0;
+  width: 1px;
+  background: var(--steel-line);
+}
+
+.tl-step.done:not(:last-child)::before { background: var(--ink); }
+
+.tl-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  flex-shrink: 0;
+  margin-top: 3px;
+  z-index: 1;
+}
+
+.tl-step.done .tl-dot { background: var(--ink); border-color: var(--ink); }
+
+.tl-step.now .tl-dot {
+  background: var(--cobalt);
+  border-color: var(--cobalt);
+  box-shadow: 0 0 0 4px rgba(42, 77, 255, 0.16);
+}
+
+.tl-label {
+  font-size: 14.5px;
+  color: var(--steel);
+}
+
+.tl-step.done .tl-label { color: var(--ink); }
+.tl-step.now .tl-label { font-weight: 500; }
+
+.tl-note {
+  font-size: 12.5px;
+  color: #3a3a30;
+  margin-top: 5px;
+  line-height: 1.6;
+}
+
+.tr-cancelled {
+  margin: 24px 0;
+  border-left: 2px solid var(--signal);
+  background: rgba(255, 68, 38, 0.08);
+  padding: 13px 15px;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.tr-cancelled a { color: var(--signal); }
+
+/* ---------- Items ---------- */
+
+.tr-items {
+  border-top: 1px solid var(--steel-line);
+  padding-top: 20px;
+}
+
+.tr-items .label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  margin-bottom: 12px;
+}
+
+.tr-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13.5px;
+  padding: 7px 0;
+}
+
+.tr-foot {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--steel-line);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--steel);
+}
+
+.track-page .back-link {
+  display: inline-block;
+  margin-top: 30px;
+  font-size: 12px;
+  color: var(--steel);
+  text-decoration: none;
+}
+
+.track-page .back-link:hover { color: var(--ink); }
+
+@media (max-width: 700px) {
+  .track-page { padding: 26px 20px 60px; }
+  .track-form { grid-template-columns: 1fr; }
+  .track-result { padding: 20px 18px; }
+}
