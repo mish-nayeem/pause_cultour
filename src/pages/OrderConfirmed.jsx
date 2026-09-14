@@ -48,6 +48,12 @@ export default function OrderConfirmed() {
 
         <p className="confirm-note mono">Pay in cash when your order arrives. We'll call to confirm before delivery.</p>
 
+        {/* Right after checkout is when the order number is in front of them,
+            so this is the best moment to hand over the tracking link. */}
+        <Link to={`/track?id=${order.orderId}`} className="track-cta mono">
+          Track this order →
+        </Link>
+
         <Link to="/" className="back-link mono">← BACK TO SHOP</Link>
       </div>
     </>
