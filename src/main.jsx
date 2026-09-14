@@ -9,6 +9,7 @@ import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import OrderConfirmed from './pages/OrderConfirmed.jsx'
 import Admin from './pages/Admin.jsx'
+import Info from './pages/Info.jsx'
 import './styles/global.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -23,6 +24,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order-confirmed" element={<OrderConfirmed />} />
           <Route path="/admin" element={<Admin />} />
+
+          {/* Static pages. Explicit paths rather than /info/:slug so the URLs
+              read as real pages and are worth sharing. */}
+          <Route path="/contact" element={<Info slug="contact" />} />
+          <Route path="/size-guide" element={<Info slug="size-guide" />} />
+          <Route path="/delivery" element={<Info slug="delivery" />} />
+          <Route path="/privacy" element={<Info slug="privacy" />} />
+          <Route path="/terms" element={<Info slug="terms" />} />
+          <Route path="/refunds" element={<Info slug="refunds" />} />
         </Routes>
       </CartProvider>
     </BrowserRouter>
