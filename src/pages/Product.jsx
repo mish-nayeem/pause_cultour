@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
+import Footer from '../components/Footer.jsx'
 import { fetchProductById } from '../lib/products.js'
 import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
@@ -8,13 +9,11 @@ import './product.css'
 
 export default function Product() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { addItem } = useCart()
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [activeImg, setActiveImg] = useState(0)
   const [activeSize, setActiveSize] = useState(null)
   const [justAdded, setJustAdded] = useState(false)
 
@@ -29,10 +28,12 @@ export default function Product() {
       } else {
         setProduct(product)
         setActiveSize(product.sizes[0] || null)
-        setActiveImg(0)
       }
       setLoading(false)
     })
+    // Jumping to the top matters here because the sticky column keeps its
+    // scroll position when moving between products otherwise.
+    window.scrollTo(0, 0)
     return () => { active = false }
   }, [id])
 
@@ -58,7 +59,7 @@ export default function Product() {
         <Nav />
         <div style={{ padding: '40px' }}>
           <p className="mono" style={{ marginBottom: '16px' }}>Couldn't find that product.</p>
-          <Link to="/" className="back-link mono">← BACK TO SHOP</Link>
+          <Link to="/shop" className="back-link mono">← BACK TO SHOP</Link>
         </div>
       </>
     )
@@ -69,45 +70,28 @@ export default function Product() {
       <Nav />
 
       <div className="crumb mono">
-        SHOP / {product.drop} / <span>{product.name.toUpperCase()}</span>
+        <Link to="/shop">SHOP</Link> / {product.drop} / <span>{product.name.toUpperCase()}</span>
       </div>
 
       <div className="pdp">
+        {/* Every image stacked full width — the page scroll is the gallery, so
+            there's no carousel to click through. */}
         <div className="media">
-          <div className="main-frame">
-            <img src={cld(product.images[activeImg], { w: 900 })} alt={product.name} />
-            <div className="frame-badge mono"><span className="dot"></span> FRAME 00214 / PAUSED</div>
-            <div className="play-static">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 4L20 12L6 20V4Z" fill="#EDEAE1" fillOpacity="0.9" />
-              </svg>
+          {product.images.map((img, i) => (
+            <div className="shot" key={img}>
+              <img src={cld(img, { w: 1000 })} alt={`${product.name} ${i + 1}`} />
+              {i === 0 && (
+                <div className="frame-tag mono">
+                  <span className="dot" /> FRAME {String(i + 1).padStart(5, '0')} / PAUSED
+                </div>
+              )}
             </div>
-            <div className="mini-scrub">
-              <div className="mini-track">
-                <div
-                  className="mini-fill"
-                  style={{ width: `${((activeImg + 1) / product.images.length) * 100}%` }}
-                ></div>
-              </div>
-              <div className="mini-meta mono">
-                <span>SCENE {String(activeImg + 1).padStart(2, '0')} / {String(product.images.length).padStart(2, '0')}</span>
-              </div>
-            </div>
-          </div>
-          <div className="thumbs">
-            {product.images.map((img, i) => (
-              <div
-                key={img}
-                className={`t ${i === activeImg ? 'active' : ''}`}
-                onClick={() => setActiveImg(i)}
-              >
-                <img src={cld(img, { w: 160 })} alt="" />
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
 
-        <div className="info">
+        {/* Sticks while the images scroll past, so size and price stay reachable
+            however many photos the product has. */}
+        <aside className="info">
           <div className="code mono">{product.sku} · {product.variant.toUpperCase()}</div>
           <h1 className="display">{product.name}</h1>
           <div className="price mono">৳ {product.price.toLocaleString()}</div>
@@ -147,9 +131,11 @@ export default function Product() {
             ))}
           </div>
 
-          <Link to="/" className="back-link mono">← BACK TO SHOP</Link>
-        </div>
+          <Link to="/shop" className="back-link mono">← BACK TO SHOP</Link>
+        </aside>
       </div>
+
+      <Footer />
     </>
   )
 }
