@@ -1,0 +1,74 @@
+.about-page {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 40px 40px 80px;
+}
+
+.about-head {
+  padding-bottom: 34px;
+  border-bottom: 1px solid var(--steel-line);
+  margin-bottom: 44px;
+}
+
+.about-head .label {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+  margin-bottom: 10px;
+}
+
+.about-head h1 {
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.02;
+}
+
+.about-msg {
+  font-size: 12.5px;
+  color: var(--steel);
+  padding: 40px 0;
+}
+
+.about-block + .about-block {
+  margin-top: 64px;
+}
+
+/* Rounded like the homepage hero, so the photography across the site reads as
+   one treatment rather than two. */
+.about-shot {
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--paper-dim);
+}
+
+.about-shot img {
+  width: 100%;
+  display: block;
+  filter: grayscale(20%) contrast(1.03);
+}
+
+.about-text {
+  margin-top: 22px;
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: #3a3a30;
+  max-width: 58ch;
+  white-space: pre-line;
+}
+
+.about-page .back-link {
+  display: inline-block;
+  margin-top: 56px;
+  font-size: 12px;
+  color: var(--steel);
+  text-decoration: none;
+}
+
+.about-page .back-link:hover { color: var(--ink); }
+
+@media (max-width: 860px) {
+  .about-page { padding: 26px 20px 60px; }
+  .about-head { margin-bottom: 32px; }
+  .about-block + .about-block { margin-top: 44px; }
+  .about-shot { border-radius: 16px; }
+  .about-text { margin-top: 18px; font-size: 14.5px; }
+}

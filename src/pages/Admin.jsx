@@ -15,6 +15,9 @@ import { sendStatusUpdate } from '../lib/email.js'
 import { cld } from '../lib/cloudinary.js'
 import ProductForm from '../components/ProductForm.jsx'
 import HeroManager from '../components/HeroManager.jsx'
+import CategoryManager from '../components/CategoryManager.jsx'
+import AboutManager from '../components/AboutManager.jsx'
+import { fetchAllNavCategories } from '../lib/navCategories.js'
 import {
   IconGrid,
   IconBag,
@@ -32,6 +35,7 @@ import {
   IconStar,
   IconClock,
   IconImage,
+  IconList,
 } from '../components/Icons.jsx'
 import './admin.css'
 
@@ -79,6 +83,7 @@ export default function Admin() {
   const [tab, setTab] = useState('overview')
   const [orders, setOrders] = useState([])
   const [products, setProducts] = useState([])
+  const [navCategories, setNavCategories] = useState([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [savingId, setSavingId] = useState(null)
@@ -99,7 +104,11 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p] = await Promise.all([fetchOrders(), fetchAdminProducts()])
+    const [o, p, c] = await Promise.all([
+      fetchOrders(),
+      fetchAdminProducts(),
+      fetchAllNavCategories(),
+    ])
 
     if (o.error) {
       setLoadError(
@@ -109,6 +118,7 @@ export default function Admin() {
 
     setOrders(o.orders)
     setProducts(p.products)
+    setNavCategories(c.categories)
     setLoading(false)
   }, [])
 
@@ -121,11 +131,18 @@ export default function Admin() {
   const series = useMemo(() => dailySeries(orders, 14), [orders])
   const top = useMemo(() => topProducts(orders, 5), [orders])
 
-  // Drawn from the catalog so the product form offers the names already in
-  // use, rather than letting each new product invent its own spelling.
+  // The names already in use plus the ones on the shop menu, so a product can
+  // be filed under a menu category that has nothing in it yet — the spellings
+  // have to match exactly for the menu to find the product.
   const productCategories = useMemo(
-    () => [...new Set(products.map((p) => p.category).filter(Boolean))].sort(),
-    [products]
+    () =>
+      [
+        ...new Set([
+          ...products.map((p) => p.category),
+          ...navCategories.map((c) => c.label),
+        ].filter(Boolean)),
+      ].sort(),
+    [products, navCategories]
   )
 
   const filteredOrders = useMemo(() => {
@@ -199,6 +216,12 @@ export default function Admin() {
           <button className={tab === 'hero' ? 'on' : ''} onClick={() => setTab('hero')}>
             <span className="nav-left"><IconImage />Homepage</span>
           </button>
+          <button className={tab === 'menu' ? 'on' : ''} onClick={() => setTab('menu')}>
+            <span className="nav-left"><IconList />Nav menus</span>
+          </button>
+          <button className={tab === 'about' ? 'on' : ''} onClick={() => setTab('about')}>
+            <span className="nav-left"><IconStar />About us</span>
+          </button>
         </nav>
 
         <div className="side-foot mono">
@@ -217,6 +240,8 @@ export default function Admin() {
               {tab === 'orders' && 'Orders'}
               {tab === 'products' && 'Products'}
               {tab === 'hero' && 'Homepage hero'}
+              {tab === 'menu' && 'Nav menus'}
+              {tab === 'about' && 'About us page'}
             </h1>
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
@@ -452,6 +477,13 @@ export default function Admin() {
           </section>
         )}
         {tab === 'hero' && <HeroManager />}
+        {!loading && tab === 'menu' && (
+          <>
+            <CategoryManager menu="shop" products={products} />
+            <CategoryManager menu="drops" products={products} />
+          </>
+        )}
+        {tab === 'about' && <AboutManager />}
       </main>
     </div>
   )

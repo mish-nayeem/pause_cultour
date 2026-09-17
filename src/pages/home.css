@@ -2,8 +2,10 @@
 
 .hero-full {
   position: relative;
-  height: 100vh;
+  height: calc(100vh - 20px);
   min-height: 560px;
+  margin: 10px;
+  border-radius: 28px;
   overflow: hidden;
   background: var(--ink);
 }
@@ -88,7 +90,11 @@
 }
 
 @media (max-width: 860px) {
-  .hero-full { height: 92vh; }
+  .hero-full {
+    height: calc(92vh - 16px);
+    margin: 8px;
+    border-radius: 20px;
+  }
   .view-shop { padding: 14px 30px; font-size: 11.5px; letter-spacing: 0.1em; }
   .hero-dots { bottom: 22px; }
 }

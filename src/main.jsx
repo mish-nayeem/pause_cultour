@@ -10,6 +10,7 @@ import Checkout from './pages/Checkout.jsx'
 import OrderConfirmed from './pages/OrderConfirmed.jsx'
 import Admin from './pages/Admin.jsx'
 import Info from './pages/Info.jsx'
+import About from './pages/About.jsx'
 import Track from './pages/Track.jsx'
 import './styles/global.css'
 
@@ -29,6 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* Static pages. Explicit paths rather than /info/:slug so the URLs
               read as real pages and are worth sharing. */}
           <Route path="/track" element={<Track />} />
+          <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Info slug="contact" />} />
           <Route path="/size-guide" element={<Info slug="size-guide" />} />
           <Route path="/delivery" element={<Info slug="delivery" />} />

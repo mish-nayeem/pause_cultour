@@ -19,13 +19,9 @@ const BLANK = {
   description: '',
   sizes: ['S', 'M', 'L', 'XL'],
   sizesOut: [],
-  specs: [
-    { k: 'FABRIC', v: '' },
-    { k: 'FIT', v: '' },
-    { k: 'CARE', v: 'Machine wash cold' },
-    { k: 'ORIGIN', v: 'Made in Bangladesh' },
-    { k: 'DELIVERY', v: 'Cash on delivery, 2–5 days' },
-  ],
+  details: '',
+  sizeChart: null,
+  colourGroup: '',
 }
 
 // Rows come from the DB in snake_case; the form works in the storefront's shape.
@@ -44,7 +40,18 @@ function fromRow(row) {
     description: row.description ?? '',
     sizes: row.sizes ?? [],
     sizesOut: row.sizes_out ?? [],
-    specs: row.specs ?? [],
+    details: row.details ?? '',
+    sizeChart: row.size_chart ?? null,
+    colourGroup: row.colour_group ?? '',
+  }
+}
+
+function blankChart(sizes) {
+  const columns = sizes.length > 0 ? sizes : ['S', 'M', 'L', 'XL']
+  return {
+    columns,
+    rows: [{ label: 'CHEST', values: columns.map(() => '') }],
+    notes: ['Measured flat, in centimetres'],
   }
 }
 
@@ -100,12 +107,52 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
     })
   }
 
-  function setSpec(i, key, value) {
-    setP((prev) => {
-      const specs = [...prev.specs]
-      specs[i] = { ...specs[i], [key]: value }
-      return { ...prev, specs }
-    })
+  function updateChart(fn) {
+    setP((prev) => ({ ...prev, sizeChart: fn(prev.sizeChart) }))
+  }
+
+  // Changing the columns has to resize every row in step, otherwise a row keeps
+  // values that no longer line up with a heading.
+  function setChartColumns(csv) {
+    const columns = csv.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+    updateChart((chart) => ({
+      ...chart,
+      columns,
+      rows: chart.rows.map((r) => ({
+        ...r,
+        values: columns.map((_, i) => r.values[i] ?? ''),
+      })),
+    }))
+  }
+
+  function setChartCell(rowIndex, colIndex, value) {
+    updateChart((chart) => ({
+      ...chart,
+      rows: chart.rows.map((r, i) =>
+        i !== rowIndex ? r : { ...r, values: r.values.map((v, j) => (j === colIndex ? value : v)) }
+      ),
+    }))
+  }
+
+  function setChartRowLabel(rowIndex, label) {
+    updateChart((chart) => ({
+      ...chart,
+      rows: chart.rows.map((r, i) => (i === rowIndex ? { ...r, label } : r)),
+    }))
+  }
+
+  function addChartRow() {
+    updateChart((chart) => ({
+      ...chart,
+      rows: [...chart.rows, { label: '', values: chart.columns.map(() => '') }],
+    }))
+  }
+
+  function removeChartRow(rowIndex) {
+    updateChart((chart) => ({
+      ...chart,
+      rows: chart.rows.filter((_, i) => i !== rowIndex),
+    }))
   }
 
   function validate() {
@@ -235,6 +282,19 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
         </label>
 
         <label className="pf-field">
+          <span className="mono">COLOUR GROUP</span>
+          <input
+            value={p.colourGroup}
+            onChange={(e) => set('colourGroup', e.target.value.toUpperCase())}
+            placeholder="VARSITY-JACKET"
+          />
+          <em className="pf-hint mono">
+            Give every colour of the same piece this exact tag and they'll list
+            each other on the product page. Leave empty if it comes in one colour.
+          </em>
+        </label>
+
+        <label className="pf-field">
           <span className="mono">PRICE (৳)</span>
           <input
             type="number"
@@ -329,6 +389,20 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
         />
       </label>
 
+      <label className="pf-field">
+        <span className="mono">DETAILS</span>
+        <textarea
+          rows={6}
+          value={p.details}
+          onChange={(e) => set('details', e.target.value)}
+          placeholder={'Oversized fit\nChain stitch embroidery\nBranded metal zipper\nShell: 55% wool, 45% polyester'}
+        />
+        <em className="pf-hint mono">
+          One line per bullet. These sit behind the DETAILS button on the product
+          page — leave it empty and that button doesn't show at all.
+        </em>
+      </label>
+
       {/* ---- Sizes ---- */}
       <div className="pf-grid">
         <label className="pf-field">
@@ -356,6 +430,110 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
         </label>
       </div>
 
+      {/* ---- Size chart ---- */}
+      <div className="pf-label mono">SIZE CHART</div>
+      <div className="pf-note mono">
+        Each product carries its own chart — a jacket and a tee don't measure the
+        same way. Without one, the SIZE CHART button stays hidden on the page.
+      </div>
+
+      {!p.sizeChart ? (
+        <button
+          type="button"
+          className="pf-chart-add mono"
+          onClick={() => set('sizeChart', blankChart(p.sizes))}
+        >
+          + Add a size chart
+        </button>
+      ) : (
+        <div className="pf-chart">
+          <label className="pf-field">
+            <span className="mono">COLUMNS</span>
+            <input
+              className="mono"
+              value={p.sizeChart.columns.join(', ')}
+              onChange={(e) => setChartColumns(e.target.value)}
+              placeholder="S, M, L, XL"
+            />
+            <em className="pf-hint mono">Comma separated — usually the sizes you sell.</em>
+          </label>
+
+          <div className="pf-chart-grid">
+            <div
+              className="pf-chart-row head mono"
+              style={{ gridTemplateColumns: `150px repeat(${p.sizeChart.columns.length}, 1fr) 30px` }}
+            >
+              <span>MEASUREMENT</span>
+              {p.sizeChart.columns.map((c) => (
+                <span key={c}>{c}</span>
+              ))}
+              <span />
+            </div>
+
+            {p.sizeChart.rows.map((row, ri) => (
+              <div
+                className="pf-chart-row"
+                key={ri}
+                style={{ gridTemplateColumns: `150px repeat(${p.sizeChart.columns.length}, 1fr) 30px` }}
+              >
+                <input
+                  className="mono"
+                  value={row.label}
+                  onChange={(e) => setChartRowLabel(ri, e.target.value.toUpperCase())}
+                  placeholder="CHEST"
+                />
+                {p.sizeChart.columns.map((c, ci) => (
+                  <input
+                    key={c}
+                    className="mono"
+                    value={row.values[ci] ?? ''}
+                    onChange={(e) => setChartCell(ri, ci, e.target.value)}
+                    placeholder="—"
+                  />
+                ))}
+                <button
+                  type="button"
+                  className="pf-chart-x"
+                  onClick={() => removeChartRow(ri)}
+                  title="Remove row"
+                >
+                  <IconX width="12" height="12" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="pf-chart-actions">
+            <button type="button" className="pf-chart-add mono" onClick={addChartRow}>
+              + Add measurement
+            </button>
+            <button
+              type="button"
+              className="pf-ghost danger mono"
+              onClick={() => set('sizeChart', null)}
+            >
+              Remove chart
+            </button>
+          </div>
+
+          <label className="pf-field">
+            <span className="mono">CHART NOTES</span>
+            <textarea
+              rows={3}
+              value={(p.sizeChart.notes || []).join('\n')}
+              onChange={(e) =>
+                updateChart((chart) => ({
+                  ...chart,
+                  notes: e.target.value.split('\n'),
+                }))
+              }
+              placeholder={'Measured flat, in centimetres\nChest measured as circumference'}
+            />
+            <em className="pf-hint mono">One line per note, shown under the chart.</em>
+          </label>
+        </div>
+      )}
+
       {/* ---- Flags ---- */}
       <div className="pf-flags">
         <label className="pf-check mono">
@@ -371,24 +549,6 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
           Feature on shop grid (large tile)
         </label>
       </div>
-
-      {/* ---- Specs ---- */}
-      <div className="pf-label mono">SPEC TABLE</div>
-      {p.specs.map((row, i) => (
-        <div className="pf-spec" key={i}>
-          <input
-            className="mono"
-            value={row.k}
-            onChange={(e) => setSpec(i, 'k', e.target.value)}
-            placeholder="FABRIC"
-          />
-          <input
-            value={row.v}
-            onChange={(e) => setSpec(i, 'v', e.target.value)}
-            placeholder="100% cotton, 220gsm"
-          />
-        </div>
-      ))}
 
       {/* ---- Actions ---- */}
       <div className="pf-actions">

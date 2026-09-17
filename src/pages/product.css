@@ -17,11 +17,13 @@
   align-items: start;
 }
 
-/* ---------- Left: stacked images ---------- */
+/* ---------- Left: gallery ---------- */
 
-.media {
-  display: flex;
-  flex-direction: column;
+/* Two columns of stills that the page scrolls past. The right-hand column is
+   pinned, so this is the only side that moves. */
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
@@ -60,6 +62,9 @@
   background: var(--signal);
 }
 
+/* Handles for the phone rail — the desktop grid has nothing to page through. */
+.rail-nav { display: none; }
+
 /* ---------- Right: sticky detail column ---------- */
 
 .info {
@@ -68,6 +73,8 @@
   top: 96px;
   align-self: start;
   padding-top: 4px;
+  display: flex;
+  flex-direction: column;
 }
 
 .info .code {
@@ -167,43 +174,289 @@
 
 .added-note a { color: var(--cobalt); }
 
-.spec-list {
-  border-top: 1px solid var(--steel-line);
-  margin-top: 32px;
-  margin-bottom: 26px;
-}
+/* ---------- Panel triggers ---------- */
 
-.spec-row {
+.panel-links {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--steel-line);
-  font-size: 12.5px;
+  flex-direction: column;
+  margin-top: 26px;
 }
 
-.spec-row .k { color: var(--steel); flex-shrink: 0; }
-.spec-row span:last-child { text-align: right; }
+.panel-links button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--steel-line);
+  padding: 14px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.panel-links button span { color: var(--steel); }
+.panel-links button:hover { color: var(--cobalt); }
+.panel-links button:hover span { color: var(--cobalt); }
+
+/* ---------- Colour options ---------- */
+
+.colours { margin-top: 28px; }
+
+.colour-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.colour-chip {
+  width: 58px;
+  height: 58px;
+  border: 1px solid var(--steel-line);
+  background: var(--paper-dim);
+  overflow: hidden;
+  display: block;
+  transition: border-color 0.15s ease;
+}
+
+.colour-chip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.colour-chip:hover { border-color: var(--ink); }
+.colour-chip.on { border-color: var(--ink); border-width: 2px; }
+
+.colour-name {
+  font-size: 11px;
+  color: var(--steel);
+  margin-top: 9px;
+  letter-spacing: 0.04em;
+}
 
 .back-link {
   display: inline-block;
+  margin-top: 34px;
   font-size: 12px;
   text-decoration: none;
   color: var(--steel);
+  align-self: flex-start;
 }
 
 .back-link:hover { color: var(--ink); }
+
+/* ---------- Details / size chart sheet ---------- */
+
+.sheet-back {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(22, 22, 15, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: sheet-fade 0.16s ease-out;
+}
+
+.sheet {
+  background: var(--ink);
+  color: var(--paper);
+  width: min(680px, 100%);
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: 26px 28px 30px;
+  animation: sheet-rise 0.2s ease-out;
+}
+
+@keyframes sheet-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheet-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.sheet-eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+  margin-bottom: 8px;
+}
+
+.sheet-head h1,
+.sheet-head h2 {
+  font-size: clamp(20px, 2.6vw, 28px);
+  line-height: 1.05;
+  color: var(--paper);
+}
+
+.sheet-close {
+  flex-shrink: 0;
+  background: rgba(237, 234, 225, 0.12);
+  border: none;
+  color: var(--paper);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+
+.sheet-close:hover { background: var(--paper); color: var(--ink); }
+
+.sheet-list {
+  list-style: none;
+  margin-top: 18px;
+}
+
+.sheet-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: rgba(237, 234, 225, 0.82);
+}
+
+.sheet-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--signal);
+}
+
+.sheet-table-wrap { overflow-x: auto; }
+
+.sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 420px;
+}
+
+.sheet-table th {
+  text-align: right;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  padding: 0 0 10px 14px;
+  border-bottom: 1px solid rgba(237, 234, 225, 0.2);
+}
+
+.sheet-table td {
+  text-align: right;
+  padding: 11px 0 11px 14px;
+  border-bottom: 1px solid rgba(237, 234, 225, 0.12);
+  color: var(--paper);
+}
+
+.sheet-table .row-label {
+  text-align: left;
+  padding-left: 0;
+  color: var(--steel);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.sheet-table tr:last-child td { border-bottom: none; }
 
 /* ---------- Responsive ---------- */
 
 @media (max-width: 900px) {
   .crumb { padding: 18px 20px 0; }
+
   .pdp {
     grid-template-columns: 1fr;
     gap: 28px;
     padding: 18px 20px 60px;
   }
+
   /* Sticky is dropped on narrow screens — there's no second column to scroll
      past, so pinning the panel would just cover the photos. */
   .info { position: static; }
+
+  /* The grid becomes one swipeable rail: a full-width frame per swipe, snapped
+     so it never settles between two photos. */
+  .gallery {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .gallery::-webkit-scrollbar { display: none; }
+
+  .shot {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+  }
+
+  .rail-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 12px;
+  }
+
+  .rail-nav button {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--steel-line);
+    background: transparent;
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .rail-nav button:disabled { color: var(--steel-line); cursor: default; }
+
+  .rail-count {
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    color: var(--steel);
+    min-width: 62px;
+    text-align: center;
+  }
+
+  /* Pulled to the top of the detail column, which lands it directly under the
+     photo rail rather than further down the column. */
+  .colours {
+    order: -1;
+    margin-top: 0;
+    margin-bottom: 26px;
+  }
+
+  .colour-chip { width: 50px; height: 50px; }
+
+  .sheet-back { padding: 0; align-items: flex-end; }
+
+  .sheet {
+    width: 100%;
+    max-height: 88vh;
+    padding: 22px 20px 28px;
+  }
 }

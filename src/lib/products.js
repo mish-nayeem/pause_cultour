@@ -17,8 +17,29 @@ function mapRow(row) {
     description: row.description,
     sizes: row.sizes || [],
     sizesOut: row.sizes_out || [],
-    specs: row.specs || [],
+    details: row.details || '',
+    sizeChart: row.size_chart || null,
+    colourGroup: row.colour_group || '',
   }
+}
+
+// The same piece in its other colours. Each colour is its own product row, so
+// this is a lookup by the shared group rather than a field on the product.
+export async function fetchColourOptions(colourGroup) {
+  if (!colourGroup) return { options: [], error: null }
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, variant, images')
+    .eq('colour_group', colourGroup)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('[Supabase] fetchColourOptions failed:', error.message)
+    return { options: [], error }
+  }
+
+  return { options: data, error: null }
 }
 
 export async function fetchProducts() {

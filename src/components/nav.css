@@ -31,12 +31,53 @@
   padding: 13px 26px;
 }
 
+/* The mark is a cutout on transparency, so it sits on the dark pill without a
+   panel of its own. Perspective lives on the link rather than the image so the
+   turn reads as depth instead of a flat horizontal squash. */
 .site-header .logo {
-  font-size: 20px;
-  color: var(--paper);
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  font-style: italic;
-  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  perspective: 340px;
+}
+
+/* The stacked copies turn as one body, so the rotation lives on the wrapper
+   and each copy keeps its own translateZ. */
+.logo-3d {
+  position: relative;
+  display: block;
+  transform-style: preserve-3d;
+  animation: logo-turn 6s linear infinite;
+}
+
+.logo-3d img {
+  display: block;
+  height: 30px;
+  width: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* The first copy sets the box's size; the rest sit exactly on top of it. */
+.logo-3d img + img {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Positive rotateY sends the right edge back first, so the face sweeps right
+   to left. The back of the mark shows mirrored on the far half of the turn,
+   the way a hanging shop sign does. */
+@keyframes logo-turn {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+/* A logo that never stops moving is exactly what motion-sensitivity settings
+   are asking about, so it holds still when the visitor has asked for that. */
+@media (prefers-reduced-motion: reduce) {
+  .logo-3d { animation: none; }
 }
 
 .desk-nav ul {
@@ -106,6 +147,7 @@
 
 .cat-menu {
   pointer-events: auto;
+  position: relative;
   margin-top: 8px;
   max-width: 720px;
   background: rgba(22, 22, 15, 0.72);
@@ -113,6 +155,18 @@
   border-radius: 26px;
   padding: 16px 26px;
   animation: cat-in 0.16s ease-out;
+}
+
+/* An invisible bridge across the gap between the pill and this panel. The wrap
+   around them ignores the pointer, so without this the space between the two
+   counts as leaving the menu entirely. */
+.cat-menu::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -14px;
+  height: 14px;
 }
 
 @keyframes cat-in {
@@ -232,7 +286,7 @@
     border-radius: 999px;
   }
 
-  .site-header .logo { font-size: 17px; }
+  .logo-3d img { height: 24px; }
 
   /* Swap: inline links out, hamburger in. */
   .desk-nav { display: none; }

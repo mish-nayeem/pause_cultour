@@ -1,28 +1,55 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
-import { fetchProducts } from '../lib/products.js'
+import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
 import { IconLock } from './Icons.jsx'
 import './nav.css'
+
+// The mark is a flat PNG, so its thickness is faked by stacking copies a
+// fraction of a pixel apart along Z — edge-on they read as one solid slab.
+// Centring the stack keeps the turn's axis through the middle of that slab.
+const LOGO_LAYERS = 6
+const LOGO_STEP = 1
+const LOGO_HALF_DEPTH = ((LOGO_LAYERS - 1) * LOGO_STEP) / 2
 
 export default function Nav({ overlay = false }) {
   const { count } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [catOpen, setCatOpen] = useState(false)   // desktop hover dropdown
+  const [openMenu, setOpenMenu] = useState(null)  // null | 'shop' | 'drops'
   const [menuOpen, setMenuOpen] = useState(false) // mobile panel
   const [categories, setCategories] = useState([])
+  const [drops, setDrops] = useState([])
 
-  // Categories come from what's actually in the catalog rather than a fixed
-  // list, so the menu can never offer a category with nothing behind it.
+  const closeTimer = useRef(null)
+
+  // Closing on a delay rather than the instant the pointer leaves: the trip
+  // from a nav link down to the panel clips the corner of the gap between them,
+  // and without this grace period the menu shuts halfway there.
+  function showMenu(name) {
+    clearTimeout(closeTimer.current)
+    setOpenMenu(name)
+  }
+
+  function scheduleClose() {
+    clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => setOpenMenu(null), 220)
+  }
+
+  useEffect(() => () => clearTimeout(closeTimer.current), [])
+
+  // Both menus are admin-managed lists, so an entry can be pulled the day it
+  // sells out without touching the products behind it.
   useEffect(() => {
     let active = true
-    fetchProducts().then(({ products }) => {
+
+    Promise.all([fetchMenuCategories(), fetchMenuDrops()]).then(([cats, drps]) => {
       if (!active) return
-      const found = [...new Set(products.map((p) => p.category).filter(Boolean))]
-      setCategories(found.sort())
+      setCategories(cats)
+      setDrops(drps)
     })
+
     return () => { active = false }
   }, [])
 
@@ -30,7 +57,7 @@ export default function Nav({ overlay = false }) {
   // over the page it just took you to.
   useEffect(() => {
     setMenuOpen(false)
-    setCatOpen(false)
+    setOpenMenu(null)
   }, [location.pathname, location.search])
 
   // The mobile panel covers the screen, so the page behind it shouldn't scroll.
@@ -39,32 +66,67 @@ export default function Nav({ overlay = false }) {
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
-  function go(category) {
+  function goCategory(category) {
     navigate(category === 'ALL' ? '/shop' : `/shop?c=${encodeURIComponent(category)}`)
   }
 
+  function goDrop(drop) {
+    navigate(`/shop?d=${encodeURIComponent(drop)}`)
+  }
+
   const catList = ['ALL', 'NEW', ...categories]
+  const openList = openMenu === 'drops' ? drops : catList
+  const openGo = openMenu === 'drops' ? goDrop : goCategory
 
   return (
     <div
       className={`nav-wrap ${overlay ? 'overlay' : ''}`}
-      onMouseLeave={() => setCatOpen(false)}
+      onMouseLeave={scheduleClose}
     >
       <header className="site-header">
-        <Link to="/" className="logo display">PAUSE</Link>
+        <Link to="/" className="logo" aria-label="PAUSE — home">
+          <span className="logo-3d">
+            {Array.from({ length: LOGO_LAYERS }, (_, i) => {
+              const z = LOGO_HALF_DEPTH - i * LOGO_STEP
+
+              // Each layer is doubled: one copy faces front, one faces back.
+              // With backface-visibility hidden only the copy pointing at the
+              // viewer paints, so the far half of the turn shows the mark the
+              // right way round instead of mirrored. The back copy takes the
+              // shading of the layer it becomes when seen from that side —
+              // depth order reverses once you're behind the slab.
+              return [0, 180].map((face) => (
+                <img
+                  key={`${i}-${face}`}
+                  src="/logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  style={{
+                    transform: `translateZ(${z}px) rotateY(${face}deg)`,
+                    filter: `brightness(${
+                      1 - (face === 0 ? i : LOGO_LAYERS - 1 - i) * 0.07
+                    })`,
+                  }}
+                />
+              ))
+            })}
+          </span>
+        </Link>
 
         {/* Desktop links */}
         <nav className="desk-nav">
           <ul>
-            <li onMouseEnter={() => setCatOpen(true)}>
-              <Link to="/shop" className={catOpen ? 'dim' : ''}>SHOP</Link>
+            <li onMouseEnter={() => showMenu('shop')}>
+              <Link to="/shop" className={openMenu === 'shop' ? 'dim' : ''}>SHOP</Link>
             </li>
-            <li onMouseEnter={() => setCatOpen(false)}><Link to="/shop">DROPS</Link></li>
-            <li onMouseEnter={() => setCatOpen(false)}><Link to="/size-guide">ADVICE</Link></li>
-            <li onMouseEnter={() => setCatOpen(false)}>
+            <li onMouseEnter={() => showMenu(drops.length > 0 ? 'drops' : null)}>
+              <Link to="/shop" className={openMenu === 'drops' ? 'dim' : ''}>DROPS</Link>
+            </li>
+            <li onMouseEnter={() => showMenu(null)}><Link to="/about">ABOUT US</Link></li>
+            <li onMouseEnter={() => showMenu(null)}>
               <Link to="/cart" className="cart">CART ({count})</Link>
             </li>
-            <li onMouseEnter={() => setCatOpen(false)}>
+            <li onMouseEnter={() => showMenu(null)}>
               <Link to="/admin" className="admin-link" title="Admin" aria-label="Admin">
                 <IconLock width="14" height="14" />
               </Link>
@@ -87,12 +149,13 @@ export default function Nav({ overlay = false }) {
         </div>
       </header>
 
-      {/* Desktop hover dropdown */}
-      {catOpen && catList.length > 0 && (
-        <div className="cat-menu" onMouseEnter={() => setCatOpen(true)}>
+      {/* Desktop hover dropdown — same panel for both menus, so moving between
+          SHOP and DROPS swaps the contents instead of stacking two boxes. */}
+      {openMenu && openList.length > 0 && (
+        <div className="cat-menu" onMouseEnter={() => showMenu(openMenu)}>
           <div className="cat-inner mono">
-            {catList.map((c) => (
-              <button key={c} onClick={() => go(c)}>{c}</button>
+            {openList.map((c) => (
+              <button key={c} onClick={() => openGo(c)}>{c}</button>
             ))}
           </div>
         </div>
@@ -104,13 +167,23 @@ export default function Nav({ overlay = false }) {
           <div className="mob-section mono">SHOP</div>
           <div className="mob-cats mono">
             {catList.map((c) => (
-              <button key={c} onClick={() => go(c)}>{c}</button>
+              <button key={c} onClick={() => goCategory(c)}>{c}</button>
             ))}
           </div>
 
+          {drops.length > 0 && (
+            <>
+              <div className="mob-section mono">DROPS</div>
+              <div className="mob-cats mono">
+                {drops.map((d) => (
+                  <button key={d} onClick={() => goDrop(d)}>{d}</button>
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="mob-links mono">
-            <Link to="/shop">DROPS</Link>
-            <Link to="/size-guide">ADVICE</Link>
+            <Link to="/about">ABOUT US</Link>
             <Link to="/cart">CART ({count})</Link>
             <Link to="/admin" className="mob-admin">
               <IconLock width="13" height="13" /> ADMIN

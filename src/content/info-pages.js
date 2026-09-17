@@ -79,7 +79,7 @@ export const INFO_PAGES = {
         type: 'text',
         heading: 'Between two sizes?',
         body:
-          'Our fits run boxy, so size down for a closer fit or stay on the larger size if you like room. Each product page lists its own fit under the spec table.',
+          'Our fits run boxy, so size down for a closer fit or stay on the larger size if you like room. Each product page carries its own measurements under SIZE CHART.',
       },
     ],
   },

@@ -23,6 +23,19 @@ export function IconGrid(props) {
   )
 }
 
+export function IconList(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 6h12" />
+      <path d="M9 12h12" />
+      <path d="M9 18h12" />
+      <circle cx="4.5" cy="6" r="1.2" />
+      <circle cx="4.5" cy="12" r="1.2" />
+      <circle cx="4.5" cy="18" r="1.2" />
+    </svg>
+  )
+}
+
 export function IconBag(props) {
   return (
     <svg {...base} {...props}>

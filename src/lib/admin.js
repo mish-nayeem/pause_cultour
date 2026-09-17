@@ -198,7 +198,9 @@ function toRow(p) {
     description: p.description ?? '',
     sizes: p.sizes ?? [],
     sizes_out: p.sizesOut ?? [],
-    specs: p.specs ?? [],
+    details: p.details ?? '',
+    size_chart: p.sizeChart ?? null,
+    colour_group: p.colourGroup?.trim() || null,
   }
 }
 

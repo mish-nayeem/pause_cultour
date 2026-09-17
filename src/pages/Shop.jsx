@@ -3,16 +3,19 @@ import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchProducts } from '../lib/products.js'
+import { fetchMenuCategories } from '../lib/navCategories.js'
 import { cld } from '../lib/cloudinary.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './shop.css'
 
 export default function Shop() {
   const [params, setParams] = useSearchParams()
+  const activeDrop = params.get('d') || ''
   const active = params.get('c') || 'ALL'
-  usePageMeta(active === 'ALL' ? 'Shop' : active)
+  usePageMeta(activeDrop || (active === 'ALL' ? 'Shop' : active))
 
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
 
@@ -27,17 +30,25 @@ export default function Shop() {
     return () => { cancelled = true }
   }, [])
 
-  // Built from the catalog so a filter can never point at an empty category.
-  const categories = useMemo(
-    () => [...new Set(products.map((p) => p.category).filter(Boolean))].sort(),
-    [products]
-  )
+  // Same list the nav dropdown shows, so a category pulled from the menu in
+  // the admin panel disappears from these filters too.
+  useEffect(() => {
+    let cancelled = false
+    fetchMenuCategories().then((found) => {
+      if (!cancelled) setCategories(found)
+    })
+    return () => { cancelled = true }
+  }, [])
 
+  // A drop is its own view of the catalog, so it replaces the category filter
+  // rather than narrowing it — arriving from the DROPS menu shows that drop
+  // whole, not the part of it that happens to match the last category picked.
   const shown = useMemo(() => {
+    if (activeDrop) return products.filter((p) => p.drop === activeDrop)
     if (active === 'ALL') return products
     if (active === 'NEW') return products.filter((p) => p.isNew)
     return products.filter((p) => p.category === active)
-  }, [products, active])
+  }, [products, active, activeDrop])
 
   function pick(c) {
     if (c === 'ALL') setParams({})
@@ -50,8 +61,10 @@ export default function Shop() {
 
       <div className="shop-head">
         <div>
-          <div className="label mono">SHOP</div>
-          <h1 className="display">{active === 'ALL' ? 'Everything' : active}</h1>
+          <div className="label mono">{activeDrop ? 'DROP' : 'SHOP'}</div>
+          <h1 className="display">
+            {activeDrop || (active === 'ALL' ? 'Everything' : active)}
+          </h1>
         </div>
         <div className="shop-count mono">
           {shown.length} {shown.length === 1 ? 'piece' : 'pieces'}
@@ -59,10 +72,24 @@ export default function Shop() {
       </div>
 
       <div className="filters mono">
-        <button className={active === 'ALL' ? 'on' : ''} onClick={() => pick('ALL')}>ALL</button>
-        <button className={active === 'NEW' ? 'on' : ''} onClick={() => pick('NEW')}>NEW</button>
+        <button
+          className={active === 'ALL' && !activeDrop ? 'on' : ''}
+          onClick={() => pick('ALL')}
+        >
+          ALL
+        </button>
+        <button
+          className={active === 'NEW' && !activeDrop ? 'on' : ''}
+          onClick={() => pick('NEW')}
+        >
+          NEW
+        </button>
         {categories.map((c) => (
-          <button key={c} className={active === c ? 'on' : ''} onClick={() => pick(c)}>
+          <button
+            key={c}
+            className={active === c && !activeDrop ? 'on' : ''}
+            onClick={() => pick(c)}
+          >
             {c}
           </button>
         ))}
