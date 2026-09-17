@@ -541,3 +541,519 @@
 .add-product:hover { background: var(--cobalt); }
 
 .trow.prow.clickable { cursor: pointer; }
+
+/* ---------- Overview: clickable counters ---------- */
+
+.stat-row.three { grid-template-columns: repeat(3, 1fr); }
+.stat-row.four { grid-template-columns: repeat(4, 1fr); }
+
+/* A counter that opens the list behind it is a real button, so it keeps
+   keyboard focus and the pointer cursor — it just wears the card's styling. */
+.stat-click {
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.stat-click:hover { box-shadow: inset 0 0 0 1px var(--cobalt); }
+.stat-click:hover .stat-cta { color: var(--cobalt); }
+
+.stat-click:focus-visible {
+  outline: 2px solid var(--cobalt);
+  outline-offset: -2px;
+}
+
+.stat-cta {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-top: 10px;
+}
+
+/* ---------- Measure toggle ---------- */
+
+.toggle {
+  display: flex;
+  border: 1px solid var(--steel-line);
+  flex-shrink: 0;
+}
+
+.toggle button {
+  background: none;
+  border: none;
+  padding: 7px 12px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  cursor: pointer;
+}
+
+.toggle button + button { border-left: 1px solid var(--steel-line); }
+.toggle button:hover { color: var(--ink); }
+
+.toggle button.on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- Monthly bar chart ---------- */
+
+.bars-max {
+  font-size: 10.5px;
+  color: var(--steel);
+  text-align: right;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--steel-line);
+}
+
+.bars-plot {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 10px;
+  height: 200px;
+  align-items: end;
+}
+
+.bar-col {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* Capped so six months of data doesn't turn into six slabs — the height is
+   the reading, the width carries no meaning. */
+.bar-fill {
+  position: relative;
+  width: 100%;
+  max-width: 52px;
+  background: var(--cobalt);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.25s ease, background 0.15s ease;
+}
+
+.bar-col:hover .bar-fill { background: var(--ink); }
+
+.bar-x {
+  font-size: 10.5px;
+  color: var(--steel);
+  text-align: center;
+  padding-top: 9px;
+}
+
+/* Hover read-out — the exact figure on demand keeps a number off every bar. */
+.bar-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 10.5px;
+  padding: 6px 9px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+.bar-tip .dim { color: rgba(237, 234, 225, 0.55); }
+
+.bar-col:hover .bar-tip { opacity: 1; }
+
+/* ---------- Drop / category bars ---------- */
+
+.hbars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hbar-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.hbar-name { font-size: 13.5px; }
+.hbar-val { font-size: 11.5px; white-space: nowrap; }
+
+.hbar-track {
+  height: 8px;
+  background: rgba(22, 22, 15, 0.06);
+}
+
+.hbar-fill {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 0 4px 4px 0;
+  transition: width 0.25s ease;
+}
+
+.hbars.cobalt .hbar-fill { background: var(--cobalt); }
+
+/* ---------- Order status filter chips ---------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 1px solid var(--steel-line);
+  color: var(--steel);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  padding: 7px 11px;
+  cursor: pointer;
+}
+
+.chip:hover { border-color: var(--ink); color: var(--ink); }
+
+.chip-count { opacity: 0.65; }
+
+.chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.chip.on.cancelled {
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+@media (max-width: 1000px) {
+  .stat-row.three, .stat-row.four { grid-template-columns: repeat(2, 1fr); }
+  .bars-plot { height: 165px; }
+}
+
+@media (max-width: 560px) {
+  .stat-row.three, .stat-row.four { grid-template-columns: 1fr; }
+  .hbar-top { flex-direction: column; gap: 2px; align-items: flex-start; }
+}
+
+/* ---------- Order payment breakdown ---------- */
+
+/* Flags an order whose bKash advance is already paid, so the row reads
+   differently from a plain COD one at a glance. */
+.adv-tag {
+  margin-left: 7px;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--cobalt);
+  color: var(--cobalt);
+  padding: 1px 4px;
+}
+
+.ditem .trx {
+  font-size: 11.5px;
+  color: var(--steel);
+}
+
+.ditem.collect {
+  border-top: 1px solid var(--steel-line);
+  margin-top: 6px;
+  padding-top: 9px;
+  font-weight: 500;
+}
+
+/* ---------- Low stock ---------- */
+
+.low-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.low-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.low-row:last-child { border-bottom: none; }
+
+.low-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.low-size {
+  border: 1px solid var(--steel-line);
+  padding: 3px 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+.low-left { color: var(--cobalt); }
+
+/* Nothing left is a different problem from nearly nothing left. */
+.low-row.out .low-left { color: var(--signal); }
+.low-row.out .low-size { border-color: var(--signal); color: var(--signal); }
+
+/* ---------- Stock per size, in the products table ---------- */
+
+.stock-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip-stock {
+  border: 1px solid var(--steel-line);
+  padding: 2px 6px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.chip-stock.low { border-color: var(--cobalt); color: var(--cobalt); }
+.chip-stock.out { border-color: var(--signal); color: var(--signal); }
+
+/* ---------- Wishlist ---------- */
+
+.wish-group {
+  border-bottom: 1px solid var(--steel-line);
+  padding-bottom: 12px;
+}
+
+.wish-group:last-child { border-bottom: none; }
+
+.wish-group .low-row { border-bottom: none; padding-bottom: 4px; }
+
+/* The addresses are here to be mailed by hand if the automatic send ever
+   misses — recessive, not the point of the row. */
+.wish-emails {
+  font-size: 10.5px;
+  color: var(--steel);
+  line-height: 1.7;
+  word-break: break-all;
+}
+
+.wish-send {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 6px 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.wish-send:hover { background: var(--cobalt); }
+.wish-send:disabled { background: var(--steel-line); cursor: not-allowed; }
+
+/* ---------- Customer history ---------- */
+
+/* Rides next to the name in the list. Only ever shown for a number that has
+   refused parcels more than once — a warning on every row would be noise. */
+.risk-tag {
+  margin-left: 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--signal);
+  color: var(--signal);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.hist {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink);
+  padding: 4px 0;
+}
+
+.hist-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--steel);
+  flex-shrink: 0;
+}
+
+.hist.good .hist-dot { background: var(--ink); }
+.hist.watch .hist-dot { background: var(--cobalt); }
+.hist.risk .hist-dot { background: var(--signal); }
+.hist.risk { color: var(--signal); }
+
+.hist-note {
+  font-size: 11px;
+  color: var(--steel);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* ---------- Courier hand-off ---------- */
+
+.courier-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.courier-row .dim { font-size: 11.5px; }
+
+.courier-select {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 7px 9px;
+  font-size: 11.5px;
+  color: var(--ink);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.courier-select:focus { outline: none; border-color: var(--cobalt); }
+
+.courier-btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 8px 12px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.courier-btn:hover { background: var(--cobalt); }
+.courier-btn:disabled { background: var(--steel-line); cursor: not-allowed; }
+
+.courier-btn.ghost {
+  background: none;
+  color: var(--steel);
+  border: 1px solid var(--steel-line);
+  margin-left: auto;
+}
+
+.courier-btn.ghost:hover { border-color: var(--ink); color: var(--ink); background: none; }
+
+.slip-btn {
+  margin: 14px 0 0;
+  width: 100%;
+}
+
+/* ---------- Packing slip ---------- */
+
+/* Off-screen entirely — this exists for the printer, and a preview of it on
+   the page would just be another thing to keep in step. */
+.slip-root { display: none; }
+
+@media print {
+  /* Hide the app rather than unmounting it, so the panel is untouched when
+     the dialog closes. */
+  body * { visibility: hidden; }
+  .slip-root, .slip-root * { visibility: visible; }
+
+  .slip-root {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+  }
+
+  .slip {
+    padding: 18mm 16mm;
+    color: #000;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .slip-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+
+  .slip-brand { font-size: 26px; }
+  .slip-sub { font-size: 9px; letter-spacing: 1.5px; margin-top: 3px; }
+
+  .slip-id { text-align: right; font-size: 10px; }
+  .slip-id-big { font-size: 15px; margin-bottom: 3px; }
+
+  .slip-to { margin-top: 16px; }
+  .slip-label { font-size: 9px; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .slip-name { font-size: 17px; font-weight: 600; }
+  .slip-phone { font-size: 14px; margin: 3px 0 6px; }
+  .slip-addr { font-size: 13px; line-height: 1.5; }
+  .slip-note { font-size: 12px; margin-top: 6px; font-style: italic; }
+
+  .slip-items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    border-top: 1px solid #000;
+  }
+
+  .slip-items td {
+    padding: 7px 0;
+    font-size: 12.5px;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .slip-money {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .slip-money td { padding: 3px 0; font-size: 11.5px; }
+
+  .right { text-align: right; }
+
+  .slip-due {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border: 2px solid #000;
+    padding: 12px 14px;
+    margin-top: 14px;
+  }
+
+  .slip-due .mono { font-size: 11px; letter-spacing: 1.5px; }
+  .slip-due-amount { font-size: 26px; }
+
+  .slip-foot {
+    margin-top: 16px;
+    font-size: 9.5px;
+    text-align: center;
+  }
+
+  @page { margin: 0; }
+}

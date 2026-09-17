@@ -97,7 +97,7 @@ export default function Track() {
                 <div className="tr-id mono">{order.id}</div>
                 <div className="tr-name">{order.name}</div>
               </div>
-              <div className="tr-total mono">{taka(order.subtotal)}</div>
+              <div className="tr-total mono">{taka(order.total ?? order.subtotal)}</div>
             </div>
 
             {cancelled ? (

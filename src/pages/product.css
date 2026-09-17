@@ -147,6 +147,21 @@
 
 .size-opt.disabled:hover { border-color: var(--steel-line); }
 
+/* A sold-out size can still be picked — that's how the shopper says which
+   size to email them about — so it has to read as selected while staying
+   struck through and clearly not buyable. */
+.size-opt.disabled.active {
+  background: transparent;
+  color: var(--steel);
+  border-color: var(--ink);
+}
+
+.add-cart:disabled {
+  background: var(--steel-line);
+  color: var(--paper);
+  cursor: not-allowed;
+}
+
 .add-cart {
   width: 100%;
   padding: 18px;
@@ -459,4 +474,65 @@
     max-height: 88vh;
     padding: 22px 20px 28px;
   }
+}
+
+/* ---------- Wishlist / restock queue ---------- */
+
+.wish {
+  border: 1px solid var(--steel-line);
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.wish-head {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-bottom: 10px;
+}
+
+.wish-row {
+  display: flex;
+  gap: 8px;
+}
+
+.wish-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  padding: 11px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: var(--ink);
+  border-radius: 0;
+}
+
+.wish-row input:focus { outline: none; border-color: var(--cobalt); }
+
+.wish-row button {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 0 16px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wish-row button:hover { background: var(--cobalt); }
+.wish-row button:disabled { background: var(--steel-line); cursor: not-allowed; }
+
+.wish-note {
+  font-size: 10.5px;
+  color: var(--steel);
+  margin-top: 9px;
+  line-height: 1.5;
+}
+
+.wish-done {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ink);
 }

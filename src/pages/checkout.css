@@ -33,7 +33,8 @@
   margin-bottom: 8px;
 }
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   border: 1px solid var(--steel-line);
   background: var(--paper);
   padding: 12px 14px;
@@ -43,10 +44,17 @@
   resize: vertical;
 }
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   outline: none;
   border-color: var(--cobalt);
 }
+/* Marks the fields an order can't be placed without. */
+.field .req {
+  color: var(--signal);
+  font-style: normal;
+}
+
 .field .err {
   font-size: 11px;
   color: var(--signal);
@@ -118,4 +126,138 @@
 @media (max-width: 860px) {
   .checkout-page .section-head { padding: 32px 20px 20px; }
   .checkout-body { grid-template-columns: 1fr; padding: 8px 20px 60px; gap: 32px; }
+}
+
+/* ---------- District picker ---------- */
+
+.field select {
+  border-radius: 0;
+  cursor: pointer;
+  /* Native arrow only; a custom one would need a background image and this
+     stays consistent with the rest of the form's flat fields. */
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+                    linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 36px;
+}
+
+/* ---------- Outside-Dhaka advance ---------- */
+
+.advance-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--ink);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+/* Outside Dhaka this box sits straight on top of the bKash panel, so the two
+   read as one block. Inside Dhaka it stands alone. */
+.advance-head.pay {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.advance-head.cod .advance-amount { color: var(--ink); }
+
+.advance-title {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.advance-sub {
+  font-size: 11px;
+  color: var(--steel);
+  margin-top: 4px;
+}
+
+.advance-amount {
+  font-size: 19px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.bkash-box {
+  border: 1px solid var(--ink);
+  padding: 20px 16px;
+  margin-bottom: 20px;
+}
+
+.bkash-number {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--steel-line);
+  padding: 14px 14px;
+  font-size: 14px;
+}
+
+.bkash-digits {
+  margin-left: auto;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.copy {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--steel);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 5px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.copy:hover { border-color: var(--ink); color: var(--ink); }
+
+.bkash-steps {
+  list-style: none;
+  margin: 16px 0 18px;
+  padding: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--steel);
+}
+
+.bkash-steps li {
+  position: relative;
+  padding-left: 16px;
+  margin-bottom: 7px;
+}
+
+.bkash-steps li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 4px;
+  height: 4px;
+  background: var(--steel);
+}
+
+/* ---------- Summary extras ---------- */
+
+.summary-row.steel span { color: var(--steel); }
+
+.summary-split {
+  border-top: 1px solid var(--steel-line);
+  margin-top: 10px;
+  padding-top: 6px;
+}
+
+.summary-row.due {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 860px) {
+  .bkash-number { flex-wrap: wrap; gap: 8px; }
+  .bkash-digits { margin-left: 0; }
 }

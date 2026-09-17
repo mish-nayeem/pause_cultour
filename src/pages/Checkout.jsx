@@ -4,8 +4,38 @@ import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { sendOrderConfirmation } from '../lib/email.js'
+import { BKASH_NUMBER, DISTRICTS, quote, isTrxId } from '../lib/delivery.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './checkout.css'
+
+function money(n) {
+  return '৳ ' + Number(n).toLocaleString()
+}
+
+// place_order raises a tagged message for the cases the customer can act on,
+// so each one comes back as something worth reading instead of a database
+// error. Anything else is treated as a failed request.
+function orderMessage(error) {
+  const raw = error.message || ''
+
+  const soldOut = raw.match(/SOLD_OUT:(.*):(.*)/)
+  if (soldOut) {
+    return `${soldOut[1]} in size ${soldOut[2]} just sold out — please remove it from your cart and try again.`
+  }
+
+  const gone = raw.match(/UNAVAILABLE:(.*)/)
+  if (gone) {
+    return `${gone[1]} is no longer available — please remove it from your cart.`
+  }
+
+  // The unique index on the transaction id: this bKash receipt is already on
+  // another order.
+  if (error.code === '23505' || raw.includes('orders_advance_trx_id_idx')) {
+    return 'That transaction ID has already been used on another order.'
+  }
+
+  return 'Could not place your order — please check your connection and try again.'
+}
 
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()
@@ -16,12 +46,14 @@ export default function Checkout() {
     phone: '',
     email: '',
     address: '',
-    area: '',
+    district: '',
     note: '',
+    trxId: '',
   })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   if (items.length === 0) {
     return (
@@ -35,21 +67,62 @@ export default function Checkout() {
     )
   }
 
+  // The district decides everything below it: the delivery charge, whether an
+  // advance is owed, and how much the rider still collects.
+  const bill = quote(subtotal, form.district)
+  const needsAdvance = bill.advance > 0
+
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  function pickDistrict(e) {
+    const district = e.target.value
+
+    // Switching back to a district with no advance drops whatever was typed in
+    // the transaction box, so a stale id can never ride along with the order.
+    setForm((prev) => ({
+      ...prev,
+      district,
+      trxId: district && district !== 'Dhaka' ? prev.trxId : '',
+    }))
+    setErrors((prev) => ({ ...prev, district: undefined, trxId: undefined }))
+  }
+
+  async function copyNumber() {
+    try {
+      await navigator.clipboard.writeText(BKASH_NUMBER)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard access can be blocked; the number is on screen to be typed.
+    }
   }
 
   function validate() {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Name is required'
     if (!/^01[3-9]\d{8}$/.test(form.phone.trim())) errs.phone = 'Enter a valid Bangladeshi number (e.g. 017XXXXXXXX)'
-    // Email is optional for COD, but a typo'd address means a lost confirmation,
-    // so it's validated when the field isn't empty.
-    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) {
-      errs.email = 'Enter a valid email, or leave it blank'
+    // The confirmation, and every status mail after it, go to this address, so
+    // the order isn't taken without one.
+    if (!form.email.trim()) {
+      errs.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) {
+      errs.email = 'Enter a valid email address'
     }
     if (!form.address.trim()) errs.address = 'Address is required'
-    if (!form.area.trim()) errs.area = 'City / area is required'
+    if (!form.district) errs.district = 'Select your district'
+
+    // Outside Dhaka the advance is the order — without a transaction id there
+    // is nothing to check against bKash, so the order isn't accepted.
+    if (needsAdvance) {
+      if (!form.trxId.trim()) {
+        errs.trxId = 'Send the advance first, then enter the transaction ID'
+      } else if (!isTrxId(form.trxId)) {
+        errs.trxId = 'That does not look like a bKash transaction ID (e.g. K8H7G6F5D4)'
+      }
+    }
+
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -63,45 +136,60 @@ export default function Checkout() {
 
     const orderId = 'PC' + Math.floor(100000 + Math.random() * 900000)
 
-    const { error: orderError } = await supabase.from('orders').insert({
-      id: orderId,
-      customer_name: form.name,
-      customer_phone: form.phone,
-      customer_email: form.email.trim() || null,
-      customer_address: form.address,
-      customer_area: form.area,
-      customer_note: form.note || null,
-      subtotal,
+    const trxId = needsAdvance ? form.trxId.trim().toUpperCase() : null
+
+    // One call, one transaction: the order, its lines and the stock coming off
+    // each size either all happen or none do. Two people reaching for the last
+    // piece of a size means the second one is turned away here rather than
+    // both being sold it.
+    const { error: orderError } = await supabase.rpc('place_order', {
+      payload: {
+        order: {
+          id: orderId,
+          customer_name: form.name,
+          customer_phone: form.phone,
+          customer_email: form.email.trim() || null,
+          customer_address: form.address,
+          customer_area: form.district,
+          customer_note: form.note || null,
+          subtotal,
+          delivery_zone: bill.zone.key,
+          delivery_fee: bill.fee,
+          total: bill.total,
+          advance_amount: bill.advance,
+          advance_method: needsAdvance ? 'bkash' : null,
+          advance_trx_id: trxId,
+        },
+        items: items.map((item) => ({
+          product_id: item.id,
+          product_name: item.name,
+          size: item.size,
+          price: item.price,
+          qty: item.qty,
+        })),
+      },
     })
 
     if (orderError) {
       setSubmitting(false)
-      setSubmitError('Could not place your order — please check your connection and try again.')
-      console.error('[Supabase] order insert failed:', orderError.message)
+      setSubmitError(orderMessage(orderError))
+      console.error('[Supabase] place_order failed:', orderError.message)
       return
-    }
-
-    const orderItemsPayload = items.map((item) => ({
-      order_id: orderId,
-      product_id: item.id,
-      product_name: item.name,
-      size: item.size,
-      price: item.price,
-      qty: item.qty,
-    }))
-
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsPayload)
-
-    if (itemsError) {
-      // Order row exists but items failed — still let the customer see confirmation,
-      // since the order itself was recorded. Log it for manual follow-up.
-      console.error('[Supabase] order_items insert failed:', itemsError.message)
     }
 
     const order = {
       orderId,
       items,
       subtotal,
+      delivery: {
+        zone: bill.zone.key,
+        zoneLabel: bill.zone.label,
+        fee: bill.fee,
+        total: bill.total,
+        advance: bill.advance,
+        due: bill.due,
+        trxId,
+      },
       customer: form,
       placedAt: new Date().toISOString(),
     }
@@ -133,19 +221,19 @@ export default function Checkout() {
             <div className="field-label mono">DELIVERY DETAILS</div>
 
             <label className="field">
-              <span className="mono">Full name</span>
+              <span className="mono">Full name <i className="req">*</i></span>
               <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" />
               {errors.name && <em className="err mono">{errors.name}</em>}
             </label>
 
             <label className="field">
-              <span className="mono">Phone number</span>
+              <span className="mono">Phone number <i className="req">*</i></span>
               <input name="phone" value={form.phone} onChange={handleChange} placeholder="017XXXXXXXX" />
               {errors.phone && <em className="err mono">{errors.phone}</em>}
             </label>
 
             <label className="field">
-              <span className="mono">Email (optional)</span>
+              <span className="mono">Email <i className="req">*</i></span>
               <input
                 name="email"
                 type="email"
@@ -157,17 +245,74 @@ export default function Checkout() {
               {errors.email && <em className="err mono">{errors.email}</em>}
             </label>
 
+            {/* District sits above the address because it sets the delivery
+                charge — the customer settles where before they write out
+                exactly where. */}
             <label className="field">
-              <span className="mono">Full address</span>
+              <span className="mono">District <i className="req">*</i></span>
+              <select name="district" value={form.district} onChange={pickDistrict}>
+                <option value="">Select District</option>
+                {DISTRICTS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              {errors.district && <em className="err mono">{errors.district}</em>}
+            </label>
+
+            <label className="field">
+              <span className="mono">Full address <i className="req">*</i></span>
               <textarea name="address" value={form.address} onChange={handleChange} placeholder="House, road, area details" rows={3} />
               {errors.address && <em className="err mono">{errors.address}</em>}
             </label>
 
-            <label className="field">
-              <span className="mono">City / area</span>
-              <input name="area" value={form.area} onChange={handleChange} placeholder="e.g. Dhanmondi, Dhaka" />
-              {errors.area && <em className="err mono">{errors.area}</em>}
-            </label>
+            {/* Picked a district, so the charge is known — Dhaka shows its ৳80
+                and everywhere else swaps it for the advance that has to be
+                paid before the order is taken. */}
+            {bill.zone && (
+              <div className={`advance-head ${needsAdvance ? 'pay' : 'cod'}`}>
+                <div>
+                  <div className="advance-title mono">{bill.zone.title}</div>
+                  <div className="advance-sub mono">{bill.zone.note}</div>
+                </div>
+                <div className="advance-amount">
+                  {money(needsAdvance ? bill.advance : bill.fee)}
+                </div>
+              </div>
+            )}
+
+            {needsAdvance && (
+              <div className="bkash-box">
+                <div className="field-label mono" style={{ marginBottom: '14px' }}>BKASH PAYMENT</div>
+
+                <div className="bkash-number">
+                  <span>bKash Number</span>
+                  <span className="bkash-digits mono">{BKASH_NUMBER}</span>
+                  <button type="button" className="copy mono" onClick={copyNumber}>
+                    {copied ? 'COPIED' : 'COPY'}
+                  </button>
+                </div>
+
+                <ul className="bkash-steps mono">
+                  <li>Dial *247# or open your bKash app</li>
+                  <li>Select "Send Money"</li>
+                  <li>Send {money(bill.advance)} to the number above</li>
+                  <li>Enter the Transaction ID you receive by SMS below</li>
+                </ul>
+
+                <label className="field" style={{ marginBottom: 0 }}>
+                  <span className="mono">Transaction ID <i className="req">*</i></span>
+                  <input
+                    name="trxId"
+                    value={form.trxId}
+                    onChange={handleChange}
+                    placeholder="TRXID (e.g. K8H7G6F5D4)"
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                  {errors.trxId && <em className="err mono">{errors.trxId}</em>}
+                </label>
+              </div>
+            )}
 
             <label className="field">
               <span className="mono">Delivery note (optional)</span>
@@ -175,7 +320,10 @@ export default function Checkout() {
             </label>
 
             <div className="payment-note mono">
-              <span className="dot"></span> PAYMENT METHOD: CASH ON DELIVERY
+              <span className="dot"></span>
+              {needsAdvance
+                ? `ADVANCE ${money(bill.advance)} BY BKASH · ${money(bill.due)} CASH ON DELIVERY`
+                : 'PAYMENT METHOD: CASH ON DELIVERY'}
             </div>
 
             {submitError && <em className="err mono" style={{ display: 'block', marginBottom: '14px' }}>{submitError}</em>}
@@ -193,10 +341,31 @@ export default function Checkout() {
                 <span>৳ {(item.price * item.qty).toLocaleString()}</span>
               </div>
             ))}
+            <div className="summary-row mono">
+              <span>SUBTOTAL</span>
+              <span>{money(subtotal)}</span>
+            </div>
+            <div className={`summary-row mono ${form.zone ? '' : 'steel'}`}>
+              <span>DELIVERY</span>
+              <span>{form.zone ? money(bill.fee) : 'Pick a zone'}</span>
+            </div>
             <div className="summary-row mono total">
               <span>TOTAL</span>
-              <span>৳ {subtotal.toLocaleString()}</span>
+              <span>{money(bill.total)}</span>
             </div>
+
+            {needsAdvance && (
+              <div className="summary-split">
+                <div className="summary-row mono">
+                  <span>ADVANCE (BKASH)</span>
+                  <span>− {money(bill.advance)}</span>
+                </div>
+                <div className="summary-row mono due">
+                  <span>DUE ON DELIVERY</span>
+                  <span>{money(bill.due)}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

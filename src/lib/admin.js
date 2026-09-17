@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { lowSizes, LOW_STOCK_AT } from './stock.js'
 
 // ---------- Admin allowlist ----------
 
@@ -119,19 +120,35 @@ export async function fetchAdminProducts() {
 export function computeStats(orders) {
   const delivered = orders.filter((o) => o.status === 'delivered')
   const cancelled = orders.filter((o) => o.status === 'cancelled')
-  const pending = orders.filter((o) => o.status === 'pending' || o.status === 'shipped')
+  const pending = orders.filter((o) => o.status === 'pending')
+  const shipped = orders.filter((o) => o.status === 'shipped')
+
+  // Anything still owed to us: placed but not yet delivered or cancelled.
+  const open = [...pending, ...shipped]
 
   // Revenue counts delivered orders only — COD money isn't real until it lands.
   const revenue = delivered.reduce((sum, o) => sum + Number(o.subtotal), 0)
-  const pendingValue = pending.reduce((sum, o) => sum + Number(o.subtotal), 0)
+  const openValue = open.reduce((sum, o) => sum + Number(o.subtotal), 0)
+
+  // Pieces, not orders — one order can carry several units of several products.
+  // Cancelled orders never counted as a sale, so they're left out.
+  const unitsSold = orders
+    .filter((o) => o.status !== 'cancelled')
+    .reduce(
+      (sum, o) => sum + (o.order_items || []).reduce((s, it) => s + Number(it.qty), 0),
+      0
+    )
 
   return {
     totalOrders: orders.length,
+    unitsSold,
     delivered: delivered.length,
     cancelled: cancelled.length,
     pending: pending.length,
+    shipped: shipped.length,
+    open: open.length,
     revenue,
-    pendingValue,
+    openValue,
   }
 }
 
@@ -178,6 +195,174 @@ export function topProducts(orders, limit = 5) {
   return [...tally.values()].sort((a, b) => b.units - a.units).slice(0, limit)
 }
 
+// Counts units sold per month for the last `months` months, for the bar chart.
+// Cancelled orders are excluded so the bars only ever show real sales.
+export function monthlySeries(orders, months = 6) {
+  const now = new Date()
+  const buckets = []
+
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    buckets.push({
+      key: `${d.getFullYear()}-${d.getMonth()}`,
+      label: d.toLocaleDateString('en-GB', { month: 'short' }),
+      year: d.getFullYear(),
+      orders: 0,
+      units: 0,
+      value: 0,
+    })
+  }
+
+  const byKey = new Map(buckets.map((b) => [b.key, b]))
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      const d = new Date(o.created_at)
+      const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`)
+      if (!bucket) return
+
+      bucket.orders += 1
+      bucket.value += Number(o.subtotal)
+      ;(o.order_items || []).forEach((it) => {
+        bucket.units += Number(it.qty)
+      })
+    })
+
+  return buckets
+}
+
+// Order lines only record the product's name and price, not which drop or
+// category it belonged to — those live on the product row, so the sold units
+// are matched back to the catalog by id. A product deleted since the sale has
+// nothing to match, so its units land in the fallback bucket rather than
+// disappearing from the totals.
+function groupSales(orders, products, column, fallback) {
+  const catalog = new Map(products.map((p) => [String(p.id), p]))
+  const tally = new Map()
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      ;(o.order_items || []).forEach((it) => {
+        const product = catalog.get(String(it.product_id))
+        const label = (product && product[column]) || fallback
+        const prev = tally.get(label) || { name: label, units: 0, value: 0, orders: 0 }
+
+        prev.units += Number(it.qty)
+        prev.value += Number(it.qty) * Number(it.price)
+        prev.orders += 1
+        tally.set(label, prev)
+      })
+    })
+
+  return [...tally.values()].sort((a, b) => b.units - a.units)
+}
+
+// Units sold per drop — "how much did DROP 01 move".
+export function salesByDrop(orders, products) {
+  return groupSales(orders, products, 'drop_name', 'No drop')
+}
+
+// Units sold per category — "how many hoodies, how many jackets".
+export function salesByCategory(orders, products) {
+  return groupSales(orders, products, 'category', 'Uncategorised')
+}
+
+// Every size that has run out or is about to, across the catalog — the
+// reorder list, shortest first.
+export function lowStockSizes(products, threshold = LOW_STOCK_AT) {
+  const rows = []
+
+  products.forEach((p) => {
+    lowSizes(p, threshold).forEach(({ size, left }) => {
+      rows.push({ id: p.id, name: p.name, variant: p.variant, size, left })
+    })
+  })
+
+  return rows.sort((a, b) => a.left - b.left || a.name.localeCompare(b.name))
+}
+
+// ---------- Customer history ----------
+
+// COD only works on trust, and the phone number is the only thing that ties a
+// stranger's orders together. Someone who has refused two parcels already is
+// worth a confirmation call before the third goes out — that judgement needs
+// the history in front of you at the moment you're looking at the order.
+
+// Numbers get typed with and without the country code, so they are compared by
+// their last 11 digits — the part that actually identifies a BD mobile.
+export function phoneKey(phone) {
+  return String(phone || '').replace(/\D/g, '').slice(-11)
+}
+
+function riskLevel(entry) {
+  // A first order has no history to judge; saying nothing is the honest answer.
+  if (entry.total <= 1) return 'new'
+
+  // Refusing twice, or refusing more often than accepting, is the pattern that
+  // costs money in return fare.
+  if (entry.cancelled >= 2 || (entry.cancelled >= 1 && entry.cancelled > entry.delivered)) {
+    return 'risk'
+  }
+
+  if (entry.cancelled === 1) return 'watch'
+  if (entry.delivered >= 1) return 'good'
+
+  return 'neutral'
+}
+
+// One pass over the orders already in memory: phone number → what that number
+// has done so far. No extra round trip, and every row can look itself up.
+export function customerIndex(orders) {
+  const index = new Map()
+
+  orders.forEach((o) => {
+    const key = phoneKey(o.customer_phone)
+    if (!key) return
+
+    const entry = index.get(key) || {
+      total: 0,
+      delivered: 0,
+      cancelled: 0,
+      open: 0,
+      collected: 0,
+    }
+
+    entry.total += 1
+
+    if (o.status === 'delivered') {
+      entry.delivered += 1
+      entry.collected += Number(o.total ?? o.subtotal)
+    } else if (o.status === 'cancelled') {
+      entry.cancelled += 1
+    } else {
+      entry.open += 1
+    }
+
+    index.set(key, entry)
+  })
+
+  index.forEach((entry) => {
+    entry.level = riskLevel(entry)
+  })
+
+  return index
+}
+
+export function lookupCustomer(index, phone) {
+  return (
+    index.get(phoneKey(phone)) || {
+      total: 0,
+      delivered: 0,
+      cancelled: 0,
+      open: 0,
+      collected: 0,
+      level: 'new',
+    }
+  )
+}
+
 // ---------- Product write operations ----------
 
 // The UI keeps products in the camelCase shape the storefront uses; the table
@@ -198,6 +383,7 @@ function toRow(p) {
     description: p.description ?? '',
     sizes: p.sizes ?? [],
     sizes_out: p.sizesOut ?? [],
+    stock: p.stock ?? null,
     details: p.details ?? '',
     size_chart: p.sizeChart ?? null,
     colour_group: p.colourGroup?.trim() || null,

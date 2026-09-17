@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabaseClient.js'
 import { cld, uploadImage } from '../lib/cloudinary.js'
 import { saveProduct, deleteProduct } from '../lib/admin.js'
 import { IconX } from './Icons.jsx'
+import { stockForSizes, stockMap } from '../lib/stock.js'
+import { sendRestockAlert } from '../lib/email.js'
 import './product-form.css'
 
 const BLANK = {
@@ -19,6 +21,7 @@ const BLANK = {
   description: '',
   sizes: ['S', 'M', 'L', 'XL'],
   sizesOut: [],
+  stock: { S: 0, M: 0, L: 0, XL: 0 },
   details: '',
   sizeChart: null,
   colourGroup: '',
@@ -40,6 +43,7 @@ function fromRow(row) {
     description: row.description ?? '',
     sizes: row.sizes ?? [],
     sizesOut: row.sizes_out ?? [],
+    stock: row.stock ?? null,
     details: row.details ?? '',
     sizeChart: row.size_chart ?? null,
     colourGroup: row.colour_group ?? '',
@@ -66,8 +70,38 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
   const [newCategory, setNewCategory] = useState('')
   const fileRef = useRef(null)
 
+  // A product either keeps counts or it doesn't; the form shows one of two
+  // states rather than a checkbox plus a dead set of inputs.
+  const tracking = stockMap(p) !== null
+
   function set(field, value) {
     setP((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Stock is keyed by size, so editing the size list has to carry the counts
+  // across with it: sizes that stay keep their number, a new size starts at 0,
+  // and a removed size drops out instead of lingering in the row.
+  function setSizes(csv) {
+    const sizes = csv.split(',').map((s) => s.trim()).filter(Boolean)
+
+    setP((prev) => ({
+      ...prev,
+      sizes,
+      stock: stockMap(prev) ? stockForSizes(prev, sizes) : prev.stock,
+    }))
+  }
+
+  function setStock(size, value) {
+    const n = Math.max(0, Math.trunc(Number(value) || 0))
+    setP((prev) => ({ ...prev, stock: { ...(prev.stock || {}), [size]: n } }))
+  }
+
+  function startTracking() {
+    setP((prev) => ({ ...prev, stock: stockForSizes(prev, prev.sizes) }))
+  }
+
+  function stopTracking() {
+    setP((prev) => ({ ...prev, stock: null }))
   }
 
   async function handleFiles(e) {
@@ -183,9 +217,8 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
       isNewRecord
     )
 
-    setSaving(false)
-
     if (saveError) {
+      setSaving(false)
       setError(
         saveError.message?.includes('duplicate')
           ? 'That product ID already exists — pick another.'
@@ -193,6 +226,27 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
       )
       return
     }
+
+    // Restocking is the moment the wishlist is for: any size that was at 0 and
+    // now isn't gets its waiting list mailed. Done after the save so nobody is
+    // told a size is back before it actually is, and never allowed to fail the
+    // save — the admin panel can always send again by hand.
+    const before = stockMap({ stock: existing?.stock ?? null }) || {}
+    const after = stockMap(p) || {}
+
+    // A brand new product has nothing before it and nobody waiting, so there
+    // is nothing to announce.
+    const restocked = isNewRecord
+      ? []
+      : Object.keys(after).filter(
+          (size) => (after[size] ?? 0) > 0 && (before[size] ?? 0) === 0
+        )
+
+    for (const size of restocked) {
+      await sendRestockAlert(p.id.trim(), size)
+    }
+
+    setSaving(false)
 
     onDone()
   }
@@ -409,16 +463,14 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
           <span className="mono">SIZES AVAILABLE</span>
           <input
             value={p.sizes.join(', ')}
-            onChange={(e) =>
-              set('sizes', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))
-            }
+            onChange={(e) => setSizes(e.target.value)}
             placeholder="S, M, L, XL"
           />
           <em className="pf-hint mono">Comma separated.</em>
         </label>
 
         <label className="pf-field">
-          <span className="mono">SIZES SOLD OUT</span>
+          <span className="mono">SIZES OFF THE PAGE</span>
           <input
             value={p.sizesOut.join(', ')}
             onChange={(e) =>
@@ -426,9 +478,54 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
             }
             placeholder="XXL"
           />
-          <em className="pf-hint mono">Shown struck through, can't be ordered.</em>
+          <em className="pf-hint mono">
+            Manual override — struck through whatever the count says. A size that
+            runs out sells out on its own.
+          </em>
         </label>
       </div>
+
+      {/* ---- Stock ---- */}
+      <div className="pf-label mono">STOCK</div>
+      <div className="pf-note mono">
+        Pieces left in each size. Every order takes its own off the count, and a
+        size that hits 0 goes sold out on the product page by itself. Turn
+        counting off and this product sells with no limit, as it did before
+        stock existed.
+      </div>
+
+      {p.sizes.length === 0 ? (
+        <div className="pf-note mono">Add a size above to count stock for it.</div>
+      ) : !tracking ? (
+        <button type="button" className="pf-add mono" onClick={startTracking}>
+          + Count stock for this product
+        </button>
+      ) : (
+        <>
+          <div className="pf-stock">
+            {p.sizes.map((size) => {
+              const count = Number(p.stock?.[size] ?? 0)
+
+              return (
+                <label className="pf-stock-cell" key={size}>
+                  <span className="mono">{size}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    className={count === 0 ? 'zero' : ''}
+                    value={String(count)}
+                    onChange={(e) => setStock(size, e.target.value)}
+                  />
+                </label>
+              )
+            })}
+          </div>
+          <button type="button" className="pf-remove mono" onClick={stopTracking}>
+            Stop counting stock
+          </button>
+        </>
+      )}
 
       {/* ---- Size chart ---- */}
       <div className="pf-label mono">SIZE CHART</div>

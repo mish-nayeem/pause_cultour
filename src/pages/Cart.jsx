@@ -74,7 +74,7 @@ export default function Cart() {
               <button className="checkout-btn mono" onClick={() => navigate('/checkout')}>
                 Proceed to checkout
               </button>
-              <div className="cod-note mono">Cash on delivery only — pay when it arrives</div>
+              <div className="cod-note mono">Cash on delivery — outside Dhaka needs a ৳200 bKash advance</div>
               <Link to="/" className="back-link mono">← BACK TO SHOP</Link>
             </div>
           </div>

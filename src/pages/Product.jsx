@@ -5,6 +5,8 @@ import Footer from '../components/Footer.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
 import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
+import { availableSizes, isAllSoldOut, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
+import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './product.css'
 
@@ -49,7 +51,7 @@ function Sheet({ eyebrow, title, onClose, children }) {
 
 export default function Product() {
   const { id } = useParams()
-  const { addItem } = useCart()
+  const { addItem, items } = useCart()
 
   const [product, setProduct] = useState(null)
   const [colours, setColours] = useState([])
@@ -57,6 +59,10 @@ export default function Product() {
   const [notFound, setNotFound] = useState(false)
   const [activeSize, setActiveSize] = useState(null)
   const [justAdded, setJustAdded] = useState(false)
+  const [capped, setCapped] = useState(false)
+  const [wishEmail, setWishEmail] = useState(savedEmail)
+  const [wishState, setWishState] = useState('idle') // idle | saving | error
+  const [wishDone, setWishDone] = useState(null) // the size just signed up for
   const [sheet, setSheet] = useState(null) // null | 'details' | 'sizes'
   const [shot, setShot] = useState(0)
 
@@ -80,7 +86,7 @@ export default function Product() {
         setNotFound(true)
       } else {
         setProduct(product)
-        setActiveSize(product.sizes[0] || null)
+        setActiveSize(availableSizes(product)[0] || null)
       }
       setLoading(false)
     })
@@ -120,8 +126,51 @@ export default function Product() {
     el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' })
   }
 
+  async function handleWishlist(e) {
+    e.preventDefault()
+    if (!product || !activeSize || wishState === 'saving') return
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(wishEmail.trim())) {
+      setWishState('error')
+      return
+    }
+
+    setWishState('saving')
+    const { error } = await joinWishlist({
+      product,
+      size: activeSize,
+      email: wishEmail,
+    })
+
+    if (error) {
+      setWishState('error')
+      return
+    }
+
+    setWishState('idle')
+    setWishDone(activeSize)
+  }
+
   function handleAddToCart() {
-    if (!product || !activeSize) return
+    if (!product || !activeSize || isSoldOut(product, activeSize)) return
+
+    // The cart holds pieces that haven't been ordered yet, so they aren't off
+    // the count in the database — the check has to include them or someone can
+    // fill their cart past what exists and only find out at checkout.
+    const remaining = left(product, activeSize)
+
+    if (remaining !== null) {
+      const inCart = items
+        .filter((i) => i.id === product.id && i.size === activeSize)
+        .reduce((sum, i) => sum + i.qty, 0)
+
+      if (inCart >= remaining) {
+        setCapped(true)
+        setTimeout(() => setCapped(false), 2600)
+        return
+      }
+    }
+
     addItem(product, activeSize, 1)
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 1600)
@@ -152,6 +201,10 @@ export default function Product() {
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
+
+  // Read straight from the browser's note each render — no state to keep in
+  // step when the shopper switches size.
+  const joined = Boolean(activeSize && hasJoined(product.id, activeSize))
 
   const chart = product.sizeChart
   const hasChart = Boolean(chart?.columns?.length && chart?.rows?.length)
@@ -221,23 +274,88 @@ export default function Product() {
 
           <div className="field-label mono">SIZE</div>
           <div className="sizes">
-            {product.sizes.map((s) => (
-              <div
-                key={s}
-                className={`size-opt ${activeSize === s ? 'active' : ''}`}
-                onClick={() => setActiveSize(s)}
-              >
-                {s}
-              </div>
-            ))}
-            {product.sizesOut.map((s) => (
-              <div key={s} className="size-opt disabled">{s}</div>
-            ))}
+            {product.sizes.map((s) => {
+              const out = isSoldOut(product, s)
+
+              return (
+                <div
+                  key={s}
+                  className={`size-opt ${out ? 'disabled' : ''} ${activeSize === s ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveSize(s)
+                    setWishState('idle')
+                  }}
+                >
+                  {s}
+                </div>
+              )
+            })}
+            {/* Anything struck off by hand that was never in the size list. */}
+            {soldOutSizes(product)
+              .filter((s) => !product.sizes.includes(s))
+              .map((s) => (
+                <div key={s} className="size-opt disabled">{s}</div>
+              ))}
           </div>
 
-          <button className="add-cart mono" onClick={handleAddToCart}>
-            {justAdded ? 'Added to cart ✓' : 'Add to cart'}
+          <button
+            className="add-cart mono"
+            onClick={handleAddToCart}
+            disabled={!activeSize || isSoldOut(product, activeSize)}
+          >
+            {!activeSize || isSoldOut(product, activeSize)
+              ? 'Sold out'
+              : justAdded
+                ? 'Added to cart ✓'
+                : 'Add to cart'}
           </button>
+          {capped && (
+            <div className="added-note mono">
+              That's every piece we have left in {activeSize}.
+            </div>
+          )}
+
+          {/* A sold-out size is a dead end otherwise. Leaving an address turns
+              it into the queue for the next run — and tells us which sizes to
+              actually make more of. */}
+          {(isAllSoldOut(product) || (activeSize && isSoldOut(product, activeSize))) && (
+            <div className="wish">
+              {!activeSize ? (
+                <>
+                  <div className="wish-head mono">EMAIL ME WHEN IT'S BACK</div>
+                  <div className="wish-note mono" style={{ marginTop: 0 }}>
+                    Pick the size you're after, above.
+                  </div>
+                </>
+              ) : wishDone === activeSize || joined ? (
+                <div className="wish-done mono">
+                  You're on the list for {activeSize} — we'll email you the day
+                  it's back.
+                </div>
+              ) : (
+                <form onSubmit={handleWishlist}>
+                  <div className="wish-head mono">EMAIL ME WHEN {activeSize} IS BACK</div>
+                  <div className="wish-row">
+                    <input
+                      type="email"
+                      value={wishEmail}
+                      onChange={(e) => setWishEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      aria-label="Your email address"
+                    />
+                    <button type="submit" className="mono" disabled={wishState === 'saving'}>
+                      {wishState === 'saving' ? '…' : 'NOTIFY ME'}
+                    </button>
+                  </div>
+                  <div className="wish-note mono">
+                    {wishState === 'error'
+                      ? "That didn't go through — check the address and try again."
+                      : 'One email, only for this size. Nothing else.'}
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
           {justAdded && (
             <div className="added-note mono">
               In your cart. <Link to="/cart">View cart →</Link>

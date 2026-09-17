@@ -17,6 +17,7 @@ function mapRow(row) {
     description: row.description,
     sizes: row.sizes || [],
     sizesOut: row.sizes_out || [],
+    stock: row.stock || null,
     details: row.details || '',
     sizeChart: row.size_chart || null,
     colourGroup: row.colour_group || '',

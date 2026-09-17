@@ -5,6 +5,7 @@ import Footer from '../components/Footer.jsx'
 import { fetchProducts } from '../lib/products.js'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { cld } from '../lib/cloudinary.js'
+import { isAllSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './shop.css'
 
@@ -114,11 +115,12 @@ export default function Shop() {
               <div className="sthumb">
                 <img src={cld(p.images[0], { w: 500 })} alt={p.name} />
                 {p.isNew && <span className="snew mono"><i className="rec" />NEW</span>}
-                {p.sizesOut.length > 0 && p.sizes.length === 0 && (
-                  <span className="sout mono">SOLD OUT</span>
-                )}
               </div>
               <div className="sinfo">
+                {/* Said in words above the price rather than as a sheet over
+                    the photo — the piece is still worth looking at, and it can
+                    still go on a wishlist. */}
+                {isAllSoldOut(p) && <div className="sout mono">SOLD OUT</div>}
                 <div className="sname">{p.name}</div>
                 <div className="smeta mono">
                   <span>{p.variant}</span>
