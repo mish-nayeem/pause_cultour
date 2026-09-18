@@ -124,8 +124,19 @@ export async function extractOrderFromMessage({ text, image, mimeType }) {
   })
 
   if (error) {
-    console.error('[Supabase] extractOrderFromMessage failed:', error.message)
-    return { extracted: null, error }
+    // The client only gives a generic "non-2xx status" message here — the
+    // function's own {error: "..."} body, which says what actually went
+    // wrong, is on the raw response it stashes on context.
+    let detail = error.message
+    try {
+      const body = await error.context?.json()
+      if (body?.error) detail = body.error
+    } catch {
+      // Not JSON, or no context — the generic message is all there is.
+    }
+
+    console.error('[Supabase] extractOrderFromMessage failed:', detail)
+    return { extracted: null, error: { message: detail } }
   }
   if (data?.error) return { extracted: null, error: { message: data.error } }
 

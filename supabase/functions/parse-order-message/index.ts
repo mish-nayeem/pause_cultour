@@ -91,9 +91,13 @@ ${catalog}
 - If a field truly can't be determined, use null rather than guessing.
 ${text ? `\nMessage text:\n${text}` : ''}`
 
+    // Gemini's REST API wants camelCase here (inlineData/mimeType) even
+    // though Google's own docs and client libraries often show the proto's
+    // snake_case names — sending snake_case gets the image part silently
+    // ignored or the request rejected outright.
     const parts: Record<string, unknown>[] = [{ text: prompt }]
     if (image) {
-      parts.push({ inline_data: { mime_type: mimeType || 'image/jpeg', data: image } })
+      parts.push({ inlineData: { mimeType: mimeType || 'image/jpeg', data: image } })
     }
 
     const res = await fetch(
