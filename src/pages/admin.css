@@ -5,6 +5,13 @@
 }
 
 .admin {
+  /* Darker than the site-wide --steel (defined in global.css, shared with the
+     storefront) — labels and secondary numbers here get read all day at a
+     glance, on a phone screen in daylight as often as a desktop, so they need
+     more contrast against --paper than the storefront's lighter copy does.
+     Scoped to .admin so the customer-facing pages are untouched. */
+  --steel: #5C5B54;
+
   display: grid;
   grid-template-columns: 216px 1fr;
   min-height: 100vh;
@@ -529,6 +536,11 @@
   .tc.price { text-align: left; }
   .tc.chev { display: none; }
   .pthumb { display: none; }
+
+  /* 24px of padding either side eats a third of a phone's width — tightened
+     here rather than in the base rule, so desktop keeps its room to breathe. */
+  .panel { padding: 16px; }
+  .stat { padding: 16px 16px 18px; }
 }
 
 /* ---------- Product management ---------- */
@@ -752,12 +764,18 @@
 }
 
 @media (max-width: 1000px) {
-  .stat-row.three, .stat-row.four { grid-template-columns: repeat(2, 1fr); }
+  .stat-row.four { grid-template-columns: repeat(2, 1fr); }
   .bars-plot { height: 165px; }
 }
 
+/* A row of 3 skips the 2-column tablet width entirely — 3 cards split 2-and-1
+   reads as a mistake, where 4 cards split 2-and-2 doesn't. */
+@media (max-width: 900px) {
+  .stat-row.three { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 560px) {
-  .stat-row.three, .stat-row.four { grid-template-columns: 1fr; }
+  .stat-row.four { grid-template-columns: 1fr; }
   .hbar-top { flex-direction: column; gap: 2px; align-items: flex-start; }
 }
 
