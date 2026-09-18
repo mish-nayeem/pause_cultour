@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { createManualOrder, orderErrorMessage } from '../lib/admin.js'
+import { createManualOrder, extractOrderFromMessage, orderErrorMessage } from '../lib/admin.js'
 import { sendOrderConfirmation } from '../lib/email.js'
 import { DISTRICTS, quote, isTrxId } from '../lib/delivery.js'
 import { availableSizes } from '../lib/stock.js'
@@ -31,6 +31,11 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
   const [draft, setDraft] = useState({ productId: '', size: '', qty: 1 })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const [pasteText, setPasteText] = useState('')
+  const [pickedImage, setPickedImage] = useState(null) // { base64, mimeType, name }
+  const [extracting, setExtracting] = useState(false)
+  const [extractNote, setExtractNote] = useState('')
 
   const draftProduct = products.find((p) => String(p.id) === draft.productId) || null
   const draftSizes = draftProduct ? availableSizes(draftProduct) : []
@@ -70,6 +75,76 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
 
   function removeItem(i) {
     setItems((prev) => prev.filter((_, idx) => idx !== i))
+  }
+
+  function handleImagePick(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      // readAsDataURL prefixes "data:image/jpeg;base64," — Gemini wants the
+      // base64 payload on its own.
+      const base64 = String(reader.result).split(',')[1]
+      setPickedImage({ base64, mimeType: file.type, name: file.name })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Fills the same fields a person would type into — nothing here is final
+  // until "Place order" is pressed, so a wrong guess is just something to
+  // notice and fix, not a mistake that reaches the database.
+  async function handleExtract() {
+    setExtracting(true)
+    setExtractNote('')
+
+    const { extracted, error: extractError } = await extractOrderFromMessage({
+      text: pasteText.trim() || undefined,
+      image: pickedImage?.base64,
+      mimeType: pickedImage?.mimeType,
+    })
+
+    setExtracting(false)
+
+    if (extractError || !extracted) {
+      setExtractNote(extractError?.message || "Couldn't read that — fill the form in below.")
+      return
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      name: extracted.customer_name || prev.name,
+      phone: extracted.customer_phone || prev.phone,
+      address: extracted.customer_address || prev.address,
+      district: DISTRICTS.includes(extracted.district) ? extracted.district : prev.district,
+    }))
+
+    const guesses = extracted.items || []
+    const matched = []
+
+    guesses.forEach((guess) => {
+      const product = products.find(
+        (p) => `${p.name} — ${p.variant}`.toLowerCase() === String(guess.product_match || '').toLowerCase()
+      )
+      if (!product) return
+
+      matched.push({
+        product_id: product.id,
+        product_name: product.name,
+        size: String(guess.size || '').toUpperCase(),
+        price: Number(product.price),
+        qty: Number(guess.qty) || 1,
+      })
+    })
+
+    if (matched.length > 0) setItems((prev) => [...prev, ...matched])
+
+    const missed = guesses.length - matched.length
+    setExtractNote(
+      missed > 0
+        ? `Filled in what it could read. ${missed} item${missed > 1 ? 's' : ''} didn't match a product — add ${missed > 1 ? 'them' : 'it'} below.`
+        : 'Filled in below — check it over before placing the order.'
+    )
   }
 
   async function handleSubmit(e) {
@@ -139,6 +214,32 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
         For a sale agreed over DM or a call — it takes stock off the shelf and
         counts everywhere a website order does, tagged with where it came
         from instead of a tracked link.
+      </div>
+
+      <div className="mof-extract">
+        <div className="pf-label mono" style={{ marginTop: 0 }}>FILL FROM SCREENSHOT OR MESSAGE</div>
+        <textarea
+          className="mof-extract-text"
+          rows={3}
+          placeholder="Paste the chat message here…"
+          value={pasteText}
+          onChange={(e) => setPasteText(e.target.value)}
+        />
+        <div className="mof-extract-row">
+          <label className="mof-upload mono">
+            <input type="file" accept="image/*" onChange={handleImagePick} hidden />
+            {pickedImage ? pickedImage.name : 'Upload screenshot'}
+          </label>
+          <button
+            type="button"
+            className="mof-extract-btn mono"
+            onClick={handleExtract}
+            disabled={extracting || (!pasteText.trim() && !pickedImage)}
+          >
+            {extracting ? 'Reading…' : 'Extract details'}
+          </button>
+        </div>
+        {extractNote && <em className="pf-hint mono">{extractNote}</em>}
       </div>
 
       {error && <div className="pf-error mono">{error}</div>}

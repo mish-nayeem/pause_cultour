@@ -1,3 +1,63 @@
+.mof-extract {
+  border: 1px dashed var(--steel-line);
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  background: rgba(22, 22, 15, 0.02);
+}
+
+.mof-extract-text {
+  width: 100%;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  resize: vertical;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.mof-extract-text:focus { outline: none; border-color: var(--cobalt); }
+
+.mof-extract-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mof-upload {
+  border: 1px solid var(--steel-line);
+  padding: 9px 14px;
+  font-size: 12px;
+  color: var(--steel);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.mof-upload:hover { border-color: var(--ink); color: var(--ink); }
+
+.mof-extract-btn {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 9px 16px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.mof-extract-btn:disabled {
+  border-color: var(--steel-line);
+  background: transparent;
+  color: var(--steel);
+  cursor: not-allowed;
+}
+
 .mof-add-row {
   display: grid;
   grid-template-columns: 2fr 1fr 80px auto;

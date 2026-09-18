@@ -114,6 +114,24 @@ export async function createManualOrder({ order, items }) {
   return { error: null }
 }
 
+// Reads a screenshot or pasted text of a DM order and asks Gemini to guess
+// the customer's details and what they're buying, matched against the real
+// catalog. Never writes anything itself — the form still goes through
+// createManualOrder above once a person has checked the guess over.
+export async function extractOrderFromMessage({ text, image, mimeType }) {
+  const { data, error } = await supabase.functions.invoke('parse-order-message', {
+    body: { text, image, mimeType },
+  })
+
+  if (error) {
+    console.error('[Supabase] extractOrderFromMessage failed:', error.message)
+    return { extracted: null, error }
+  }
+  if (data?.error) return { extracted: null, error: { message: data.error } }
+
+  return { extracted: data.extracted, error: null }
+}
+
 // place_order raises a tagged message for the cases worth explaining
 // specifically — the same convention Checkout.jsx parses on the customer
 // side, reused here for the admin's own order form.
