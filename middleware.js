@@ -1,24 +1,28 @@
 import { next } from '@vercel/edge'
 
-// A copy of src/lib/cloudinary.js's cld(), not an import of it — that file's
-// upload half reads import.meta.env.VITE_CLOUDINARY_CLOUD_NAME at the top
-// level, which Vite injects at build time but the Edge runtime never
-// provides. Importing it here threw on every single invocation, bot or not,
-// which is why every product page was coming back as a 500.
+// Builds the Cloudinary transform by hand rather than importing
+// src/lib/cloudinary.js — that file's upload half reads
+// import.meta.env.VITE_CLOUDINARY_CLOUD_NAME at the top level, which Vite
+// injects at build time but the Edge runtime never provides. Importing it
+// here threw on every single invocation, bot or not, which is why every
+// product page was coming back as a 500.
 const CLOUDINARY_MARKER = '/image/upload/'
 
-function cld(url, { w, h } = {}) {
-  if (typeof url !== 'string' || !url.includes(CLOUDINARY_MARKER)) return url
+// Facebook's own recommended share-image size (1.91:1). WhatsApp in
+// particular renders more reliably when og:image:width/height are declared
+// and actually match the file, which a plain resize can't promise — c_fill
+// crops to the exact box instead, so the numbers below are always true.
+const OG_IMAGE_WIDTH = 1200
+const OG_IMAGE_HEIGHT = 630
 
-  const parts = ['f_auto', 'q_auto', 'c_limit']
-  if (w) parts.push(`w_${w}`)
-  if (h) parts.push(`h_${h}`)
+function ogImage(url) {
+  if (typeof url !== 'string' || !url.includes(CLOUDINARY_MARKER)) return url
 
   const [base, rest] = url.split(CLOUDINARY_MARKER)
   const alreadyTransformed = /^[a-z]{1,3}_[^/]+\//.test(rest)
   if (alreadyTransformed) return url
 
-  return `${base}${CLOUDINARY_MARKER}${parts.join(',')}/${rest}`
+  return `${base}${CLOUDINARY_MARKER}f_auto,q_auto,c_fill,g_auto,w_${OG_IMAGE_WIDTH},h_${OG_IMAGE_HEIGHT}/${rest}`
 }
 
 // Facebook, WhatsApp, Messenger and friends don't run a page's JavaScript —
@@ -66,7 +70,7 @@ export default async function middleware(request) {
 
   const title = `${product.name} — PAUSE`
   const description = `${product.name} — ${product.variant}, ৳${Number(product.price).toLocaleString()}. ${product.description || ''}`.trim()
-  const image = product.images?.[0] ? cld(product.images[0], { w: 1200 }) : `${url.origin}/og-image.jpg`
+  const image = product.images?.[0] ? ogImage(product.images[0]) : `${url.origin}/og-image.jpg`
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -78,6 +82,8 @@ export default async function middleware(request) {
 <meta property="og:title" content="${escapeHtml(title)}" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:image" content="${escapeHtml(image)}" />
+<meta property="og:image:width" content="${OG_IMAGE_WIDTH}" />
+<meta property="og:image:height" content="${OG_IMAGE_HEIGHT}" />
 <meta property="og:url" content="${escapeHtml(url.toString())}" />
 <meta property="product:price:amount" content="${escapeHtml(product.price)}" />
 <meta property="product:price:currency" content="BDT" />
