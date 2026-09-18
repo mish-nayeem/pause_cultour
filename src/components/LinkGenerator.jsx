@@ -30,6 +30,7 @@ function dmTemplate(product) {
 
 Name:
 Phone number:
+Email (for your order confirmation):
 Full address (house/road/area):
 District:
 Size:

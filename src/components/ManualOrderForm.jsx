@@ -115,6 +115,7 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
       ...prev,
       name: extracted.customer_name || prev.name,
       phone: extracted.customer_phone || prev.phone,
+      email: extracted.customer_email || prev.email,
       address: extracted.customer_address || prev.address,
       district: DISTRICTS.includes(extracted.district) ? extracted.district : prev.district,
     }))

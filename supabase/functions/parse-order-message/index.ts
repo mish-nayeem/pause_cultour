@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
 {
   "customer_name": string or null,
   "customer_phone": string or null,
+  "customer_email": string or null,
   "customer_address": string or null,
   "district": string or null,
   "items": [ { "product_match": string or null, "size": string or null, "qty": number } ]
