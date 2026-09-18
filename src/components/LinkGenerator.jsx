@@ -20,10 +20,29 @@ const SOURCES = [
   { value: 'fb_story', label: 'Facebook story', medium: 'social', group: 'Facebook' },
 ]
 
+// The product name goes in before this ever reaches the customer, so they
+// never have to identify or type it themselves — just their own details and
+// the size. That also means whatever comes back names an exact catalog
+// product instead of a guess, which is what the "New order" form's
+// screenshot/message extraction matches against.
+function dmTemplate(product) {
+  return `Hi! To confirm your order for ${product.name} — ${product.variant}, please reply with:
+
+Name:
+Phone number:
+Full address (house/road/area):
+District:
+Size:
+Quantity:
+
+Thanks — PAUSE`
+}
+
 export default function LinkGenerator({ products }) {
   const [destination, setDestination] = useState('home')
   const [source, setSource] = useState('insta_reel')
   const [copied, setCopied] = useState(false)
+  const [templateCopied, setTemplateCopied] = useState(false)
 
   // A drop or a category is its own view of the shop (see Shop.jsx's ?d= and
   // ?c= filters), so each gets its own destination instead of forcing a link
@@ -75,6 +94,19 @@ export default function LinkGenerator({ products }) {
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // Clipboard access can be blocked; the link is on screen to select by hand.
+    }
+  }
+
+  const selectedProduct = products.find((p) => String(p.id) === destination) || null
+
+  async function copyTemplate() {
+    if (!selectedProduct) return
+    try {
+      await navigator.clipboard.writeText(dmTemplate(selectedProduct))
+      setTemplateCopied(true)
+      setTimeout(() => setTemplateCopied(false), 2000)
+    } catch {
+      // Clipboard access can be blocked; nothing more to fall back to here.
     }
   }
 
@@ -142,6 +174,18 @@ export default function LinkGenerator({ products }) {
           {copied ? 'COPIED' : 'COPY'}
         </button>
       </div>
+
+      {selectedProduct && (
+        <div className="linkgen-template">
+          <div className="linkgen-template-head mono">
+            <span>DM TEMPLATE — {selectedProduct.name} — {selectedProduct.variant}</span>
+            <button type="button" className="linkgen-copy mono" onClick={copyTemplate}>
+              {templateCopied ? 'COPIED' : 'COPY'}
+            </button>
+          </div>
+          <pre className="linkgen-template-text mono">{dmTemplate(selectedProduct)}</pre>
+        </div>
+      )}
     </section>
   )
 }

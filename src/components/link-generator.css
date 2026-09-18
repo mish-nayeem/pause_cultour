@@ -62,7 +62,35 @@
 
 .linkgen-copy:hover { background: var(--cobalt); border-color: var(--cobalt); }
 
+.linkgen-template {
+  border: 1px solid var(--steel-line);
+  margin-top: 14px;
+}
+
+.linkgen-template-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(22, 22, 15, 0.03);
+  border-bottom: 1px solid var(--steel-line);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+}
+
+.linkgen-template-text {
+  margin: 0;
+  padding: 14px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
 @media (max-width: 640px) {
   .linkgen-row { grid-template-columns: 1fr; }
   .linkgen-output { flex-direction: column; align-items: stretch; }
+  .linkgen-template-head { flex-direction: column; align-items: flex-start; }
 }
