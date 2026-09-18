@@ -1,5 +1,25 @@
 import { next } from '@vercel/edge'
-import { cld } from './src/lib/cloudinary.js'
+
+// A copy of src/lib/cloudinary.js's cld(), not an import of it — that file's
+// upload half reads import.meta.env.VITE_CLOUDINARY_CLOUD_NAME at the top
+// level, which Vite injects at build time but the Edge runtime never
+// provides. Importing it here threw on every single invocation, bot or not,
+// which is why every product page was coming back as a 500.
+const CLOUDINARY_MARKER = '/image/upload/'
+
+function cld(url, { w, h } = {}) {
+  if (typeof url !== 'string' || !url.includes(CLOUDINARY_MARKER)) return url
+
+  const parts = ['f_auto', 'q_auto', 'c_limit']
+  if (w) parts.push(`w_${w}`)
+  if (h) parts.push(`h_${h}`)
+
+  const [base, rest] = url.split(CLOUDINARY_MARKER)
+  const alreadyTransformed = /^[a-z]{1,3}_[^/]+\//.test(rest)
+  if (alreadyTransformed) return url
+
+  return `${base}${CLOUDINARY_MARKER}${parts.join(',')}/${rest}`
+}
 
 // Facebook, WhatsApp, Messenger and friends don't run a page's JavaScript —
 // they read the raw HTML once and use whatever <meta> tags are already there.
