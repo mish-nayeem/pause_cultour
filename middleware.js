@@ -34,7 +34,7 @@ function ogImage(url) {
 // product's own title, description and photo. A real visitor's request never
 // matches and reaches the normal React app untouched.
 const BOT_PATTERN =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Pinterest/i
+  /facebookexternalhit|Facebot|facebookcatalog|meta-externalagent|Messenger|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Pinterest/i
 
 export const config = {
   matcher: '/product/:id',
