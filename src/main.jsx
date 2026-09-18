@@ -12,7 +12,10 @@ import Admin from './pages/Admin.jsx'
 import Info from './pages/Info.jsx'
 import About from './pages/About.jsx'
 import Track from './pages/Track.jsx'
+import { captureAttribution } from './lib/attribution.js'
 import './styles/global.css'
+
+captureAttribution()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

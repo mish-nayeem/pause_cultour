@@ -12,6 +12,7 @@ import {
   monthlySeries,
   salesByDrop,
   salesByCategory,
+  salesByAttribution,
   topProducts,
   lowStockSizes,
   customerIndex,
@@ -23,6 +24,7 @@ import ProductForm from '../components/ProductForm.jsx'
 import HeroManager from '../components/HeroManager.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
+import LinkGenerator from '../components/LinkGenerator.jsx'
 import { fetchAllNavCategories } from '../lib/navCategories.js'
 import { stockMap, totalStock, LOW_STOCK_AT } from '../lib/stock.js'
 import { fetchWishlist, groupDemand } from '../lib/wishlist.js'
@@ -45,6 +47,7 @@ import {
   IconClock,
   IconImage,
   IconList,
+  IconLink,
 } from '../components/Icons.jsx'
 import './admin.css'
 
@@ -123,10 +126,10 @@ function MonthBars({ series, metric, format }) {
 
 // Horizontal bars for named buckets (drops, categories) — those labels are
 // words, not dates, so each gets its own line instead of a cramped column head.
-function RankBars({ rows, empty, accent }) {
+function RankBars({ rows, empty, accent, countKey = 'units', countLabel = 'pcs' }) {
   if (rows.length === 0) return <div className="empty mono">{empty}</div>
 
-  const max = Math.max(1, ...rows.map((r) => r.units))
+  const max = Math.max(1, ...rows.map((r) => r[countKey]))
 
   return (
     <div className={`hbars ${accent || ''}`}>
@@ -135,11 +138,11 @@ function RankBars({ rows, empty, accent }) {
           <div className="hbar-top">
             <span className="hbar-name">{r.name}</span>
             <span className="hbar-val mono">
-              {r.units} pcs<span className="dim"> · {taka(r.value)}</span>
+              {r[countKey]} {countLabel}<span className="dim"> · {taka(r.value)}</span>
             </span>
           </div>
           <div className="hbar-track">
-            <div className="hbar-fill" style={{ width: `${Math.max(2, (r.units / max) * 100)}%` }} />
+            <div className="hbar-fill" style={{ width: `${Math.max(2, (r[countKey] / max) * 100)}%` }} />
           </div>
         </div>
       ))}
@@ -310,6 +313,7 @@ export default function Admin() {
   const months = useMemo(() => monthlySeries(orders, 6), [orders])
   const byDrop = useMemo(() => salesByDrop(orders, products), [orders, products])
   const byCategory = useMemo(() => salesByCategory(orders, products), [orders, products])
+  const byAttribution = useMemo(() => salesByAttribution(orders), [orders])
   const top = useMemo(() => topProducts(orders, 5), [orders])
   const lowStock = useMemo(() => lowStockSizes(products), [products])
   const demand = useMemo(() => groupDemand(wishRows), [wishRows])
@@ -490,6 +494,9 @@ export default function Admin() {
             <span className="nav-left"><IconStar />Wishlist</span>
             {demand.length > 0 && <span className="badge">{wishRows.length}</span>}
           </button>
+          <button className={tab === 'links' ? 'on' : ''} onClick={() => setTab('links')}>
+            <span className="nav-left"><IconLink />Tracked links</span>
+          </button>
           <button className={tab === 'about' ? 'on' : ''} onClick={() => setTab('about')}>
             <span className="nav-left"><IconImage />About us</span>
           </button>
@@ -513,6 +520,7 @@ export default function Admin() {
               {tab === 'hero' && 'Homepage hero'}
               {tab === 'menu' && 'Nav menus'}
               {tab === 'wishlist' && 'Wishlist'}
+              {tab === 'links' && 'Tracked links'}
               {tab === 'about' && 'About us page'}
             </h1>
             <div className="top-sub mono">{session.user?.email}</div>
@@ -664,6 +672,23 @@ export default function Admin() {
             </div>
 
             <section className="panel">
+              <div className="panel-label mono" style={{ marginBottom: '6px' }}>
+                <IconTrend width="13" height="13" />ORDERS BY SOURCE
+              </div>
+              <div className="panel-note" style={{ marginBottom: '18px' }}>
+                Where each order's link came from — reel, story or bio, tagged with
+                ?utm_source. Orders with no tag were typed in or bookmarked directly.
+              </div>
+              <RankBars
+                rows={byAttribution}
+                empty="No orders yet."
+                accent="cobalt"
+                countKey="orders"
+                countLabel="orders"
+              />
+            </section>
+
+            <section className="panel">
               <div className="panel-head">
                 <div>
                   <div className="panel-label mono"><IconCash width="13" height="13" />DAILY MOMENTUM</div>
@@ -805,6 +830,17 @@ export default function Admin() {
                         ))}
                         {(!o.order_items || o.order_items.length === 0) && (
                           <div className="mono dim">No line items recorded.</div>
+                        )}
+
+                        {o.utm_source && (
+                          <>
+                            <div className="dlabel mono" style={{ marginTop: '16px' }}>SOURCE</div>
+                            <div className="mono dim">
+                              {o.utm_source}
+                              {o.utm_medium && ` · ${o.utm_medium}`}
+                              {o.utm_campaign && ` · ${o.utm_campaign}`}
+                            </div>
+                          </>
                         )}
 
                         {/* Everything this phone number has done with us, so the
@@ -1057,6 +1093,7 @@ export default function Admin() {
             <CategoryManager menu="drops" products={products} />
           </>
         )}
+        {!loading && tab === 'links' && <LinkGenerator products={products} />}
         {tab === 'about' && <AboutManager />}
       </main>
 

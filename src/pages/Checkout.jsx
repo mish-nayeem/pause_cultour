@@ -4,6 +4,7 @@ import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { sendOrderConfirmation } from '../lib/email.js'
+import { getAttribution } from '../lib/attribution.js'
 import { BKASH_NUMBER, DISTRICTS, quote, isTrxId } from '../lib/delivery.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './checkout.css'
@@ -137,6 +138,7 @@ export default function Checkout() {
     const orderId = 'PC' + Math.floor(100000 + Math.random() * 900000)
 
     const trxId = needsAdvance ? form.trxId.trim().toUpperCase() : null
+    const attribution = getAttribution()
 
     // One call, one transaction: the order, its lines and the stock coming off
     // each size either all happen or none do. Two people reaching for the last
@@ -159,6 +161,11 @@ export default function Checkout() {
           advance_amount: bill.advance,
           advance_method: needsAdvance ? 'bkash' : null,
           advance_trx_id: trxId,
+          utm_source: attribution.utm_source || null,
+          utm_medium: attribution.utm_medium || null,
+          utm_campaign: attribution.utm_campaign || null,
+          utm_content: attribution.utm_content || null,
+          utm_term: attribution.utm_term || null,
         },
         items: items.map((item) => ({
           product_id: item.id,

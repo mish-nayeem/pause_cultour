@@ -7,7 +7,7 @@ import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
 import { availableSizes, isAllSoldOut, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
 import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
-import usePageMeta from '../lib/usePageMeta.js'
+import usePageMeta, { useProductSchema } from '../lib/usePageMeta.js'
 import './product.css'
 
 // Slides over the page for the DETAILS and SIZE CHART panels. Escape and a
@@ -72,6 +72,7 @@ export default function Product() {
     product?.name,
     product ? `${product.name} — ${product.variant}, ৳${product.price}. ${product.description}` : undefined
   )
+  useProductSchema(product)
 
   useEffect(() => {
     let active = true

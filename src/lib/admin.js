@@ -269,6 +269,27 @@ export function salesByCategory(orders, products) {
   return groupSales(orders, products, 'category', 'Uncategorised')
 }
 
+// Orders grouped by where the customer clicked in from — the utm_source
+// captured off the link they landed on, so "reel A got 12 orders, story got
+// 3" is read straight off the data instead of guessed. Orders with no
+// tracked link (typed the URL, opened a bookmark) land in the fallback.
+export function salesByAttribution(orders, fallback = 'Direct / no link') {
+  const tally = new Map()
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      const label = o.utm_source || fallback
+      const prev = tally.get(label) || { name: label, orders: 0, value: 0 }
+
+      prev.orders += 1
+      prev.value += Number(o.total ?? o.subtotal)
+      tally.set(label, prev)
+    })
+
+  return [...tally.values()].sort((a, b) => b.orders - a.orders)
+}
+
 // Every size that has run out or is about to, across the catalog — the
 // reorder list, shortest first.
 export function lowStockSizes(products, threshold = LOW_STOCK_AT) {

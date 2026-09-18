@@ -52,6 +52,25 @@ create unique index if not exists orders_advance_trx_id_idx
   where advance_trx_id is not null;
 
 
+-- ---------------------------------------------------------------------------
+-- UTM attribution
+-- ---------------------------------------------------------------------------
+-- Which reel, story or bio link an order actually came from — captured
+-- client-side off the ?utm_* params on the link the customer clicked, carried
+-- through checkout, and written onto the order here. Nullable: an order
+-- placed by typing the URL directly, or from before this existed, just has
+-- nothing to show and reads as "Direct / no link" in the admin panel.
+
+alter table orders add column if not exists utm_source text;
+alter table orders add column if not exists utm_medium text;
+alter table orders add column if not exists utm_campaign text;
+alter table orders add column if not exists utm_content text;
+alter table orders add column if not exists utm_term text;
+
+create index if not exists orders_utm_source_idx on orders (utm_source)
+  where utm_source is not null;
+
+
 -- Row Level Security: customers get no direct access to orders at all.
 -- They cannot read, edit or delete them — including their own — and they
 -- cannot insert one either. Orders are created only through place_order()
@@ -169,7 +188,8 @@ begin
   insert into orders (
     id, customer_name, customer_phone, customer_email, customer_address,
     customer_area, customer_note, subtotal, delivery_zone, delivery_fee,
-    total, advance_amount, advance_method, advance_trx_id
+    total, advance_amount, advance_method, advance_trx_id,
+    utm_source, utm_medium, utm_campaign, utm_content, utm_term
   ) values (
     new_id,
     o ->> 'customer_name',
@@ -184,7 +204,12 @@ begin
     (o ->> 'total')::numeric,
     (o ->> 'advance_amount')::numeric,
     o ->> 'advance_method',
-    o ->> 'advance_trx_id'
+    o ->> 'advance_trx_id',
+    o ->> 'utm_source',
+    o ->> 'utm_medium',
+    o ->> 'utm_campaign',
+    o ->> 'utm_content',
+    o ->> 'utm_term'
   );
 
   -- Aliased `e`, not `item`: `item` is a variable in this function, and a
