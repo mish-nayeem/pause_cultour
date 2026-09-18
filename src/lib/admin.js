@@ -98,6 +98,43 @@ export async function updateOrderStatus(orderId, status) {
   return { error: null }
 }
 
+// A sale agreed over DM never touches the checkout page, so nothing takes the
+// pieces off the shelf or counts the revenue unless it goes through here too.
+// Routed through the same place_order the website uses — the stock lock,
+// the sold-out check and the order/order_items write are exactly the ones a
+// checkout order gets, so a DM sale can't oversell a size the website has
+// already sold out, and it shows up in every count exactly like any other.
+export async function createManualOrder({ order, items }) {
+  const { error } = await supabase.rpc('place_order', { payload: { order, items } })
+
+  if (error) {
+    console.error('[Supabase] createManualOrder failed:', error.message)
+    return { error }
+  }
+  return { error: null }
+}
+
+// place_order raises a tagged message for the cases worth explaining
+// specifically — the same convention Checkout.jsx parses on the customer
+// side, reused here for the admin's own order form.
+export function orderErrorMessage(error) {
+  const raw = error?.message || ''
+
+  const soldOut = raw.match(/SOLD_OUT:(.*):(.*)/)
+  if (soldOut) return `${soldOut[1]} in size ${soldOut[2]} is sold out.`
+
+  const gone = raw.match(/UNAVAILABLE:(.*)/)
+  if (gone) return `${gone[1]} is no longer available.`
+
+  if (error?.code === '23505' || raw.includes('orders_advance_trx_id_idx')) {
+    return 'That transaction ID has already been used on another order.'
+  }
+
+  if (raw.includes('EMPTY_CART')) return 'Add at least one item.'
+
+  return 'Could not place the order — check the details and try again.'
+}
+
 // ---------- Products ----------
 
 export async function fetchAdminProducts() {

@@ -139,7 +139,8 @@
 }
 
 .pf-field input,
-.pf-field textarea {
+.pf-field textarea,
+.pf-field select {
   border: 1px solid var(--steel-line);
   background: transparent;
   padding: 10px 12px;
@@ -151,7 +152,8 @@
 }
 
 .pf-field input:focus,
-.pf-field textarea:focus {
+.pf-field textarea:focus,
+.pf-field select:focus {
   outline: none;
   border-color: var(--cobalt);
 }

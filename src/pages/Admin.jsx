@@ -25,6 +25,7 @@ import HeroManager from '../components/HeroManager.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
+import ManualOrderForm from '../components/ManualOrderForm.jsx'
 import { fetchAllNavCategories } from '../lib/navCategories.js'
 import { stockMap, totalStock, LOW_STOCK_AT } from '../lib/stock.js'
 import { fetchWishlist, groupDemand } from '../lib/wishlist.js'
@@ -269,6 +270,7 @@ export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [monthMetric, setMonthMetric] = useState('units')
   const [editing, setEditing] = useState(null) // null | 'new' | product row
+  const [addingOrder, setAddingOrder] = useState(false)
 
   useEffect(() => {
     getSession().then((s) => {
@@ -748,7 +750,18 @@ export default function Admin() {
           </>
         )}
 
-        {!loading && tab === 'orders' && (
+        {!loading && tab === 'orders' && addingOrder && (
+          <ManualOrderForm
+            products={products}
+            onCancel={() => setAddingOrder(false)}
+            onDone={() => {
+              setAddingOrder(false)
+              reload()
+            }}
+          />
+        )}
+
+        {!loading && tab === 'orders' && !addingOrder && (
           <section className="panel">
             <div className="chips mono">
               {['all', ...STATUSES].map((s) => (
@@ -776,7 +789,12 @@ export default function Admin() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <div className="mono dim">{filteredOrders.length} of {orders.length}</div>
+              <div className="orders-head-right">
+                <div className="mono dim">{filteredOrders.length} of {orders.length}</div>
+                <button className="add-product mono" onClick={() => setAddingOrder(true)}>
+                  + New order
+                </button>
+              </div>
             </div>
 
             {filteredOrders.length === 0 && <div className="empty mono">No matching orders.</div>}
