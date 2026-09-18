@@ -22,9 +22,10 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Flash is Google's free-tier, multimodal model. Swap this one string if
-// Google renames or retires it.
-const GEMINI_MODEL = 'gemini-2.0-flash'
+// Flash is Google's free-tier, multimodal model. Google retires these
+// fairly often — if this one starts 404ing, the error names its
+// replacement directly; swap this one string for whatever it says.
+const GEMINI_MODEL = 'gemini-3.6-flash'
 
 const DISTRICTS = [
   'Dhaka', 'Bagerhat', 'Bandarban', 'Barguna', 'Barishal', 'Bhola', 'Bogura', 'Brahmanbaria',
