@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
+import { IconShare } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
 import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
@@ -65,6 +66,7 @@ export default function Product() {
   const [wishDone, setWishDone] = useState(null) // the size just signed up for
   const [sheet, setSheet] = useState(null) // null | 'details' | 'sizes'
   const [shot, setShot] = useState(0)
+  const [shared, setShared] = useState(false)
 
   const galleryRef = useRef(null)
 
@@ -150,6 +152,33 @@ export default function Product() {
 
     setWishState('idle')
     setWishDone(activeSize)
+  }
+
+  // Tagged with its own source, same as a link built in the admin panel, so
+  // a sale that started with someone hitting this button shows up under
+  // "share" on the Overview tab instead of vanishing into "Direct".
+  async function handleShare() {
+    if (!product) return
+
+    const url = `${window.location.origin}/product/${product.id}?utm_source=share&utm_medium=native`
+    const text = `${product.name} — ${product.variant}, ৳${product.price.toLocaleString()}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${product.name} — PAUSE`, text, url })
+      } catch {
+        // Cancelled from the share sheet — not an error worth reporting.
+      }
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(url)
+      setShared(true)
+      setTimeout(() => setShared(false), 2000)
+    } catch {
+      // Clipboard access can be blocked; there's nothing more to fall back to here.
+    }
   }
 
   function handleAddToCart() {
@@ -268,7 +297,13 @@ export default function Product() {
         {/* Sticks while the stills scroll past, so size and price stay reachable
             however many photos the product has. */}
         <aside className="info">
-          <div className="code mono">{product.sku} · {product.variant.toUpperCase()}</div>
+          <div className="code-row">
+            <div className="code mono">{product.sku} · {product.variant.toUpperCase()}</div>
+            <button type="button" className="share-btn mono" onClick={handleShare}>
+              <IconShare width="13" height="13" />
+              {shared ? 'LINK COPIED' : 'SHARE'}
+            </button>
+          </div>
           <h1 className="display">{product.name}</h1>
           <div className="price mono">৳ {product.price.toLocaleString()}</div>
           <p className="desc">{product.description}</p>
