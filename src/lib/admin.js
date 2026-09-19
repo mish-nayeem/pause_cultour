@@ -572,6 +572,43 @@ export async function fetchAllReviews() {
   return { reviews: data, error: null }
 }
 
+// ---------- Marketing (manual entry) ----------
+
+// Four tables, one identical shape each — fetch/add/remove, admin-only, no
+// live API behind any of them yet. A factory rather than four copies of the
+// same three functions.
+function metricApi(table) {
+  return {
+    fetch: async () => {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error(`[Supabase] fetch ${table} failed:`, error.message)
+        return { rows: [], error }
+      }
+      return { rows: data, error: null }
+    },
+    add: async (row) => {
+      const { error } = await supabase.from(table).insert(row)
+      if (error) console.error(`[Supabase] insert into ${table} failed:`, error.message)
+      return { error }
+    },
+    remove: async (id) => {
+      const { error } = await supabase.from(table).delete().eq('id', id)
+      if (error) console.error(`[Supabase] delete from ${table} failed:`, error.message)
+      return { error }
+    },
+  }
+}
+
+export const adSpendApi = metricApi('ad_spend')
+export const emailCampaignsApi = metricApi('email_campaigns')
+export const socialStatsApi = metricApi('social_stats')
+export const couponStatsApi = metricApi('coupon_stats')
+
 // ---------- Product write operations ----------
 
 // The UI keeps products in the camelCase shape the storefront uses; the table

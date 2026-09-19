@@ -25,6 +25,10 @@ import {
   repeatVsNew,
   costAndMargin,
   fetchAllReviews,
+  adSpendApi,
+  emailCampaignsApi,
+  socialStatsApi,
+  couponStatsApi,
 } from '../lib/admin.js'
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { cld } from '../lib/cloudinary.js'
@@ -63,9 +67,9 @@ const TAB_LABELS = {
   orders: 'Orders',
   products: 'Products / Inventory',
   customers: 'Customers',
+  marketing: 'Marketing',
   hero: 'Homepage hero',
   menu: 'Nav menus',
-  links: 'Tracked links',
   about: 'About us page',
 }
 
@@ -77,9 +81,9 @@ const SECTION_COLORS = {
   orders: '#FF5E7E',
   products: '#3DDC97',
   customers: '#FFC14D',
+  marketing: '#7C6CFF',
   hero: '#3DDC97',
   menu: '#FFC14D',
-  links: '#7C6CFF',
   about: '#FF5E7E',
 }
 
@@ -110,6 +114,14 @@ const CUSTOMERS_SUBS = [
   { key: 'wishlist', label: 'Wishlist' },
 ]
 
+const MARKETING_SUBS = [
+  { key: 'adspend', label: 'Ad spend / ROAS' },
+  { key: 'email', label: 'Email campaigns' },
+  { key: 'social', label: 'Social tracking' },
+  { key: 'coupons', label: 'Coupons' },
+  { key: 'links', label: 'Tracked links' },
+]
+
 // Which tabs have had their dark-theme pass — see the shared rule these
 // classes share in admin.css. A tab with no entry here just renders in the
 // original light theme until its own turn comes.
@@ -118,6 +130,7 @@ const TAB_THEME = {
   orders: 'orders-dark',
   products: 'products-dark',
   customers: 'customers-dark',
+  marketing: 'marketing-dark',
 }
 
 function taka(n) {
@@ -344,9 +357,19 @@ export default function Admin() {
   const [abandonedCarts, setAbandonedCarts] = useState([])
   const [returnForm, setReturnForm] = useState({ orderId: '', reason: '' })
   const [returnBusy, setReturnBusy] = useState(null)
+  const [adSpendDraft, setAdSpendDraft] = useState({ channel: '', spend: '', revenue: '' })
+  const [emailDraft, setEmailDraft] = useState({ campaign: '', open_rate: '', click_rate: '' })
+  const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
+  const [couponDraft, setCouponDraft] = useState({ code: '', uses: '', revenue: '' })
+  const [marketingBusy, setMarketingBusy] = useState(null)
   const [productsSub, setProductsSub] = useState('catalog')
   const [customersSub, setCustomersSub] = useState('list')
   const [allReviews, setAllReviews] = useState([])
+  const [marketingSub, setMarketingSub] = useState('adspend')
+  const [adSpend, setAdSpend] = useState([])
+  const [emailCampaigns, setEmailCampaigns] = useState([])
+  const [socialStats, setSocialStats] = useState([])
+  const [couponStats, setCouponStats] = useState([])
 
   useEffect(() => {
     getSession().then((s) => {
@@ -361,7 +384,7 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p, c, w, r, ac, rv] = await Promise.all([
+    const [o, p, c, w, r, ac, rv, as, ec, ss, cs] = await Promise.all([
       fetchOrders(),
       fetchAdminProducts(),
       fetchAllNavCategories(),
@@ -369,6 +392,10 @@ export default function Admin() {
       fetchReturns(),
       fetchAbandonedCarts(),
       fetchAllReviews(),
+      adSpendApi.fetch(),
+      emailCampaignsApi.fetch(),
+      socialStatsApi.fetch(),
+      couponStatsApi.fetch(),
     ])
 
     if (o.error) {
@@ -384,6 +411,10 @@ export default function Admin() {
     setReturns(r.returns)
     setAbandonedCarts(ac.carts)
     setAllReviews(rv.reviews)
+    setAdSpend(as.rows)
+    setEmailCampaigns(ec.rows)
+    setSocialStats(ss.rows)
+    setCouponStats(cs.rows)
     setLoading(false)
   }, [])
 
@@ -510,6 +541,33 @@ export default function Admin() {
     reload()
   }
 
+  // One handler for all four Marketing tables — same shape every time: add a
+  // row through the table's api, clear the draft, reload. `numericKeys` says
+  // which fields to parse as numbers before the insert.
+  async function handleMarketingAdd(api, draft, setDraft, numericKeys) {
+    setMarketingBusy(api)
+    const row = { ...draft }
+    numericKeys.forEach((k) => { row[k] = Number(row[k]) || 0 })
+
+    const { error } = await api.add(row)
+    setMarketingBusy(null)
+
+    if (error) {
+      setLoadError("Couldn't save that row. Try again.")
+      return
+    }
+
+    setDraft(Object.fromEntries(Object.keys(draft).map((k) => [k, ''])))
+    reload()
+  }
+
+  async function handleMarketingDelete(api, id) {
+    setMarketingBusy(id)
+    await api.remove(id)
+    setMarketingBusy(null)
+    reload()
+  }
+
   // Rendered, printed, then dropped once the dialog closes. Waiting for
   // afterprint rather than clearing straight away keeps the slip on the page
   // for the browsers that print asynchronously.
@@ -603,9 +661,9 @@ export default function Admin() {
     { key: 'orders', label: 'Orders', badge: stats.open > 0 ? stats.open : null },
     { key: 'products', label: 'Products / Inventory', badge: null },
     { key: 'customers', label: 'Customers', badge: demand.length > 0 ? wishRows.length : null },
+    { key: 'marketing', label: 'Marketing', badge: null },
     { key: 'hero', label: 'Homepage', badge: null },
     { key: 'menu', label: 'Nav menus', badge: null },
-    { key: 'links', label: 'Tracked links', badge: null },
     { key: 'about', label: 'About us', badge: null },
   ]
 
@@ -672,6 +730,8 @@ export default function Admin() {
                 ` / ${PRODUCTS_SUBS.find((s) => s.key === productsSub).label.toUpperCase()}`}
               {tab === 'customers' &&
                 ` / ${CUSTOMERS_SUBS.find((s) => s.key === customersSub).label.toUpperCase()}`}
+              {tab === 'marketing' &&
+                ` / ${MARKETING_SUBS.find((s) => s.key === marketingSub).label.toUpperCase()}`}
             </div>
             <h1 className="display">{TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
@@ -1562,7 +1622,212 @@ export default function Admin() {
             <CategoryManager menu="drops" products={products} />
           </>
         )}
-        {!loading && tab === 'links' && <LinkGenerator products={products} />}
+        {!loading && tab === 'marketing' && (
+          <>
+          <div className="subtabs mono">
+            {MARKETING_SUBS.map((s) => (
+              <button
+                key={s.key}
+                className={`subtab ${marketingSub === s.key ? 'active' : ''}`}
+                onClick={() => setMarketingSub(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {marketingSub === 'adspend' && (
+            <>
+              <form
+                className="pform"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!adSpendDraft.channel.trim()) return
+                  handleMarketingAdd(adSpendApi, adSpendDraft, setAdSpendDraft, ['spend', 'revenue'])
+                }}
+              >
+                <div className="pform-head"><h3 className="display">Log ad spend</h3></div>
+                <div className="pf-note">Cost per channel vs the revenue it brought in — both typed in by hand for now.</div>
+                <div className="pf-grid">
+                  <label className="pf-field">
+                    <span className="mono">CHANNEL</span>
+                    <input value={adSpendDraft.channel} onChange={(e) => setAdSpendDraft({ ...adSpendDraft, channel: e.target.value })} placeholder="FB Ads, IG Boost…" />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">SPEND (৳)</span>
+                    <input type="number" value={adSpendDraft.spend} onChange={(e) => setAdSpendDraft({ ...adSpendDraft, spend: e.target.value })} />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">REVENUE (৳)</span>
+                    <input type="number" value={adSpendDraft.revenue} onChange={(e) => setAdSpendDraft({ ...adSpendDraft, revenue: e.target.value })} />
+                  </label>
+                </div>
+                <button type="submit" className="mof-submit mono" disabled={marketingBusy === adSpendApi}>
+                  {marketingBusy === adSpendApi ? 'Saving…' : 'Add row'}
+                </button>
+              </form>
+
+              <section className="panel">
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>AD SPEND / ROAS</div>
+                {adSpend.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
+                {adSpend.map((r) => (
+                  <div className="mini-row" key={r.id}>
+                    <div className="mini-name">{r.channel}</div>
+                    <div className="mini-right">
+                      <div className="mono">{taka(r.spend)} → {taka(r.revenue)}</div>
+                      <div className="mono dim">{r.spend > 0 ? (r.revenue / r.spend).toFixed(1) : '0.0'}x ROAS</div>
+                    </div>
+                    <button className="mof-item-x" onClick={() => handleMarketingDelete(adSpendApi, r.id)}>×</button>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+
+          {marketingSub === 'email' && (
+            <>
+              <form
+                className="pform"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!emailDraft.campaign.trim()) return
+                  handleMarketingAdd(emailCampaignsApi, emailDraft, setEmailDraft, ['open_rate', 'click_rate'])
+                }}
+              >
+                <div className="pform-head"><h3 className="display">Log a campaign</h3></div>
+                <div className="pf-grid">
+                  <label className="pf-field">
+                    <span className="mono">CAMPAIGN</span>
+                    <input value={emailDraft.campaign} onChange={(e) => setEmailDraft({ ...emailDraft, campaign: e.target.value })} placeholder="Drop 02 launch" />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">OPEN %</span>
+                    <input type="number" value={emailDraft.open_rate} onChange={(e) => setEmailDraft({ ...emailDraft, open_rate: e.target.value })} />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">CLICK %</span>
+                    <input type="number" value={emailDraft.click_rate} onChange={(e) => setEmailDraft({ ...emailDraft, click_rate: e.target.value })} />
+                  </label>
+                </div>
+                <button type="submit" className="mof-submit mono" disabled={marketingBusy === emailCampaignsApi}>
+                  {marketingBusy === emailCampaignsApi ? 'Saving…' : 'Add row'}
+                </button>
+              </form>
+
+              <section className="panel">
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>EMAIL CAMPAIGNS</div>
+                {emailCampaigns.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
+                {emailCampaigns.map((r) => (
+                  <div className="mini-row" key={r.id}>
+                    <div className="mini-name">{r.campaign}</div>
+                    <div className="mini-right">
+                      <div className="mono">{r.open_rate}% open</div>
+                      <div className="mono dim">{r.click_rate}% click</div>
+                    </div>
+                    <button className="mof-item-x" onClick={() => handleMarketingDelete(emailCampaignsApi, r.id)}>×</button>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+
+          {marketingSub === 'social' && (
+            <>
+              <form
+                className="pform"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!socialDraft.platform.trim()) return
+                  handleMarketingAdd(socialStatsApi, socialDraft, setSocialDraft, ['followers', 'engagement_rate'])
+                }}
+              >
+                <div className="pform-head"><h3 className="display">Log a platform</h3></div>
+                <div className="pf-grid">
+                  <label className="pf-field">
+                    <span className="mono">PLATFORM</span>
+                    <input value={socialDraft.platform} onChange={(e) => setSocialDraft({ ...socialDraft, platform: e.target.value })} placeholder="Instagram, Facebook…" />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">FOLLOWERS</span>
+                    <input type="number" value={socialDraft.followers} onChange={(e) => setSocialDraft({ ...socialDraft, followers: e.target.value })} />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">ENGAGEMENT %</span>
+                    <input type="number" value={socialDraft.engagement_rate} onChange={(e) => setSocialDraft({ ...socialDraft, engagement_rate: e.target.value })} />
+                  </label>
+                </div>
+                <button type="submit" className="mof-submit mono" disabled={marketingBusy === socialStatsApi}>
+                  {marketingBusy === socialStatsApi ? 'Saving…' : 'Add row'}
+                </button>
+              </form>
+
+              <section className="panel">
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>SOCIAL TRACKING</div>
+                {socialStats.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
+                {socialStats.map((r) => (
+                  <div className="mini-row" key={r.id}>
+                    <div className="mini-name">{r.platform}</div>
+                    <div className="mini-right">
+                      <div className="mono">{Number(r.followers).toLocaleString()} followers</div>
+                      <div className="mono dim">{r.engagement_rate}% engagement</div>
+                    </div>
+                    <button className="mof-item-x" onClick={() => handleMarketingDelete(socialStatsApi, r.id)}>×</button>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+
+          {marketingSub === 'coupons' && (
+            <>
+              <form
+                className="pform"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!couponDraft.code.trim()) return
+                  handleMarketingAdd(couponStatsApi, couponDraft, setCouponDraft, ['uses', 'revenue'])
+                }}
+              >
+                <div className="pform-head"><h3 className="display">Log a coupon</h3></div>
+                <div className="pf-grid">
+                  <label className="pf-field">
+                    <span className="mono">CODE</span>
+                    <input value={couponDraft.code} onChange={(e) => setCouponDraft({ ...couponDraft, code: e.target.value.toUpperCase() })} placeholder="SUNDAY10" />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">USES</span>
+                    <input type="number" value={couponDraft.uses} onChange={(e) => setCouponDraft({ ...couponDraft, uses: e.target.value })} />
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">REVENUE (৳)</span>
+                    <input type="number" value={couponDraft.revenue} onChange={(e) => setCouponDraft({ ...couponDraft, revenue: e.target.value })} />
+                  </label>
+                </div>
+                <button type="submit" className="mof-submit mono" disabled={marketingBusy === couponStatsApi}>
+                  {marketingBusy === couponStatsApi ? 'Saving…' : 'Add row'}
+                </button>
+              </form>
+
+              <section className="panel">
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>COUPONS</div>
+                {couponStats.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
+                {couponStats.map((r) => (
+                  <div className="mini-row" key={r.id}>
+                    <div className="mini-name">{r.code}</div>
+                    <div className="mini-right">
+                      <div className="mono">{r.uses} uses</div>
+                      <div className="mono dim">{taka(r.revenue)}</div>
+                    </div>
+                    <button className="mof-item-x" onClick={() => handleMarketingDelete(couponStatsApi, r.id)}>×</button>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+
+          {marketingSub === 'links' && <LinkGenerator products={products} />}
+          </>
+        )}
         {tab === 'about' && <AboutManager />}
       </div>
       </main>
