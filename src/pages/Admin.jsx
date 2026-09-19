@@ -145,6 +145,9 @@ const TAB_THEME = {
   customers: 'customers-dark',
   marketing: 'marketing-dark',
   analytics: 'analytics-dark',
+  hero: 'hero-dark',
+  menu: 'menu-dark',
+  about: 'about-dark',
 }
 
 function taka(n) {

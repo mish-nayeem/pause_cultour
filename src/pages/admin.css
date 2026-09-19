@@ -1183,7 +1183,10 @@
 .products-dark,
 .customers-dark,
 .marketing-dark,
-.analytics-dark {
+.analytics-dark,
+.hero-dark,
+.menu-dark,
+.about-dark {
   --paper: #1E1B24;
   --paper-dim: #151318;
   --ink: #F5F3F7;
@@ -1213,6 +1216,9 @@
 .customers-dark { --cobalt: #FFC14D; }
 .marketing-dark { --cobalt: #7C6CFF; }
 .analytics-dark { --cobalt: #3FC1FF; }
+.hero-dark { --cobalt: #3DDC97; }
+.menu-dark { --cobalt: #FFC14D; }
+.about-dark { --cobalt: #FF5E7E; }
 
 /* A <select>'s own open dropdown panel ignores most of the styling above —
    Chrome/Edge on Windows render it with a plain white background regardless,
@@ -1224,7 +1230,10 @@
 .products-dark select option,
 .customers-dark select option,
 .marketing-dark select option,
-.analytics-dark select option {
+.analytics-dark select option,
+.hero-dark select option,
+.menu-dark select option,
+.about-dark select option {
   background-color: var(--paper);
   color: var(--ink);
 }
@@ -1320,5 +1329,8 @@
   .products-dark,
   .customers-dark,
   .marketing-dark,
-  .analytics-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
+  .analytics-dark,
+  .hero-dark,
+  .menu-dark,
+  .about-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
 }

@@ -34,11 +34,11 @@
 
 .cm-note {
   border-left: 2px solid var(--cobalt);
-  background: rgba(42, 77, 255, 0.06);
+  background: rgba(255, 193, 77, 0.1);
   padding: 11px 14px;
   font-size: 11.5px;
   line-height: 1.65;
-  color: #3a3a30;
+  color: var(--ink);
   margin-bottom: 18px;
   max-width: 62ch;
 }
@@ -70,7 +70,7 @@
 .cm-suggest button:disabled { cursor: default; opacity: 0.5; }
 
 .cm-warn {
-  background: rgba(42, 77, 255, 0.08);
+  background: rgba(255, 193, 77, 0.12);
   border-left: 2px solid var(--cobalt);
   padding: 11px 13px;
   font-size: 11.5px;
