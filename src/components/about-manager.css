@@ -25,7 +25,7 @@
 .am-upload {
   border: 1px dashed var(--steel-line);
   padding: 11px 20px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--steel);
   cursor: pointer;
   white-space: nowrap;
@@ -41,7 +41,7 @@
   border-left: 2px solid var(--cobalt);
   background: rgba(255, 94, 126, 0.08);
   padding: 11px 14px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   line-height: 1.65;
   color: var(--ink);
   margin-bottom: 24px;
@@ -54,7 +54,7 @@
   background: rgba(255, 94, 126, 0.1);
   border-left: 2px solid var(--cobalt);
   padding: 11px 13px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   margin-bottom: 16px;
 }
 
@@ -109,7 +109,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--steel);
 }
 
@@ -119,7 +119,7 @@
   color: var(--ink);
   cursor: pointer;
   padding: 4px 9px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .am-order button:disabled { color: var(--steel-line); cursor: default; }
@@ -130,7 +130,7 @@
   background: transparent;
   color: var(--ink);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   padding: 7px 10px;
   cursor: pointer;
 }
@@ -149,7 +149,7 @@
   background: none;
   border: 1px solid transparent;
   color: var(--steel);
-  font-size: 11px;
+  font-size: 12px;
   padding: 6px 0;
   cursor: pointer;
 }
@@ -159,7 +159,7 @@
 .am-confirm {
   display: flex;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .am-danger {
@@ -168,7 +168,7 @@
   border: none;
   padding: 6px 9px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11.5px;
   cursor: pointer;
 }
 
@@ -177,7 +177,7 @@
   border: none;
   color: var(--steel);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11.5px;
   cursor: pointer;
 }
 

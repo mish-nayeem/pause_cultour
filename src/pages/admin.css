@@ -41,7 +41,7 @@
 .side-brand .display { font-size: 22px; }
 
 .side-sub {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   color: var(--steel);
 }
@@ -90,7 +90,7 @@
 .side-nav .badge {
   background: var(--signal);
   color: var(--paper);
-  font-size: 10px;
+  font-size: 11px;
   padding: 2px 6px;
   border-radius: 2px;
 }
@@ -101,7 +101,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 
 .side-foot a {
@@ -119,7 +119,7 @@
   border: none;
   color: var(--steel);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11.5px;
+  font-size: 12.5px;
   text-align: left;
   padding: 0;
   cursor: pointer;
@@ -144,7 +144,7 @@
 .top h1 { font-size: 27px; }
 
 .admin-crumb {
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.08em;
   color: var(--steel);
   margin-bottom: 6px;
@@ -156,13 +156,13 @@
 .admin-overlay { display: none; }
 
 .top-sub {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--steel);
   margin-top: 5px;
 }
 
 .top-date {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--steel);
 }
 
@@ -170,13 +170,13 @@
   background: rgba(255, 68, 38, 0.1);
   border-left: 2px solid var(--signal);
   padding: 12px 14px;
-  font-size: 12px;
+  font-size: 13px;
   margin-bottom: 22px;
   line-height: 1.5;
 }
 
 .loading, .empty {
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--steel);
   padding: 14px 0;
 }
@@ -218,7 +218,7 @@
 .stat-ico.bad { background: rgba(255, 68, 38, 0.1); color: var(--signal); }
 
 .stat-label {
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.07em;
   color: var(--steel);
   margin-bottom: 0;
@@ -227,7 +227,7 @@
 .stat-value { font-size: 32px; line-height: 1; }
 
 .stat-note {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--steel);
   margin-top: 8px;
 }
@@ -241,7 +241,7 @@
 }
 
 .panel-label {
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.07em;
   color: var(--steel);
   display: flex;
@@ -252,7 +252,7 @@
 .panel-label svg { flex-shrink: 0; }
 
 .panel-tag {
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.06em;
   color: var(--steel);
   border: 1px solid var(--steel-line);
@@ -270,7 +270,7 @@
 }
 
 .panel-note {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--steel);
   line-height: 1.6;
 }
@@ -292,7 +292,7 @@
 .spark-axis {
   display: flex;
   justify-content: space-between;
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--steel);
   margin-top: 6px;
 }
@@ -318,7 +318,7 @@
 .mini-row:last-child { border-bottom: none; }
 
 .mini-id {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--steel);
   margin-bottom: 3px;
 }
@@ -327,7 +327,7 @@
 
 .mini-right {
   text-align: right;
-  font-size: 12.5px;
+  font-size: 13.5px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -339,7 +339,7 @@
 /* ---------- Status pills ---------- */
 
 .pill {
-  font-size: 10px;
+  font-size: 11px;
   padding: 3px 7px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -384,14 +384,14 @@
   border: none;
   background: transparent;
   padding: 10px 0;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--ink);
   border-radius: 0;
 }
 
 .search:focus { outline: none; }
 
-.orders-head .dim { font-size: 11.5px; }
+.orders-head .dim { font-size: 12.5px; }
 
 .orders-head-right {
   display: flex;
@@ -432,7 +432,7 @@
   white-space: nowrap;
 }
 
-.tc.id { font-size: 11.5px; color: var(--steel); }
+.tc.id { font-size: 12.5px; color: var(--steel); }
 .tc.name { font-weight: 500; }
 .tc.price { text-align: right; }
 
@@ -441,7 +441,7 @@
   border: 1px solid var(--steel-line);
   background: transparent;
   padding: 6px 8px;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ink);
@@ -466,7 +466,7 @@
 }
 
 .dlabel {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.07em;
   color: var(--steel);
   margin-bottom: 9px;
@@ -506,7 +506,7 @@
 }
 
 .out-tag {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--signal);
   border: 1px solid var(--signal);
   padding: 2px 6px;
@@ -605,7 +605,7 @@
   color: var(--paper);
   border: none;
   padding: 10px 18px;
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.04em;
   cursor: pointer;
   white-space: nowrap;
@@ -640,7 +640,7 @@
 }
 
 .stat-cta {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   color: var(--steel);
   margin-top: 10px;
@@ -658,7 +658,7 @@
   background: none;
   border: none;
   padding: 7px 12px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.06em;
   color: var(--steel);
   cursor: pointer;
@@ -675,7 +675,7 @@
 /* ---------- Monthly bar chart ---------- */
 
 .bars-max {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--steel);
   text-align: right;
   padding-bottom: 5px;
@@ -720,7 +720,7 @@
 .bar-col:hover .bar-fill { background: var(--ink); }
 
 .bar-x {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--steel);
   text-align: center;
   padding-top: 9px;
@@ -734,7 +734,7 @@
   transform: translateX(-50%);
   background: var(--ink);
   color: var(--paper);
-  font-size: 10.5px;
+  font-size: 11.5px;
   padding: 6px 9px;
   white-space: nowrap;
   opacity: 0;
@@ -764,7 +764,7 @@
 }
 
 .hbar-name { font-size: 13.5px; }
-.hbar-val { font-size: 11.5px; white-space: nowrap; }
+.hbar-val { font-size: 12.5px; white-space: nowrap; }
 
 .hbar-track {
   height: 8px;
@@ -797,7 +797,7 @@
   border: 1px solid var(--steel-line);
   color: var(--steel);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.05em;
   padding: 7px 11px;
   cursor: pointer;
@@ -840,7 +840,7 @@
    differently from a plain COD one at a glance. */
 .adv-tag {
   margin-left: 7px;
-  font-size: 9.5px;
+  font-size: 10.5px;
   letter-spacing: 0.05em;
   border: 1px solid var(--cobalt);
   color: var(--cobalt);
@@ -848,7 +848,7 @@
 }
 
 .ditem .trx {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--steel);
 }
 
@@ -881,14 +881,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   white-space: nowrap;
 }
 
 .low-size {
   border: 1px solid var(--steel-line);
   padding: 3px 8px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.04em;
 }
 
@@ -909,7 +909,7 @@
 .chip-stock {
   border: 1px solid var(--steel-line);
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.03em;
   color: var(--ink);
 }
@@ -931,7 +931,7 @@
 /* The addresses are here to be mailed by hand if the automatic send ever
    misses — recessive, not the point of the row. */
 .wish-emails {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--steel);
   line-height: 1.7;
   word-break: break-all;
@@ -943,7 +943,7 @@
   border: none;
   padding: 6px 11px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.05em;
   cursor: pointer;
 }
@@ -957,7 +957,7 @@
    refused parcels more than once — a warning on every row would be noise. */
 .risk-tag {
   margin-left: 8px;
-  font-size: 9.5px;
+  font-size: 10.5px;
   letter-spacing: 0.05em;
   border: 1px solid var(--signal);
   color: var(--signal);
@@ -969,7 +969,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--ink);
   padding: 4px 0;
 }
@@ -988,7 +988,7 @@
 .hist.risk { color: var(--signal); }
 
 .hist-note {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--steel);
   margin-top: 4px;
   line-height: 1.5;
@@ -1003,13 +1003,13 @@
   padding: 6px 0;
 }
 
-.courier-row .dim { font-size: 11.5px; }
+.courier-row .dim { font-size: 12.5px; }
 
 .courier-select {
   border: 1px solid var(--steel-line);
   background: transparent;
   padding: 7px 9px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--ink);
   border-radius: 0;
   cursor: pointer;
@@ -1022,7 +1022,7 @@
   color: var(--paper);
   border: none;
   padding: 8px 12px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.05em;
   cursor: pointer;
   white-space: nowrap;
@@ -1148,7 +1148,7 @@
 
 .subtab {
   font-family: 'Inter', sans-serif;
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 600;
   padding: 8px 16px;
   border-radius: 10px;
@@ -1164,173 +1164,4 @@
   background: var(--cobalt);
   color: #151318;
   border-color: transparent;
-}
-
-/* ---------- Dark-themed sections ---------- */
-
-/* Every panel/stat/chart/table rule in this file reads its colors off
-   --paper, --paper-dim, --ink, --steel, --steel-line and --cobalt — so
-   redefining those tokens for a tab's own subtree reskins all of it dark
-   without duplicating a single rule. One class per tab (each just its own
-   accent — see below) rather than doing this on .admin itself, since the
-   rest of the panel is being redone the same way one section at a time, not
-   all at once. Wraps the header too, and cancels all of .main's padding on
-   every side (not just top/sides) so the dark fill reaches every edge of the
-   content column instead of leaving the page's own cream showing through
-   below it. */
-.overview-dark,
-.orders-dark,
-.products-dark,
-.customers-dark,
-.marketing-dark,
-.analytics-dark,
-.hero-dark,
-.menu-dark,
-.about-dark {
-  --paper: #1E1B24;
-  --paper-dim: #151318;
-  --ink: #F5F3F7;
-  --steel: #9B96A8;
-  --steel-line: rgba(255, 255, 255, 0.08);
-
-  /* body sets color: var(--ink) once, and that computed (light-theme) value
-     is what descendants inherit — plain `color` isn't re-resolved per
-     element the way a custom property is, so anything here that never
-     re-declares `color` itself would otherwise render the old dark text on
-     this new dark background. Re-declaring it here re-resolves --ink fresh
-     and every unstyled descendant inherits the right value from here down. */
-  color: var(--ink);
-  background: var(--paper-dim);
-  /* .main stretches to the sidebar's 100vh as a grid item regardless of how
-     tall its own content is, so falling short of that height would leave
-     .admin's own (light) background showing through below this div — match
-     the sidebar's height so the dark fill always reaches the bottom. */
-  min-height: 100vh;
-  margin: -28px -32px -60px;
-  padding: 28px 32px 60px;
-}
-
-.overview-dark { --cobalt: #3FC1FF; }
-.orders-dark { --cobalt: #FF5E7E; }
-.products-dark { --cobalt: #3DDC97; }
-.customers-dark { --cobalt: #FFC14D; }
-.marketing-dark { --cobalt: #7C6CFF; }
-.analytics-dark { --cobalt: #3FC1FF; }
-.hero-dark { --cobalt: #3DDC97; }
-.menu-dark { --cobalt: #FFC14D; }
-.about-dark { --cobalt: #FF5E7E; }
-
-/* A <select>'s own open dropdown panel ignores most of the styling above —
-   Chrome/Edge on Windows render it with a plain white background regardless,
-   so the light text this scope gives every element (inherited from `color`
-   on the wrapper) turned invisible against it. Styling the options
-   themselves is the one thing that panel does respect. */
-.overview-dark select option,
-.orders-dark select option,
-.products-dark select option,
-.customers-dark select option,
-.marketing-dark select option,
-.analytics-dark select option,
-.hero-dark select option,
-.menu-dark select option,
-.about-dark select option {
-  background-color: var(--paper);
-  color: var(--ink);
-}
-
-/* Hardcoded rgba(22,22,15,…)/rgba(237,234,225,…) literals elsewhere in this
-   file assume a light surface — they don't move when the tokens above do, so
-   the handful actually used inside these tabs get their own dark-appropriate
-   values here. */
-.overview-dark .stat-ico,
-.orders-dark .stat-ico,
-.products-dark .stat-ico,
-.customers-dark .stat-ico,
-.marketing-dark .stat-ico,
-.analytics-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
-.overview-dark .stat-ico.warn,
-.analytics-dark .stat-ico.warn { background: rgba(63, 193, 255, 0.14); }
-.orders-dark .stat-ico.warn { background: rgba(255, 94, 126, 0.14); }
-.products-dark .stat-ico.warn { background: rgba(61, 220, 151, 0.14); }
-.customers-dark .stat-ico.warn { background: rgba(255, 193, 77, 0.14); }
-.marketing-dark .stat-ico.warn { background: rgba(124, 108, 255, 0.14); }
-.overview-dark .stat-ico.good,
-.orders-dark .stat-ico.good,
-.products-dark .stat-ico.good,
-.customers-dark .stat-ico.good,
-.marketing-dark .stat-ico.good,
-.analytics-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
-.overview-dark .hbar-track,
-.orders-dark .hbar-track,
-.products-dark .hbar-track,
-.customers-dark .hbar-track,
-.marketing-dark .hbar-track,
-.analytics-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
-.overview-dark .bar-tip .dim,
-.orders-dark .bar-tip .dim,
-.products-dark .bar-tip .dim,
-.customers-dark .bar-tip .dim,
-.marketing-dark .bar-tip .dim,
-.analytics-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
-.overview-dark .trow:hover,
-.orders-dark .trow:hover,
-.products-dark .trow:hover,
-.customers-dark .trow:hover,
-.marketing-dark .trow:hover,
-.analytics-dark .trow:hover { background: rgba(255, 255, 255, 0.03); }
-.overview-dark .tdetail,
-.orders-dark .tdetail,
-.products-dark .tdetail,
-.customers-dark .tdetail,
-.marketing-dark .tdetail,
-.analytics-dark .tdetail { background: rgba(255, 255, 255, 0.02); }
-
-/* Status pills as soft glow badges instead of an outline — reads more like a
-   dark UI's own idiom than the storefront-style bordered pill would. */
-.overview-dark .pill,
-.orders-dark .pill,
-.products-dark .pill,
-.customers-dark .pill,
-.marketing-dark .pill,
-.analytics-dark .pill { border: none; }
-.overview-dark .pill.pending,
-.orders-dark .pill.pending,
-.products-dark .pill.pending,
-.customers-dark .pill.pending,
-.marketing-dark .pill.pending,
-.analytics-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
-.overview-dark .pill.shipped,
-.orders-dark .pill.shipped,
-.products-dark .pill.shipped,
-.customers-dark .pill.shipped,
-.marketing-dark .pill.shipped,
-.analytics-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
-.overview-dark .pill.delivered,
-.orders-dark .pill.delivered,
-.products-dark .pill.delivered,
-.customers-dark .pill.delivered,
-.marketing-dark .pill.delivered,
-.analytics-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
-.overview-dark .pill.cancelled,
-.orders-dark .pill.cancelled,
-.products-dark .pill.cancelled,
-.customers-dark .pill.cancelled,
-.marketing-dark .pill.cancelled,
-.analytics-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
-
-/* Marketing's own delete-row buttons sit inline with the row rather than
-   stacked under a mini-right block, since these rows are only ever a name
-   plus two short numbers — closer to the low-row layout than mini-row's. */
-.marketing-dark .mini-row { gap: 12px; }
-
-@media (max-width: 760px) {
-  .overview-dark,
-  .orders-dark,
-  .products-dark,
-  .customers-dark,
-  .marketing-dark,
-  .analytics-dark,
-  .hero-dark,
-  .menu-dark,
-  .about-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
 }

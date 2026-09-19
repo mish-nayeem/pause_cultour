@@ -1,0 +1,433 @@
+/* Admin dashboard themes.
+   Loaded after admin.css. Everything in admin.css reads its colours off the
+   tokens --paper (cards), --paper-dim (page), --ink (text), --steel (muted
+   text), --steel-line (hairlines) and --cobalt (accent), so a theme is just a
+   set of values for those, plus the sidebar's own colours. Three themes,
+   picked from the header and remembered in the browser:
+
+     green — green sidebar, white cards
+     blue  — blue sidebar, white cards
+     dark  — black / grey (the panel's original dark look)                    */
+
+/* ---------- Theme tokens ---------- */
+
+.admin {
+  --admin-font: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --r-card: 18px;
+  --r-ctl: 10px;
+  --gap: 14px;
+
+  font-family: var(--admin-font);
+  color: var(--ink);
+  background: var(--paper-dim);
+  grid-template-columns: 236px 1fr;
+}
+
+.admin[data-theme='green'] {
+  --paper: #ffffff;
+  --paper-dim: #eef5f0;
+  --ink: #15271d;
+  --steel: #566a5e;
+  --steel-line: rgba(21, 39, 29, 0.1);
+  --cobalt: #0b8a43;
+  --side-bg: linear-gradient(180deg, #14a656 0%, #0a7d3e 100%);
+  --side-text: #ffffff;
+  --side-muted: rgba(255, 255, 255, 0.8);
+  --side-hover: rgba(255, 255, 255, 0.14);
+  --card-shadow: 0 1px 2px rgba(21, 60, 35, 0.05), 0 10px 28px rgba(21, 60, 35, 0.06);
+  --glass-bg: linear-gradient(140deg, rgba(20, 166, 86, 0.16) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(20, 166, 86, 0.07) 100%);
+  --glass-border: rgba(20, 166, 86, 0.22);
+  --pill-pending: #a8690b;
+  --pill-shipped: #1a63b0;
+  --pill-delivered: #0b7a3b;
+  --pill-cancelled: #c1304a;
+}
+
+.admin[data-theme='blue'] {
+  --paper: #ffffff;
+  --paper-dim: #edf2f9;
+  --ink: #14233a;
+  --steel: #566880;
+  --steel-line: rgba(20, 35, 58, 0.1);
+  --cobalt: #1d5fb4;
+  --side-bg: linear-gradient(180deg, #1c63b8 0%, #0f3f80 100%);
+  --side-text: #ffffff;
+  --side-muted: rgba(255, 255, 255, 0.8);
+  --side-hover: rgba(255, 255, 255, 0.14);
+  --card-shadow: 0 1px 2px rgba(20, 45, 90, 0.05), 0 10px 28px rgba(20, 45, 90, 0.07);
+  --glass-bg: linear-gradient(140deg, rgba(28, 99, 184, 0.15) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(28, 99, 184, 0.07) 100%);
+  --glass-border: rgba(28, 99, 184, 0.22);
+  --pill-pending: #a8690b;
+  --pill-shipped: #1a63b0;
+  --pill-delivered: #0b7a3b;
+  --pill-cancelled: #c1304a;
+}
+
+.admin[data-theme='dark'] {
+  --paper: #25282d;
+  --paper-dim: #17191c;
+  --ink: #f1f2f4;
+  --steel: #a3a8b1;
+  --steel-line: rgba(255, 255, 255, 0.09);
+  --cobalt: #3fc1ff;
+  --side-bg: #212429;
+  --side-text: #f1f2f4;
+  --side-muted: rgba(241, 242, 244, 0.64);
+  --side-hover: rgba(255, 255, 255, 0.07);
+  --card-shadow: none;
+  --glass-bg: var(--paper);
+  --glass-border: transparent;
+  --pill-pending: #ffc14d;
+  --pill-shipped: #3fc1ff;
+  --pill-delivered: #3ddc97;
+  --pill-cancelled: #ff5e7e;
+}
+
+/* The dark theme keeps one accent per section, as before. */
+.admin[data-theme='dark'][data-tab='overview'],
+.admin[data-theme='dark'][data-tab='analytics'] { --cobalt: #3fc1ff; }
+.admin[data-theme='dark'][data-tab='orders'],
+.admin[data-theme='dark'][data-tab='about'] { --cobalt: #ff5e7e; }
+.admin[data-theme='dark'][data-tab='products'],
+.admin[data-theme='dark'][data-tab='hero'] { --cobalt: #3ddc97; }
+.admin[data-theme='dark'][data-tab='customers'],
+.admin[data-theme='dark'][data-tab='menu'] { --cobalt: #ffc14d; }
+.admin[data-theme='dark'][data-tab='marketing'] { --cobalt: #7c6cff; }
+
+/* ---------- Type ---------- */
+
+/* One friendly sans everywhere in the panel. The monospace and condensed
+   display faces the storefront uses are hard to read in dense tables. */
+.admin :is(h1, h2, h3, h4, p, span, div, a, label, li, td, th, button, input, select, textarea, em) {
+  font-family: var(--admin-font);
+}
+
+.admin .mono {
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin .display {
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: -0.015em;
+}
+
+.admin .main { font-size: 14px; line-height: 1.5; }
+.admin .top h1 { font-size: 30px; }
+.admin .admin-crumb { letter-spacing: 0.06em; font-weight: 600; }
+.admin .stat-value { font-weight: 800; letter-spacing: -0.02em; }
+.admin .big { font-weight: 800; letter-spacing: -0.02em; }
+
+/* ---------- Sidebar ---------- */
+
+.admin .side {
+  background: var(--side-bg);
+  color: var(--side-text);
+  border-radius: 0 30px 30px 0;
+  padding: 28px 0 24px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.12);
+}
+
+.admin .side-brand { padding: 0 26px 26px; }
+.admin .side-brand .display { font-size: 26px; color: var(--side-text); }
+.admin .side-sub { color: var(--side-muted); letter-spacing: 0.16em; font-weight: 600; }
+
+.admin .side-nav { gap: 2px; }
+
+/* The picked item is cut out of the sidebar in the page's own colour and runs
+   into the content, with a concave curve above and below where it joins. */
+.admin .side-nav button {
+  position: relative;
+  margin-left: 16px;
+  padding: 13px 18px 13px 14px;
+  border: none;
+  border-radius: 26px 0 0 26px;
+  color: var(--side-muted);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  transition: background 0.2s ease, color 0.2s ease, padding 0.2s ease;
+}
+
+.admin .side-nav button:hover {
+  background: var(--side-hover);
+  color: var(--side-text);
+  padding-left: 18px;
+}
+
+.admin .side-nav button.on,
+.admin .side-nav button.on:hover {
+  background: var(--paper-dim);
+  color: var(--ink);
+  padding-left: 14px;
+  border-left: none;
+}
+
+.admin .side-nav button.on::before,
+.admin .side-nav button.on::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+}
+
+.admin .side-nav button.on::before {
+  top: -26px;
+  background: radial-gradient(circle at 0 0, transparent 26px, var(--paper-dim) 26.5px);
+}
+
+.admin .side-nav button.on::after {
+  bottom: -26px;
+  background: radial-gradient(circle at 0 100%, transparent 26px, var(--paper-dim) 26.5px);
+}
+
+/* Light themes: quiet white dots that turn to the accent on the picked item.
+   Dark keeps each section's own colour. */
+.admin:not([data-theme='dark']) .nav-dot { background: rgba(255, 255, 255, 0.55); }
+.admin:not([data-theme='dark']) .side-nav button.on .nav-dot { background: var(--cobalt); }
+
+.admin .side-nav .badge {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin .side-foot { padding: 0 26px; font-size: 13px; }
+.admin .side-foot a,
+.admin .signout { color: var(--side-muted); font-weight: 600; }
+.admin .side-foot a:hover,
+.admin .signout:hover { color: var(--side-text); }
+
+/* ---------- Header + theme picker ---------- */
+
+.admin .top { margin-bottom: 24px; align-items: center; }
+
+.top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.theme-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--paper);
+  border-radius: 999px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--steel-line);
+}
+
+.theme-picker-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--steel);
+  margin-right: 2px;
+}
+
+.theme-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-swatch:hover { transform: scale(1.12); }
+.theme-swatch.on { border-color: var(--ink); }
+
+.theme-swatch[data-swatch='green'] { background: linear-gradient(135deg, #12a252 50%, #ffffff 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.theme-swatch[data-swatch='blue'] { background: linear-gradient(135deg, #1c63b8 50%, #ffffff 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.theme-swatch[data-swatch='dark'] { background: linear-gradient(135deg, #212429 50%, #6b7079 50%); }
+
+/* ---------- Cards: rounded, with room between them ---------- */
+
+.admin .main { padding: 30px 34px 60px; }
+
+.admin .stat,
+.admin .panel,
+.admin .table {
+  background: var(--paper);
+  border-radius: var(--r-card);
+  box-shadow: var(--card-shadow);
+}
+
+.admin .stat-row { gap: var(--gap); margin-bottom: var(--gap); }
+.admin .two-col { gap: var(--gap); }
+.admin .panel { margin-bottom: var(--gap); }
+.admin .two-col .panel { margin-bottom: 0; }
+
+/* Panels that hold a chart get a frosted-glass wash of the theme's colour:
+   a light tint, blurred, with a hairline edge in the same hue. */
+.admin .panel:has(.bars-plot, .spark, .hbars) {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+}
+
+/* A list inside a panel doesn't get a second card around it. */
+.admin .panel .table { background: transparent; box-shadow: none; padding: 0; border-radius: 0; }
+
+/* The order and product lists become one card; the rows keep their hairlines. */
+.admin .table { border-top: none; padding: 6px 22px; }
+.admin .trow { padding-left: 0; padding-right: 0; }
+.admin .trow:last-child,
+.admin .tdetail:last-child { border-bottom: none; }
+.admin .trow:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.admin .tdetail { background: color-mix(in srgb, var(--ink) 3%, transparent); border-radius: 12px; padding-left: 16px; padding-right: 16px; }
+
+.admin .stat-click { border-radius: var(--r-card); }
+.admin .stat-click:hover { transform: translateY(-2px); }
+
+.admin .stat-ico {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.admin .stat-ico.warn { background: color-mix(in srgb, var(--cobalt) 14%, transparent); color: var(--cobalt); }
+.admin .stat-ico.good { background: var(--cobalt); color: #fff; }
+.admin .stat-ico.bad { background: rgba(255, 68, 38, 0.12); color: var(--signal); }
+
+.admin .hbar-track { background: color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 999px; }
+.admin .hbar-fill { border-radius: 999px; }
+.admin .bar-fill { border-radius: 6px 6px 0 0; }
+.admin .pthumb { border-radius: 10px; }
+.admin .panel-tag { border-radius: 999px; }
+.admin .search-wrap { border-radius: 12px; background: var(--paper); }
+.admin .err-banner { border-radius: 12px; }
+
+/* Status badges: soft tinted pills. */
+.admin .pill,
+.admin .out-tag,
+.admin .risk-tag,
+.admin .adv-tag {
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+.admin .pill.pending { background: color-mix(in srgb, var(--pill-pending) 16%, transparent); color: var(--pill-pending); }
+.admin .pill.shipped { background: color-mix(in srgb, var(--pill-shipped) 16%, transparent); color: var(--pill-shipped); }
+.admin .pill.delivered { background: color-mix(in srgb, var(--pill-delivered) 16%, transparent); color: var(--pill-delivered); }
+.admin .pill.cancelled { background: color-mix(in srgb, var(--pill-cancelled) 16%, transparent); color: var(--pill-cancelled); }
+
+.admin .status-select { border-radius: 999px; padding-left: 12px; font-weight: 700; }
+.admin .status-select.delivered { background: color-mix(in srgb, var(--pill-delivered) 16%, transparent); color: var(--pill-delivered); border-color: transparent; }
+
+/* ---------- Controls ---------- */
+
+.admin :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select,
+  textarea
+) {
+  border-radius: var(--r-ctl);
+}
+
+.admin .main button { border-radius: var(--r-ctl); }
+.admin .main .toggle { border-radius: var(--r-ctl); overflow: hidden; }
+.admin .main .toggle button { border-radius: 0; }
+.admin .main .subtab { border-radius: 999px; }
+.admin .main .chip,
+.admin .main .chip-stock { border-radius: 999px; }
+.admin .main .pf-chart-x { border-radius: 50%; }
+
+.admin .subtab { background: var(--paper); font-weight: 600; box-shadow: var(--card-shadow); }
+.admin .subtab.active { background: var(--cobalt); color: #fff; border-color: transparent; }
+.admin[data-theme='dark'] .subtab.active { color: #15171a; }
+
+.admin[data-theme='dark'] select option { background-color: var(--paper); color: var(--ink); }
+.admin[data-theme='dark'] .bar-tip .dim { color: rgba(21, 23, 26, 0.6); }
+
+/* Boxes inside the forms and managers (upload areas, cards, bills). */
+.admin :is(
+  .pf-upload, .pf-box, .pf-stock-cell, .pf-cat, .pf-newcat,
+  .hm-upload, .am-upload, .mof-extract, .mof-upload, .mof-bill,
+  .linkgen-output, .linkgen-template, .cm-suggest-label
+) {
+  border-radius: var(--r-ctl);
+}
+
+.admin .pf-chart-grid, .admin .pf-chart { border-radius: var(--r-ctl); }
+
+/* Buttons that filled with --ink on a light page read fine as they are; on the
+   coloured themes the hover picks up the accent. */
+.admin .add-product:hover,
+.admin .courier-btn:hover,
+.admin .wish-send:hover { background: var(--cobalt); color: #fff; }
+
+/* ---------- Phone ---------- */
+
+@media (max-width: 760px) {
+  .admin { grid-template-columns: 1fr; }
+
+  .admin .admin-topbar { background: var(--side-bg); color: var(--side-text); }
+  .admin .side { border-radius: 0 26px 26px 0; }
+  .admin .main { padding: 20px 16px 50px; }
+  .admin .top { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .top-right { align-items: flex-start; }
+  .admin .top h1 { font-size: 26px; }
+  .admin .table { padding: 4px 14px; }
+}
+
+/* ---------- Motion + scrolling ---------- */
+
+/* A tab's content eases in when you switch to it. */
+.tab-wrap { animation: tab-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards and controls glide between states instead of snapping. */
+.admin .stat,
+.admin .panel,
+.admin .stat-click,
+.admin .subtab,
+.admin .main button,
+.admin .trow,
+.admin :is(input, select, textarea) {
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease;
+}
+
+.admin .main button:active { transform: scale(0.98); }
+
+/* A slim scrollbar that stays out of the way instead of the fat grey default. */
+html:has(.admin) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 130, 125, 0.55) transparent;
+}
+
+html:has(.admin)::-webkit-scrollbar { width: 10px; }
+html:has(.admin)::-webkit-scrollbar-track { background: transparent; }
+html:has(.admin)::-webkit-scrollbar-thumb {
+  background: rgba(120, 130, 125, 0.5);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125, 0.75); background-clip: content-box; }
+
+/* Lists that scroll sideways or on their own (wide tables, chart grids) keep
+   their scroll to themselves rather than dragging the page with them. */
+.admin :is(.pf-chart-grid, .table, .sheet-table-wrap) { overscroll-behavior: contain; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-wrap { animation: none; }
+  .admin * { transition: none !important; }
+}

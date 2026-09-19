@@ -36,6 +36,7 @@ import {
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { cld } from '../lib/cloudinary.js'
 import ProductForm from '../components/ProductForm.jsx'
+import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
@@ -62,6 +63,7 @@ import {
   IconImage,
 } from '../components/Icons.jsx'
 import './admin.css'
+import './admin-theme.css'
 
 const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
 
@@ -77,9 +79,9 @@ const TAB_LABELS = {
   about: 'About us page',
 }
 
-// One accent per section, so the sidebar reads as a set of distinct areas
-// rather than one long list — carried through to whatever that section's own
-// dark-mode panels recolor themselves with (see .overview-dark in admin.css).
+// One accent per section in the dark theme, so the sidebar reads as a set of
+// distinct areas rather than one long list; the lighter themes use a single
+// accent instead (see admin-theme.css).
 const SECTION_COLORS = {
   overview: '#3FC1FF',
   orders: '#FF5E7E',
@@ -134,19 +136,23 @@ const ANALYTICS_SUBS = [
   { key: 'category', label: 'Sold by category' },
 ]
 
-// Which tabs have had their dark-theme pass — see the shared rule these
-// classes share in admin.css. A tab with no entry here just renders in the
-// original light theme until its own turn comes.
-const TAB_THEME = {
-  overview: 'overview-dark',
-  orders: 'orders-dark',
-  products: 'products-dark',
-  customers: 'customers-dark',
-  marketing: 'marketing-dark',
-  analytics: 'analytics-dark',
-  hero: 'hero-dark',
-  menu: 'menu-dark',
-  about: 'about-dark',
+// The three looks the panel can wear — see admin-theme.css. The pick is kept in
+// this browser, so it survives a reload without touching the database.
+const THEMES = [
+  { key: 'green', label: 'Green & white' },
+  { key: 'blue', label: 'Blue & white' },
+  { key: 'dark', label: 'Black & grey' },
+]
+
+const THEME_KEY = 'pause_admin_theme'
+
+function savedTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY)
+    return THEMES.some((t) => t.key === saved) ? saved : 'dark'
+  } catch {
+    return 'dark'
+  }
 }
 
 function taka(n) {
@@ -346,6 +352,7 @@ function PackingSlip({ order }) {
 
 export default function Admin() {
   const [session, setSession] = useState(null)
+  const [theme, setTheme] = useState(savedTheme)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
   const [tab, setTab] = useState('overview')
@@ -692,7 +699,7 @@ export default function Admin() {
   ]
 
   return (
-    <div className="admin">
+    <div className="admin" data-theme={theme} data-tab={tab}>
       <div className="admin-topbar">
         <button
           type="button"
@@ -741,7 +748,7 @@ export default function Admin() {
       </aside>
 
       <main className="main">
-      <div className={TAB_THEME[tab] || ''}>
+      <div className="tab-wrap" key={tab}>
         <header className="top">
           <div>
             <div className="admin-crumb mono">
@@ -762,8 +769,29 @@ export default function Admin() {
             <h1 className="display">{TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
-          <div className="top-date mono">
-            {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          <div className="top-right">
+            <div className="theme-picker" role="radiogroup" aria-label="Dashboard theme">
+              <span className="theme-picker-label">Theme</span>
+              {THEMES.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={theme === t.key}
+                  aria-label={t.label}
+                  title={t.label}
+                  data-swatch={t.key}
+                  className={`theme-swatch ${theme === t.key ? 'on' : ''}`}
+                  onClick={() => {
+                    setTheme(t.key)
+                    try { localStorage.setItem(THEME_KEY, t.key) } catch { /* not remembered */ }
+                  }}
+                />
+              ))}
+            </div>
+            <div className="top-date mono">
+              {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </div>
           </div>
         </header>
 
@@ -1373,6 +1401,7 @@ export default function Admin() {
           <ProductForm
             existing={editing === 'new' ? null : editing}
             categories={productCategories}
+            detailLabels={collectLabels(products)}
             onCancel={() => setEditing(null)}
             onDone={() => {
               setEditing(null)
