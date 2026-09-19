@@ -33,24 +33,38 @@ export default function Cart() {
             <div className="cart-lines">
               {items.map((item) => (
                 <div className="cart-line" key={`${item.id}-${item.size}`}>
-                  <div className="line-thumb">
+                  <Link to={`/product/${item.id}`} className="line-thumb">
                     <img src={cld(item.image, { w: 200 })} alt={item.name} />
-                  </div>
+                  </Link>
+
                   <div className="line-info">
                     <div className="line-sku mono">{item.sku}</div>
-                    <div className="line-name">{item.name}</div>
+                    <Link to={`/product/${item.id}`} className="line-name">{item.name}</Link>
                     <div className="line-size mono">SIZE {item.size}</div>
                   </div>
+
                   <div className="line-qty">
-                    <button onClick={() => updateQty(item.id, item.size, item.qty - 1)}>−</button>
+                    <button
+                      onClick={() => updateQty(item.id, item.size, item.qty - 1)}
+                      aria-label="Fewer"
+                    >
+                      −
+                    </button>
                     <span className="mono">{item.qty}</span>
-                    <button onClick={() => updateQty(item.id, item.size, item.qty + 1)}>+</button>
+                    <button
+                      onClick={() => updateQty(item.id, item.size, item.qty + 1)}
+                      aria-label="More"
+                    >
+                      +
+                    </button>
                   </div>
+
                   <div className="line-price mono">৳ {(item.price * item.qty).toLocaleString()}</div>
+
                   <button
-                    className="line-remove mono"
+                    className="line-remove"
                     onClick={() => removeItem(item.id, item.size)}
-                    aria-label="Remove"
+                    aria-label={`Remove ${item.name}`}
                   >
                     ✕
                   </button>
@@ -59,6 +73,8 @@ export default function Cart() {
             </div>
 
             <div className="cart-summary">
+              <div className="summary-title mono">ORDER SUMMARY</div>
+
               <div className="summary-row mono">
                 <span>SUBTOTAL</span>
                 <span>৳ {subtotal.toLocaleString()}</span>
@@ -71,11 +87,12 @@ export default function Cart() {
                 <span>TOTAL</span>
                 <span>৳ {subtotal.toLocaleString()}</span>
               </div>
+
               <button className="checkout-btn mono" onClick={() => navigate('/checkout')}>
                 Proceed to checkout
               </button>
               <div className="cod-note mono">Cash on delivery — outside Dhaka needs a ৳200 bKash advance</div>
-              <Link to="/" className="back-link mono">← BACK TO SHOP</Link>
+              <Link to="/shop" className="back-link mono">← BACK TO SHOP</Link>
             </div>
           </div>
         )}

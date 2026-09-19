@@ -1,5 +1,8 @@
 import { useLocation, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
+import { IconChat } from '../components/Icons.jsx'
+import { CONTACT_PHONE } from '../content/info-pages.js'
+import { whatsappLink, customerToShopMessage } from '../lib/whatsapp.js'
 import './order-confirmed.css'
 
 export default function OrderConfirmed() {
@@ -66,6 +69,22 @@ export default function OrderConfirmed() {
           {order.delivery?.advance > 0
             ? "We'll check your bKash advance and call to confirm. Pay the rest in cash when the parcel arrives."
             : "Pay in cash when your order arrives. We'll call to confirm before delivery."}
+        </p>
+
+        {/* Opens WhatsApp with the order already written out — one tap to send.
+            Confirming over chat is the quickest way to weed out orders nobody
+            will be home for. */}
+        <a
+          className="wa-cta mono"
+          href={whatsappLink(CONTACT_PHONE, customerToShopMessage(order))}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <IconChat width="17" height="17" />
+          Confirm on WhatsApp
+        </a>
+        <p className="wa-note mono">
+          Optional — a message to us on WhatsApp gets your order confirmed faster.
         </p>
 
         {/* Right after checkout is when the order number is in front of them,

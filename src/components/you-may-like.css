@@ -1,5 +1,7 @@
+/* Laid out like the shop grid: tiles touch, square corners, a hairline between
+   them, edge to edge. */
 .yml {
-  padding: 10px 40px 20px;
+  padding: 0;
   border-top: 1px solid var(--steel-line);
   margin-top: 10px;
   scroll-margin-top: 90px;
@@ -7,28 +9,41 @@
 
 .yml > h2 {
   font-size: 20px;
-  margin: 28px 0 18px;
+  padding: 28px 40px 18px;
 }
 
 .yml-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 22px 14px;
+  gap: 0;
+  background: var(--paper);
+  border-top: 1px solid var(--steel-line);
+  border-bottom: 1px solid var(--steel-line);
 }
 
 .yml-card {
+  position: relative;
   display: block;
+  background: var(--paper);
   color: var(--ink);
   text-decoration: none;
+}
+
+/* The line between tiles is each tile's own right and bottom edge, drawn over
+   the photo so it shows between two pictures too. */
+.yml-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset -1px -1px 0 var(--steel-line);
+  pointer-events: none;
 }
 
 .yml-thumb {
   position: relative;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border-radius: 12px;
   background: var(--paper-dim);
-  margin-bottom: 10px;
 }
 
 .yml-thumb img {
@@ -40,19 +55,20 @@
   transition: transform 0.5s ease;
 }
 
-.yml-card:hover .yml-thumb img { transform: scale(1.04); }
+.yml-card:hover .yml-thumb img { transform: scale(1.035); }
 
 .yml-new {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 12px;
+  left: 12px;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--paper);
   background: rgba(22, 22, 15, 0.72);
-  border-radius: 4px;
   padding: 4px 8px;
 }
+
+.yml-info { padding: 14px 16px 20px; }
 
 .yml-out {
   font-size: 10px;
@@ -63,9 +79,9 @@
 }
 
 .yml-name {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .yml-meta {
@@ -81,6 +97,6 @@
 }
 
 @media (max-width: 640px) {
-  .yml { padding: 6px 20px 10px; }
-  .yml-grid { grid-template-columns: repeat(2, 1fr); gap: 18px 12px; }
+  .yml > h2 { padding: 22px 20px 14px; }
+  .yml-grid { grid-template-columns: repeat(2, 1fr); }
 }

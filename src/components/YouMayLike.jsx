@@ -50,11 +50,13 @@ export default function YouMayLike({ currentId }) {
               <img src={cld(p.images[0], { w: 500 })} alt={p.name} loading="lazy" />
               {p.isNew && <span className="yml-new mono">NEW</span>}
             </div>
-            {isAllSoldOut(p) && <div className="yml-out mono">SOLD OUT</div>}
-            <div className="yml-name">{p.name}</div>
-            <div className="yml-meta mono">
-              <span>{p.variant}</span>
-              <span>৳ {p.price.toLocaleString()}</span>
+            <div className="yml-info">
+              {isAllSoldOut(p) && <div className="yml-out mono">SOLD OUT</div>}
+              <div className="yml-name">{p.name}</div>
+              <div className="yml-meta mono">
+                <span>{p.variant}</span>
+                <span>৳ {p.price.toLocaleString()}</span>
+              </div>
             </div>
           </Link>
         ))}

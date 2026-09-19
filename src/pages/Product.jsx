@@ -302,6 +302,7 @@ export default function Product() {
   const chartNotes = (chart?.notes || []).map((n) => n.trim()).filter(Boolean)
 
   const unavailable = !activeSize || isSoldOut(product, activeSize)
+  const inCartCount = items.filter((i) => i.id === product.id).reduce((sum, i) => sum + i.qty, 0)
 
   const onList = Boolean(activeSize && (wishDone === activeSize || joined))
 
@@ -462,10 +463,14 @@ export default function Product() {
               )}
             </div>
           )}
-          {justAdded && (
-            <div className="added-note mono">
-              In your cart. <Link to="/cart">View cart →</Link>
-            </div>
+          {/* Not tied to the "Added" flash on the button: that clears after a
+              moment, and a link that vanishes before it can be reached is no
+              use. This stays for as long as the product is in the cart. */}
+          {inCartCount > 0 && (
+            <Link to="/cart" className="view-cart">
+              <span>{inCartCount} in your cart</span>
+              <span className="view-cart-go">View cart →</span>
+            </Link>
           )}
 
           {/* Each button hides itself when the admin left that content empty,
