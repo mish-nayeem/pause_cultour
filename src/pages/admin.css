@@ -69,7 +69,7 @@
 
 .side-nav button.on {
   color: var(--paper);
-  border-left-color: var(--cobalt);
+  border-left-color: var(--item-color, var(--cobalt));
   background: rgba(237, 234, 225, 0.05);
 }
 
@@ -79,14 +79,12 @@
   gap: 11px;
 }
 
-.side-nav button svg {
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--item-color, var(--steel));
   flex-shrink: 0;
-  opacity: 0.75;
-}
-
-.side-nav button.on svg {
-  opacity: 1;
-  color: var(--cobalt);
 }
 
 .side-nav .badge {
@@ -144,6 +142,18 @@
 }
 
 .top h1 { font-size: 27px; }
+
+.admin-crumb {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  margin-bottom: 6px;
+}
+
+/* ---------- Mobile topbar / drawer ---------- */
+
+.admin-topbar { display: none; }
+.admin-overlay { display: none; }
 
 .top-sub {
   font-size: 11.5px;
@@ -514,20 +524,65 @@
 
 @media (max-width: 760px) {
   .admin { grid-template-columns: 1fr; }
-  .side {
-    position: static;
-    height: auto;
-    padding: 18px 0;
-    flex-direction: row;
+
+  /* The sidebar becomes an off-canvas drawer under the burger button rather
+     than a horizontal-scrolling strip — with 8+ sections (and more coming),
+     a row of tabs would need scrolling to even see them all, where a drawer
+     shows the whole list at once. */
+  .admin-topbar {
+    display: flex;
     align-items: center;
-    gap: 16px;
-    overflow-x: auto;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--ink);
+    color: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 30;
   }
-  .side-brand { padding: 0 16px; }
-  .side-nav { flex-direction: row; }
-  .side-nav button { border-left: none; border-bottom: 2px solid transparent; padding: 8px 12px; }
-  .side-nav button.on { border-left: none; border-bottom-color: var(--cobalt); }
-  .side-foot { margin-top: 0; flex-direction: row; padding: 0 16px; gap: 14px; white-space: nowrap; }
+
+  .admin-topbar-brand { font-size: 16px; }
+
+  .admin-burger {
+    width: 26px;
+    height: 26px;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .admin-burger span {
+    height: 2px;
+    background: var(--paper);
+    border-radius: 2px;
+  }
+
+  .admin-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 35;
+  }
+
+  .side {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100%;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+
+  .side.open { transform: translateX(0); }
+
   .main { padding: 20px 16px 50px; }
   .trow, .trow.prow {
     grid-template-columns: 1fr 1fr;
@@ -1080,4 +1135,83 @@
   }
 
   @page { margin: 0; }
+}
+
+/* ---------- Sub-tab pills ---------- */
+
+.subtabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.subtab {
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--steel);
+  border: 1px solid var(--steel-line);
+  cursor: pointer;
+}
+
+.subtab:hover { color: var(--ink); }
+
+.subtab.active {
+  background: var(--cobalt);
+  color: #151318;
+  border-color: transparent;
+}
+
+/* ---------- Overview: dark theme ---------- */
+
+/* Every panel/stat/chart/table rule in this file reads its colors off
+   --paper, --paper-dim, --ink, --steel, --steel-line and --cobalt — so
+   redefining those five tokens for Overview's own subtree reskins all of it
+   dark without duplicating a single rule. Scoped to this one tab rather than
+   the whole .admin, since the rest of the panel is being redone the same way
+   one section at a time, not all at once. */
+.overview-dark {
+  --paper: #1E1B24;
+  --paper-dim: #151318;
+  --ink: #F5F3F7;
+  --steel: #9B96A8;
+  --steel-line: rgba(255, 255, 255, 0.08);
+  --cobalt: #3FC1FF;
+
+  /* body sets color: var(--ink) once, and that computed (light-theme) value
+     is what descendants inherit — plain `color` isn't re-resolved per
+     element the way a custom property is, so anything here that never
+     re-declares `color` itself would otherwise render the old dark text on
+     this new dark background. Re-declaring it here re-resolves --ink fresh
+     and every unstyled descendant inherits the right value from here down. */
+  color: var(--ink);
+  background: var(--paper-dim);
+  margin: -28px -32px 0;
+  padding: 28px 32px 40px;
+}
+
+/* Hardcoded rgba(22,22,15,…)/rgba(237,234,225,…) literals elsewhere in this
+   file assume a light surface — they don't move when the tokens above do, so
+   the handful actually used inside Overview get their own dark-appropriate
+   values here. */
+.overview-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
+.overview-dark .stat-ico.warn { background: rgba(63, 193, 255, 0.14); }
+.overview-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
+.overview-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
+.overview-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
+
+/* Status pills as soft glow badges instead of an outline — reads more like a
+   dark UI's own idiom than the storefront-style bordered pill would. */
+.overview-dark .pill { border: none; }
+.overview-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
+.overview-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
+.overview-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
+.overview-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
+
+@media (max-width: 760px) {
+  .overview-dark { margin: -20px -16px 0; padding: 20px 16px 40px; }
 }

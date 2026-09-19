@@ -31,8 +31,6 @@ import { stockMap, totalStock, LOW_STOCK_AT } from '../lib/stock.js'
 import { fetchWishlist, groupDemand } from '../lib/wishlist.js'
 import { COURIERS, courierLabel, sendToCourier, syncCourierStatus } from '../lib/courier.js'
 import {
-  IconGrid,
-  IconBag,
   IconTag,
   IconBox,
   IconTruck,
@@ -47,12 +45,42 @@ import {
   IconStar,
   IconClock,
   IconImage,
-  IconList,
-  IconLink,
 } from '../components/Icons.jsx'
 import './admin.css'
 
 const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
+
+const TAB_LABELS = {
+  overview: 'Overview',
+  orders: 'Orders',
+  products: 'Products',
+  hero: 'Homepage hero',
+  menu: 'Nav menus',
+  wishlist: 'Wishlist',
+  links: 'Tracked links',
+  about: 'About us page',
+}
+
+// One accent per section, so the sidebar reads as a set of distinct areas
+// rather than one long list — carried through to whatever that section's own
+// dark-mode panels recolor themselves with (see .overview-dark in admin.css).
+const SECTION_COLORS = {
+  overview: '#3FC1FF',
+  orders: '#FF5E7E',
+  products: '#3DDC97',
+  hero: '#3DDC97',
+  menu: '#FFC14D',
+  wishlist: '#FFC14D',
+  links: '#7C6CFF',
+  about: '#FF5E7E',
+}
+
+const OVERVIEW_SUBS = [
+  { key: 'stats', label: 'Key stats' },
+  { key: 'trend', label: 'Sales trend' },
+  { key: 'catalog', label: 'Catalog' },
+  { key: 'recent', label: 'Recent orders' },
+]
 
 function taka(n) {
   return '৳ ' + Number(n).toLocaleString()
@@ -271,6 +299,8 @@ export default function Admin() {
   const [monthMetric, setMonthMetric] = useState('units')
   const [editing, setEditing] = useState(null) // null | 'new' | product row
   const [addingOrder, setAddingOrder] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [overviewSub, setOverviewSub] = useState('stats')
 
   useEffect(() => {
     getSession().then((s) => {
@@ -349,6 +379,13 @@ export default function Admin() {
         o.customer_phone.includes(q)
     )
   }, [orders, search, statusFilter])
+
+  // The sidebar drawer only exists on a phone width, but this runs on every
+  // width rather than checking — closing a drawer that isn't open is a no-op.
+  function goTab(key) {
+    setTab(key)
+    setMobileMenuOpen(false)
+  }
 
   // Every counter on the overview is a way into the orders behind it — the
   // click lands on the orders tab with that status already filtered.
@@ -467,41 +504,56 @@ export default function Admin() {
     cancelled: stats.cancelled,
   }
 
+  const navItems = [
+    { key: 'overview', label: 'Overview', badge: null },
+    { key: 'orders', label: 'Orders', badge: stats.open > 0 ? stats.open : null },
+    { key: 'products', label: 'Products', badge: null },
+    { key: 'hero', label: 'Homepage', badge: null },
+    { key: 'menu', label: 'Nav menus', badge: null },
+    { key: 'wishlist', label: 'Wishlist', badge: demand.length > 0 ? wishRows.length : null },
+    { key: 'links', label: 'Tracked links', badge: null },
+    { key: 'about', label: 'About us', badge: null },
+  ]
+
   return (
     <div className="admin">
-      <aside className="side">
+      <div className="admin-topbar">
+        <button
+          type="button"
+          className="admin-burger"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open menu"
+        >
+          <span /><span /><span />
+        </button>
+        <span className="display admin-topbar-brand">PAUSE ADMIN</span>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="admin-overlay" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      <aside className={`side ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="side-brand">
           <span className="display">PAUSE</span>
           <span className="mono side-sub">ADMIN</span>
         </div>
 
         <nav className="side-nav mono">
-          <button className={tab === 'overview' ? 'on' : ''} onClick={() => setTab('overview')}>
-            <span className="nav-left"><IconGrid />Overview</span>
-          </button>
-          <button className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>
-            <span className="nav-left"><IconBag />Orders</span>
-            {stats.open > 0 && <span className="badge">{stats.open}</span>}
-          </button>
-          <button className={tab === 'products' ? 'on' : ''} onClick={() => setTab('products')}>
-            <span className="nav-left"><IconTag />Products</span>
-          </button>
-          <button className={tab === 'hero' ? 'on' : ''} onClick={() => setTab('hero')}>
-            <span className="nav-left"><IconImage />Homepage</span>
-          </button>
-          <button className={tab === 'menu' ? 'on' : ''} onClick={() => setTab('menu')}>
-            <span className="nav-left"><IconList />Nav menus</span>
-          </button>
-          <button className={tab === 'wishlist' ? 'on' : ''} onClick={() => setTab('wishlist')}>
-            <span className="nav-left"><IconStar />Wishlist</span>
-            {demand.length > 0 && <span className="badge">{wishRows.length}</span>}
-          </button>
-          <button className={tab === 'links' ? 'on' : ''} onClick={() => setTab('links')}>
-            <span className="nav-left"><IconLink />Tracked links</span>
-          </button>
-          <button className={tab === 'about' ? 'on' : ''} onClick={() => setTab('about')}>
-            <span className="nav-left"><IconImage />About us</span>
-          </button>
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              className={tab === item.key ? 'on' : ''}
+              style={{ '--item-color': SECTION_COLORS[item.key] }}
+              onClick={() => goTab(item.key)}
+            >
+              <span className="nav-left">
+                <span className="nav-dot" />
+                {item.label}
+              </span>
+              {item.badge != null && <span className="badge">{item.badge}</span>}
+            </button>
+          ))}
         </nav>
 
         <div className="side-foot mono">
@@ -515,16 +567,12 @@ export default function Admin() {
       <main className="main">
         <header className="top">
           <div>
-            <h1 className="display">
-              {tab === 'overview' && 'Overview'}
-              {tab === 'orders' && 'Orders'}
-              {tab === 'products' && 'Products'}
-              {tab === 'hero' && 'Homepage hero'}
-              {tab === 'menu' && 'Nav menus'}
-              {tab === 'wishlist' && 'Wishlist'}
-              {tab === 'links' && 'Tracked links'}
-              {tab === 'about' && 'About us page'}
-            </h1>
+            <div className="admin-crumb mono">
+              ADMIN / {TAB_LABELS[tab].toUpperCase()}
+              {tab === 'overview' &&
+                ` / ${OVERVIEW_SUBS.find((s) => s.key === overviewSub).label.toUpperCase()}`}
+            </div>
+            <h1 className="display">{TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
           <div className="top-date mono">
@@ -536,7 +584,21 @@ export default function Admin() {
         {loading && <div className="loading mono">Loading…</div>}
 
         {!loading && tab === 'overview' && (
-          <>
+          <div className="overview-dark">
+            <div className="subtabs mono">
+              {OVERVIEW_SUBS.map((s) => (
+                <button
+                  key={s.key}
+                  className={`subtab ${overviewSub === s.key ? 'active' : ''}`}
+                  onClick={() => setOverviewSub(s.key)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {overviewSub === 'stats' && (
+              <>
             <div className="stat-row three">
               <StatCard
                 icon={<IconBox />}
@@ -590,7 +652,11 @@ export default function Admin() {
                 onClick={() => openOrders('cancelled')}
               />
             </div>
+              </>
+            )}
 
+            {overviewSub === 'trend' && (
+              <>
             <section className="panel">
               <div className="panel-head">
                 <div>
@@ -622,8 +688,10 @@ export default function Admin() {
                 format={(v) => (monthMetric === 'value' ? taka(v) : `${v} pcs`)}
               />
             </section>
+              </>
+            )}
 
-            {lowStock.length > 0 && (
+            {overviewSub === 'catalog' && lowStock.length > 0 && (
               <section className="panel">
                 <div className="panel-head">
                   <div>
@@ -657,6 +725,7 @@ export default function Admin() {
               </section>
             )}
 
+            {overviewSub === 'catalog' && (
             <div className="two-col">
               <section className="panel">
                 <div className="panel-label mono" style={{ marginBottom: '18px' }}>
@@ -672,7 +741,9 @@ export default function Admin() {
                 <RankBars rows={byCategory} empty="No category has sold anything yet." accent="cobalt" />
               </section>
             </div>
+            )}
 
+            {overviewSub === 'recent' && (
             <section className="panel">
               <div className="panel-label mono" style={{ marginBottom: '6px' }}>
                 <IconTrend width="13" height="13" />ORDERS BY SOURCE
@@ -689,7 +760,9 @@ export default function Admin() {
                 countLabel="orders"
               />
             </section>
+            )}
 
+            {overviewSub === 'trend' && (
             <section className="panel">
               <div className="panel-head">
                 <div>
@@ -707,7 +780,9 @@ export default function Admin() {
                 <span>{shortDate(series[series.length - 1].date.toISOString())}</span>
               </div>
             </section>
+            )}
 
+            {overviewSub === 'recent' && (
             <div className="two-col">
               <section className="panel">
                 <div className="panel-label mono" style={{ marginBottom: '18px' }}>
@@ -747,7 +822,8 @@ export default function Admin() {
                 ))}
               </section>
             </div>
-          </>
+            )}
+          </div>
         )}
 
         {!loading && tab === 'orders' && addingOrder && (
