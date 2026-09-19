@@ -406,24 +406,11 @@ export default function Admin() {
   const custSplit = useMemo(() => repeatVsNew(orders), [orders])
   const margins = useMemo(() => costAndMargin(products), [products])
 
-  // One row per tracked size — an untracked product (no stock map at all)
-  // has nothing to show a quantity for, so it's left out rather than shown
-  // with a blank.
-  const stockRows = useMemo(
-    () =>
-      products.flatMap((p) => {
-        const map = stockMap(p)
-        if (!map) return []
-        return (p.sizes || []).map((s) => ({
-          key: `${p.id}-${s}`,
-          name: p.name,
-          variant: p.variant,
-          size: s,
-          qty: map[s] ?? 0,
-        }))
-      }),
-    [products]
-  )
+  // One row per product, every size's count sitting side by side — same
+  // stock-chips a product's catalog row already shows, just without the rest
+  // of the columns. An untracked product (no stock map at all) has no
+  // quantity to show, so it's left out rather than shown blank.
+  const trackedProducts = useMemo(() => products.filter((p) => stockMap(p) !== null), [products])
 
   // The names already in use plus the ones on the shop menu, so a product can
   // be filed under a menu category that has nothing in it yet — the spellings
@@ -1384,21 +1371,31 @@ export default function Admin() {
           {productsSub === 'stock' && (
           <section className="panel">
             <div className="panel-label mono" style={{ marginBottom: '18px' }}>STOCK LEVELS</div>
-            {stockRows.length === 0 && <div className="empty mono">No tracked stock yet.</div>}
-            {stockRows.map((r) => (
-              <div className="mini-row" key={r.key}>
-                <div>
-                  <div className="mini-name">{r.name}</div>
-                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{r.variant}</div>
-                </div>
-                <div className="low-right mono">
-                  <span className="low-size">{r.size}</span>
-                  <span className={r.qty === 0 ? 'low-left' : ''} style={r.qty === 0 ? { color: 'var(--signal)' } : undefined}>
-                    {r.qty === 0 ? 'SOLD OUT' : `${r.qty} left`}
+            {trackedProducts.length === 0 && <div className="empty mono">No tracked stock yet.</div>}
+            {trackedProducts.map((p) => {
+              const map = stockMap(p)
+              return (
+                <div className="mini-row" key={p.id}>
+                  <div>
+                    <div className="mini-name">{p.name}</div>
+                    <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.variant}</div>
+                  </div>
+                  <span className="stock-chips">
+                    {(p.sizes || []).map((s) => {
+                      const n = map[s] ?? 0
+                      return (
+                        <span
+                          key={s}
+                          className={`chip-stock ${n === 0 ? 'out' : n <= LOW_STOCK_AT ? 'low' : ''}`}
+                        >
+                          {s} {n}
+                        </span>
+                      )
+                    })}
                   </span>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </section>
           )}
 
