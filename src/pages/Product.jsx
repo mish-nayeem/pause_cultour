@@ -8,6 +8,7 @@ import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
 import { availableSizes, isAllSoldOut, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
 import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
+import { fetchReviews, submitReview } from '../lib/reviews.js'
 import usePageMeta, { useProductSchema } from '../lib/usePageMeta.js'
 import './product.css'
 
@@ -67,6 +68,9 @@ export default function Product() {
   const [sheet, setSheet] = useState(null) // null | 'details' | 'sizes'
   const [shot, setShot] = useState(0)
   const [shared, setShared] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' })
+  const [reviewState, setReviewState] = useState('idle') // idle | saving | error | done
 
   const galleryRef = useRef(null)
 
@@ -114,6 +118,42 @@ export default function Product() {
     })
     return () => { active = false }
   }, [colourGroup])
+
+  useEffect(() => {
+    let active = true
+    setReviewForm({ name: '', rating: 5, comment: '' })
+    setReviewState('idle')
+
+    fetchReviews(id).then(({ reviews }) => {
+      if (active) setReviews(reviews)
+    })
+    return () => { active = false }
+  }, [id])
+
+  async function handleReviewSubmit(e) {
+    e.preventDefault()
+    if (!reviewForm.name.trim()) {
+      setReviewState('error')
+      return
+    }
+
+    setReviewState('saving')
+    const { error } = await submitReview({
+      productId: id,
+      name: reviewForm.name.trim(),
+      rating: reviewForm.rating,
+      comment: reviewForm.comment,
+    })
+
+    if (error) {
+      setReviewState('error')
+      return
+    }
+
+    const { reviews: fresh } = await fetchReviews(id)
+    setReviews(fresh)
+    setReviewState('done')
+  }
 
   // Only the phone layout scrolls sideways; on desktop the gallery is a grid
   // with nothing to scroll, so this never fires there.
@@ -239,6 +279,10 @@ export default function Product() {
   const chart = product.sizeChart
   const hasChart = Boolean(chart?.columns?.length && chart?.rows?.length)
   const chartNotes = (chart?.notes || []).map((n) => n.trim()).filter(Boolean)
+
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0
 
   return (
     <>
@@ -434,6 +478,67 @@ export default function Product() {
 
           <Link to="/shop" className="back-link mono">← BACK TO SHOP</Link>
         </aside>
+      </div>
+
+      <div className="reviews-section">
+        <div className="reviews-head">
+          <h2 className="display">Reviews</h2>
+          {reviews.length > 0 && (
+            <div className="reviews-avg mono">
+              {'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}
+              <span className="reviews-avg-detail"> {avgRating.toFixed(1)} · {reviews.length} review{reviews.length === 1 ? '' : 's'}</span>
+            </div>
+          )}
+        </div>
+
+        {reviews.length === 0 && <p className="mono reviews-empty">No reviews yet — be the first.</p>}
+
+        <div className="reviews-list">
+          {reviews.map((r) => (
+            <div className="review-row" key={r.id}>
+              <div className="review-top">
+                <span className="review-stars">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                <span className="mono review-name">{r.customer_name}</span>
+              </div>
+              {r.comment && <p className="review-comment">{r.comment}</p>}
+            </div>
+          ))}
+        </div>
+
+        <form className="review-form" onSubmit={handleReviewSubmit}>
+          <div className="field-label mono">LEAVE A REVIEW</div>
+          <div className="review-form-row">
+            <input
+              placeholder="Your name"
+              value={reviewForm.name}
+              onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })}
+            />
+            <select
+              value={reviewForm.rating}
+              onChange={(e) => setReviewForm({ ...reviewForm, rating: Number(e.target.value) })}
+            >
+              {[5, 4, 3, 2, 1].map((n) => (
+                <option key={n} value={n}>{n} star{n > 1 ? 's' : ''}</option>
+              ))}
+            </select>
+          </div>
+          <textarea
+            placeholder="What did you think? (optional)"
+            rows={3}
+            value={reviewForm.comment}
+            onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+          />
+          {reviewState === 'error' && (
+            <em className="review-error mono">Enter your name to submit a review.</em>
+          )}
+          {reviewState === 'done' ? (
+            <div className="mono">Thanks — your review is up.</div>
+          ) : (
+            <button type="submit" className="mono" disabled={reviewState === 'saving'}>
+              {reviewState === 'saving' ? 'Posting…' : 'Post review'}
+            </button>
+          )}
+        </form>
       </div>
 
       {sheet === 'details' && (

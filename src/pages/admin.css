@@ -1179,7 +1179,9 @@
    content column instead of leaving the page's own cream showing through
    below it. */
 .overview-dark,
-.orders-dark {
+.orders-dark,
+.products-dark,
+.customers-dark {
   --paper: #1E1B24;
   --paper-dim: #151318;
   --ink: #F5F3F7;
@@ -1205,6 +1207,8 @@
 
 .overview-dark { --cobalt: #3FC1FF; }
 .orders-dark { --cobalt: #FF5E7E; }
+.products-dark { --cobalt: #3DDC97; }
+.customers-dark { --cobalt: #FFC14D; }
 
 /* A <select>'s own open dropdown panel ignores most of the styling above —
    Chrome/Edge on Windows render it with a plain white background regardless,
@@ -1212,7 +1216,9 @@
    on the wrapper) turned invisible against it. Styling the options
    themselves is the one thing that panel does respect. */
 .overview-dark select option,
-.orders-dark select option {
+.orders-dark select option,
+.products-dark select option,
+.customers-dark select option {
   background-color: var(--paper);
   color: var(--ink);
 }
@@ -1222,34 +1228,60 @@
    the handful actually used inside these tabs get their own dark-appropriate
    values here. */
 .overview-dark .stat-ico,
-.orders-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
+.orders-dark .stat-ico,
+.products-dark .stat-ico,
+.customers-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
 .overview-dark .stat-ico.warn { background: rgba(63, 193, 255, 0.14); }
 .orders-dark .stat-ico.warn { background: rgba(255, 94, 126, 0.14); }
+.products-dark .stat-ico.warn { background: rgba(61, 220, 151, 0.14); }
+.customers-dark .stat-ico.warn { background: rgba(255, 193, 77, 0.14); }
 .overview-dark .stat-ico.good,
-.orders-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
+.orders-dark .stat-ico.good,
+.products-dark .stat-ico.good,
+.customers-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
 .overview-dark .hbar-track,
-.orders-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
+.orders-dark .hbar-track,
+.products-dark .hbar-track,
+.customers-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
 .overview-dark .bar-tip .dim,
-.orders-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
+.orders-dark .bar-tip .dim,
+.products-dark .bar-tip .dim,
+.customers-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
 .overview-dark .trow:hover,
-.orders-dark .trow:hover { background: rgba(255, 255, 255, 0.03); }
+.orders-dark .trow:hover,
+.products-dark .trow:hover,
+.customers-dark .trow:hover { background: rgba(255, 255, 255, 0.03); }
 .overview-dark .tdetail,
-.orders-dark .tdetail { background: rgba(255, 255, 255, 0.02); }
+.orders-dark .tdetail,
+.products-dark .tdetail,
+.customers-dark .tdetail { background: rgba(255, 255, 255, 0.02); }
 
 /* Status pills as soft glow badges instead of an outline — reads more like a
    dark UI's own idiom than the storefront-style bordered pill would. */
 .overview-dark .pill,
-.orders-dark .pill { border: none; }
+.orders-dark .pill,
+.products-dark .pill,
+.customers-dark .pill { border: none; }
 .overview-dark .pill.pending,
-.orders-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
+.orders-dark .pill.pending,
+.products-dark .pill.pending,
+.customers-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
 .overview-dark .pill.shipped,
-.orders-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
+.orders-dark .pill.shipped,
+.products-dark .pill.shipped,
+.customers-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
 .overview-dark .pill.delivered,
-.orders-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
+.orders-dark .pill.delivered,
+.products-dark .pill.delivered,
+.customers-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
 .overview-dark .pill.cancelled,
-.orders-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
+.orders-dark .pill.cancelled,
+.products-dark .pill.cancelled,
+.customers-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
 
 @media (max-width: 760px) {
   .overview-dark,
-  .orders-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
+  .orders-dark,
+  .products-dark,
+  .customers-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
 }

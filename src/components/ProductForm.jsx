@@ -13,6 +13,7 @@ const BLANK = {
   name: '',
   variant: '',
   price: '',
+  cost: '',
   drop: 'DROP 02',
   category: 'T-SHIRTS',
   isNew: false,
@@ -35,6 +36,7 @@ function fromRow(row) {
     name: row.name,
     variant: row.variant,
     price: String(row.price),
+    cost: row.cost != null ? String(row.cost) : '',
     drop: row.drop_name,
     category: row.category || '',
     isNew: row.is_new,
@@ -356,6 +358,17 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
             onChange={(e) => set('price', e.target.value)}
             placeholder="1200"
           />
+        </label>
+
+        <label className="pf-field">
+          <span className="mono">COST (৳, OPTIONAL)</span>
+          <input
+            type="number"
+            value={p.cost ?? ''}
+            onChange={(e) => set('cost', e.target.value)}
+            placeholder="What it cost to make or buy in"
+          />
+          <em className="pf-hint mono">For the margin panel — never shown to customers.</em>
         </label>
 
         <label className="pf-field">

@@ -509,6 +509,66 @@ export function lookupCustomer(index, phone) {
   )
 }
 
+// One row per phone number, for the Customers tab's own list — customerIndex
+// above is keyed the same way but built for a single lookup, not a table, so
+// it never bothered keeping a name.
+export function customerList(orders) {
+  const byPhone = new Map()
+
+  orders.forEach((o) => {
+    const key = phoneKey(o.customer_phone)
+    if (!key) return
+
+    const entry = byPhone.get(key) || { name: o.customer_name, phone: o.customer_phone, orders: 0, totalSpent: 0 }
+    entry.orders += 1
+    if (o.status === 'delivered') entry.totalSpent += Number(o.total ?? o.subtotal)
+    byPhone.set(key, entry)
+  })
+
+  return [...byPhone.values()].sort((a, b) => b.orders - a.orders)
+}
+
+// New (one order) vs repeat (more than one) — the split the Customers tab
+// shows as a headline, built off the same per-phone counts as customerList.
+export function repeatVsNew(orders) {
+  const list = customerList(orders)
+  return {
+    new: list.filter((c) => c.orders === 1).length,
+    repeat: list.filter((c) => c.orders > 1).length,
+  }
+}
+
+// ---------- Cost & margin ----------
+
+// Only products with a cost actually entered — a null cost would otherwise
+// read as "free to make" and show a false 100% margin.
+export function costAndMargin(products) {
+  return products
+    .filter((p) => p.cost != null && p.cost !== '')
+    .map((p) => {
+      const cost = Number(p.cost)
+      const price = Number(p.price)
+      const margin = price > 0 ? ((price - cost) / price) * 100 : 0
+      return { id: p.id, name: p.name, variant: p.variant, cost, price, margin }
+    })
+    .sort((a, b) => b.margin - a.margin)
+}
+
+// ---------- Reviews ----------
+
+export async function fetchAllReviews() {
+  const { data, error } = await supabase
+    .from('product_reviews')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[Supabase] fetchAllReviews failed:', error.message)
+    return { reviews: [], error }
+  }
+  return { reviews: data, error: null }
+}
+
 // ---------- Product write operations ----------
 
 // The UI keeps products in the camelCase shape the storefront uses; the table
@@ -521,6 +581,7 @@ function toRow(p) {
     name: p.name,
     variant: p.variant,
     price: Number(p.price),
+    cost: p.cost === '' || p.cost == null ? null : Number(p.cost),
     drop_name: p.drop,
     category: p.category || null,
     is_new: Boolean(p.isNew),

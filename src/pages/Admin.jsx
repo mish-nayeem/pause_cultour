@@ -21,6 +21,10 @@ import {
   createReturn,
   resolveReturn,
   fetchAbandonedCarts,
+  customerList,
+  repeatVsNew,
+  costAndMargin,
+  fetchAllReviews,
 } from '../lib/admin.js'
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { cld } from '../lib/cloudinary.js'
@@ -57,10 +61,10 @@ const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
 const TAB_LABELS = {
   overview: 'Overview',
   orders: 'Orders',
-  products: 'Products',
+  products: 'Products / Inventory',
+  customers: 'Customers',
   hero: 'Homepage hero',
   menu: 'Nav menus',
-  wishlist: 'Wishlist',
   links: 'Tracked links',
   about: 'About us page',
 }
@@ -72,9 +76,9 @@ const SECTION_COLORS = {
   overview: '#3FC1FF',
   orders: '#FF5E7E',
   products: '#3DDC97',
+  customers: '#FFC14D',
   hero: '#3DDC97',
   menu: '#FFC14D',
-  wishlist: '#FFC14D',
   links: '#7C6CFF',
   about: '#FF5E7E',
 }
@@ -91,6 +95,30 @@ const ORDERS_SUBS = [
   { key: 'returns', label: 'Refunds & returns' },
   { key: 'abandoned', label: 'Abandoned cart' },
 ]
+
+const PRODUCTS_SUBS = [
+  { key: 'catalog', label: 'Product catalog' },
+  { key: 'stock', label: 'Stock levels' },
+  { key: 'best', label: 'Best sellers' },
+  { key: 'margin', label: 'Cost & margin' },
+]
+
+const CUSTOMERS_SUBS = [
+  { key: 'list', label: 'Customer list' },
+  { key: 'repeat', label: 'Repeat vs new' },
+  { key: 'reviews', label: 'Reviews' },
+  { key: 'wishlist', label: 'Wishlist' },
+]
+
+// Which tabs have had their dark-theme pass — see the shared rule these
+// classes share in admin.css. A tab with no entry here just renders in the
+// original light theme until its own turn comes.
+const TAB_THEME = {
+  overview: 'overview-dark',
+  orders: 'orders-dark',
+  products: 'products-dark',
+  customers: 'customers-dark',
+}
 
 function taka(n) {
   return '৳ ' + Number(n).toLocaleString()
@@ -316,6 +344,9 @@ export default function Admin() {
   const [abandonedCarts, setAbandonedCarts] = useState([])
   const [returnForm, setReturnForm] = useState({ orderId: '', reason: '' })
   const [returnBusy, setReturnBusy] = useState(null)
+  const [productsSub, setProductsSub] = useState('catalog')
+  const [customersSub, setCustomersSub] = useState('list')
+  const [allReviews, setAllReviews] = useState([])
 
   useEffect(() => {
     getSession().then((s) => {
@@ -330,13 +361,14 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p, c, w, r, ac] = await Promise.all([
+    const [o, p, c, w, r, ac, rv] = await Promise.all([
       fetchOrders(),
       fetchAdminProducts(),
       fetchAllNavCategories(),
       fetchWishlist(),
       fetchReturns(),
       fetchAbandonedCarts(),
+      fetchAllReviews(),
     ])
 
     if (o.error) {
@@ -351,6 +383,7 @@ export default function Admin() {
     setWishRows(w.rows)
     setReturns(r.returns)
     setAbandonedCarts(ac.carts)
+    setAllReviews(rv.reviews)
     setLoading(false)
   }, [])
 
@@ -369,6 +402,28 @@ export default function Admin() {
   const lowStock = useMemo(() => lowStockSizes(products), [products])
   const demand = useMemo(() => groupDemand(wishRows), [wishRows])
   const customers = useMemo(() => customerIndex(orders), [orders])
+  const custList = useMemo(() => customerList(orders), [orders])
+  const custSplit = useMemo(() => repeatVsNew(orders), [orders])
+  const margins = useMemo(() => costAndMargin(products), [products])
+
+  // One row per tracked size — an untracked product (no stock map at all)
+  // has nothing to show a quantity for, so it's left out rather than shown
+  // with a blank.
+  const stockRows = useMemo(
+    () =>
+      products.flatMap((p) => {
+        const map = stockMap(p)
+        if (!map) return []
+        return (p.sizes || []).map((s) => ({
+          key: `${p.id}-${s}`,
+          name: p.name,
+          variant: p.variant,
+          size: s,
+          qty: map[s] ?? 0,
+        }))
+      }),
+    [products]
+  )
 
   // The names already in use plus the ones on the shop menu, so a product can
   // be filed under a menu category that has nothing in it yet — the spellings
@@ -559,10 +614,10 @@ export default function Admin() {
   const navItems = [
     { key: 'overview', label: 'Overview', badge: null },
     { key: 'orders', label: 'Orders', badge: stats.open > 0 ? stats.open : null },
-    { key: 'products', label: 'Products', badge: null },
+    { key: 'products', label: 'Products / Inventory', badge: null },
+    { key: 'customers', label: 'Customers', badge: demand.length > 0 ? wishRows.length : null },
     { key: 'hero', label: 'Homepage', badge: null },
     { key: 'menu', label: 'Nav menus', badge: null },
-    { key: 'wishlist', label: 'Wishlist', badge: demand.length > 0 ? wishRows.length : null },
     { key: 'links', label: 'Tracked links', badge: null },
     { key: 'about', label: 'About us', badge: null },
   ]
@@ -617,7 +672,7 @@ export default function Admin() {
       </aside>
 
       <main className="main">
-      <div className={tab === 'overview' ? 'overview-dark' : tab === 'orders' ? 'orders-dark' : ''}>
+      <div className={TAB_THEME[tab] || ''}>
         <header className="top">
           <div>
             <div className="admin-crumb mono">
@@ -626,6 +681,10 @@ export default function Admin() {
                 ` / ${OVERVIEW_SUBS.find((s) => s.key === overviewSub).label.toUpperCase()}`}
               {tab === 'orders' &&
                 ` / ${ORDERS_SUBS.find((s) => s.key === ordersSub).label.toUpperCase()}`}
+              {tab === 'products' &&
+                ` / ${PRODUCTS_SUBS.find((s) => s.key === productsSub).label.toUpperCase()}`}
+              {tab === 'customers' &&
+                ` / ${CUSTOMERS_SUBS.find((s) => s.key === customersSub).label.toUpperCase()}`}
             </div>
             <h1 className="display">{TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
@@ -1250,6 +1309,20 @@ export default function Admin() {
         )}
 
         {!loading && tab === 'products' && !editing && (
+          <>
+          <div className="subtabs mono">
+            {PRODUCTS_SUBS.map((s) => (
+              <button
+                key={s.key}
+                className={`subtab ${productsSub === s.key ? 'active' : ''}`}
+                onClick={() => setProductsSub(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {productsSub === 'catalog' && (
           <section className="panel">
             <div className="orders-head">
               <div className="panel-note mono">
@@ -1306,8 +1379,136 @@ export default function Admin() {
               ))}
             </div>
           </section>
+          )}
+
+          {productsSub === 'stock' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>STOCK LEVELS</div>
+            {stockRows.length === 0 && <div className="empty mono">No tracked stock yet.</div>}
+            {stockRows.map((r) => (
+              <div className="mini-row" key={r.key}>
+                <div>
+                  <div className="mini-name">{r.name}</div>
+                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{r.variant}</div>
+                </div>
+                <div className="low-right mono">
+                  <span className="low-size">{r.size}</span>
+                  <span className={r.qty === 0 ? 'low-left' : ''} style={r.qty === 0 ? { color: 'var(--signal)' } : undefined}>
+                    {r.qty === 0 ? 'SOLD OUT' : `${r.qty} left`}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </section>
+          )}
+
+          {productsSub === 'best' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>
+              <IconStar width="13" height="13" />BEST SELLERS
+            </div>
+            {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
+            {top.map((p, i) => (
+              <div className="mini-row" key={p.name}>
+                <div>
+                  <div className="mini-id mono">{String(i + 1).padStart(2, '0')}</div>
+                  <div className="mini-name">{p.name}</div>
+                </div>
+                <div className="mini-right">
+                  <div className="mono">{p.units} sold</div>
+                  <div className="mono dim">{taka(p.value)}</div>
+                </div>
+              </div>
+            ))}
+          </section>
+          )}
+
+          {productsSub === 'margin' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>COST &amp; MARGIN</div>
+            <div className="panel-note" style={{ marginBottom: '18px' }}>
+              Only products with a cost entered in the product form show up here.
+            </div>
+            {margins.length === 0 && <div className="empty mono">No product has a cost entered yet.</div>}
+            {margins.map((m) => (
+              <div className="mini-row" key={m.id}>
+                <div>
+                  <div className="mini-name">{m.name}</div>
+                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{m.variant}</div>
+                </div>
+                <div className="mini-right">
+                  <div className="mono">{m.margin.toFixed(0)}% margin</div>
+                  <div className="mono dim">{taka(m.cost)} → {taka(m.price)}</div>
+                </div>
+              </div>
+            ))}
+          </section>
+          )}
+          </>
         )}
-        {!loading && tab === 'wishlist' && (
+        {!loading && tab === 'customers' && (
+          <>
+          <div className="subtabs mono">
+            {CUSTOMERS_SUBS.map((s) => (
+              <button
+                key={s.key}
+                className={`subtab ${customersSub === s.key ? 'active' : ''}`}
+                onClick={() => setCustomersSub(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {customersSub === 'list' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>CUSTOMER LIST</div>
+            {custList.length === 0 && <div className="empty mono">No orders yet.</div>}
+            {custList.map((c) => (
+              <div className="mini-row" key={c.phone}>
+                <div>
+                  <div className="mini-name">{c.name}</div>
+                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{c.phone}</div>
+                </div>
+                <div className="mini-right">
+                  <div className="mono">{c.orders} order{c.orders === 1 ? '' : 's'}</div>
+                  <div className="mono dim">{taka(c.totalSpent)}</div>
+                </div>
+              </div>
+            ))}
+          </section>
+          )}
+
+          {customersSub === 'repeat' && (
+          <div className="stat-row three">
+            <StatCard label="TOTAL CUSTOMERS" value={custSplit.new + custSplit.repeat} icon={<IconStar />} />
+            <StatCard label="NEW (1 ORDER)" value={custSplit.new} icon={<IconBox />} />
+            <StatCard label="REPEAT (2+ ORDERS)" tone="good" value={custSplit.repeat} icon={<IconCheck />} />
+          </div>
+          )}
+
+          {customersSub === 'reviews' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>REVIEWS</div>
+            {allReviews.length === 0 && <div className="empty mono">No reviews yet.</div>}
+            {allReviews.map((r) => {
+              const product = products.find((p) => String(p.id) === String(r.product_id))
+              return (
+                <div className="mini-row" key={r.id}>
+                  <div>
+                    <div className="mini-name">{product ? product.name : r.product_id}</div>
+                    <div className="mini-id mono" style={{ marginTop: '3px' }}>
+                      {r.customer_name}{r.comment ? ` — ${r.comment}` : ''}
+                    </div>
+                  </div>
+                  <div className="mono dim">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
+                </div>
+              )
+            })}
+          </section>
+          )}
+
+          {customersSub === 'wishlist' && (
           <section className="panel">
             <div className="panel-head">
               <div>
@@ -1351,6 +1552,8 @@ export default function Admin() {
               ))}
             </div>
           </section>
+          )}
+          </>
         )}
         {tab === 'hero' && <HeroManager />}
         {!loading && tab === 'menu' && (

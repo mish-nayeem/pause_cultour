@@ -477,3 +477,51 @@ create policy "Signed-in admins manage abandoned carts"
   to authenticated
   using (true)
   with check (true);
+
+
+-- ---------------------------------------------------------------------------
+-- Cost per product
+-- ---------------------------------------------------------------------------
+-- What it actually cost to make or buy in, for the Products tab's margin
+-- panel. Left null skips a product there rather than showing a false margin.
+
+alter table products add column if not exists cost numeric;
+
+
+-- ---------------------------------------------------------------------------
+-- Product reviews
+-- ---------------------------------------------------------------------------
+-- Anyone can leave one from the product page — no login, no purchase check,
+-- same trust level as the wishlist signup.
+
+create table if not exists product_reviews (
+  id bigint generated always as identity primary key,
+  product_id text not null,
+  customer_name text not null,
+  rating int not null check (rating between 1 and 5),
+  comment text,
+  created_at timestamptz default now()
+);
+
+create index if not exists product_reviews_product_idx on product_reviews (product_id);
+
+alter table product_reviews enable row level security;
+
+drop policy if exists "Anyone can read reviews" on product_reviews;
+create policy "Anyone can read reviews"
+  on product_reviews for select
+  to anon
+  using (true);
+
+drop policy if exists "Anyone can leave a review" on product_reviews;
+create policy "Anyone can leave a review"
+  on product_reviews for insert
+  to anon
+  with check (true);
+
+drop policy if exists "Signed-in admins manage reviews" on product_reviews;
+create policy "Signed-in admins manage reviews"
+  on product_reviews for all
+  to authenticated
+  using (true)
+  with check (true);

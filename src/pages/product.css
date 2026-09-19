@@ -17,6 +17,126 @@
   align-items: start;
 }
 
+/* ---------- Reviews ---------- */
+
+.reviews-section {
+  max-width: 700px;
+  padding: 0 40px 80px;
+}
+
+.reviews-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.reviews-head h2 { font-size: 26px; }
+
+.reviews-avg { font-size: 15px; color: var(--cobalt); letter-spacing: 0.02em; }
+.reviews-avg-detail { color: var(--steel); font-size: 12px; }
+
+.reviews-empty {
+  color: var(--steel);
+  margin-bottom: 24px;
+}
+
+.reviews-list { margin-bottom: 30px; }
+
+.review-row {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.review-row:last-child { border-bottom: none; }
+
+.review-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.review-stars { color: var(--cobalt); letter-spacing: 1px; }
+.review-name { color: var(--steel); font-size: 12px; }
+
+.review-comment {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3a3a30;
+}
+
+.review-form {
+  border-top: 1px solid var(--steel-line);
+  padding-top: 24px;
+}
+
+.review-form-row {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.review-form-row input {
+  flex: 1;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  padding: 11px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.review-form-row select {
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  padding: 11px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.review-form textarea {
+  width: 100%;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  padding: 11px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.review-form-row input:focus,
+.review-form-row select:focus,
+.review-form textarea:focus { outline: none; border-color: var(--cobalt); }
+
+.review-error {
+  display: block;
+  color: var(--signal);
+  font-size: 12px;
+  margin-bottom: 10px;
+  font-style: normal;
+}
+
+.review-form button {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 12px 22px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.review-form button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 640px) {
+  .reviews-section { padding: 0 20px 60px; }
+  .review-form-row { flex-direction: column; }
+}
+
 /* ---------- Left: gallery ---------- */
 
 /* Two columns of stills that the page scrolls past. The right-hand column is
