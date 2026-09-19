@@ -17,6 +17,10 @@ import {
   lowStockSizes,
   customerIndex,
   lookupCustomer,
+  fetchReturns,
+  createReturn,
+  resolveReturn,
+  fetchAbandonedCarts,
 } from '../lib/admin.js'
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { cld } from '../lib/cloudinary.js'
@@ -80,6 +84,12 @@ const OVERVIEW_SUBS = [
   { key: 'trend', label: 'Sales trend' },
   { key: 'catalog', label: 'Catalog' },
   { key: 'recent', label: 'Recent orders' },
+]
+
+const ORDERS_SUBS = [
+  { key: 'list', label: 'Order list' },
+  { key: 'returns', label: 'Refunds & returns' },
+  { key: 'abandoned', label: 'Abandoned cart' },
 ]
 
 function taka(n) {
@@ -301,6 +311,11 @@ export default function Admin() {
   const [addingOrder, setAddingOrder] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [overviewSub, setOverviewSub] = useState('stats')
+  const [ordersSub, setOrdersSub] = useState('list')
+  const [returns, setReturns] = useState([])
+  const [abandonedCarts, setAbandonedCarts] = useState([])
+  const [returnForm, setReturnForm] = useState({ orderId: '', reason: '' })
+  const [returnBusy, setReturnBusy] = useState(null)
 
   useEffect(() => {
     getSession().then((s) => {
@@ -315,11 +330,13 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p, c, w] = await Promise.all([
+    const [o, p, c, w, r, ac] = await Promise.all([
       fetchOrders(),
       fetchAdminProducts(),
       fetchAllNavCategories(),
       fetchWishlist(),
+      fetchReturns(),
+      fetchAbandonedCarts(),
     ])
 
     if (o.error) {
@@ -332,6 +349,8 @@ export default function Admin() {
     setProducts(p.products)
     setNavCategories(c.categories)
     setWishRows(w.rows)
+    setReturns(r.returns)
+    setAbandonedCarts(ac.carts)
     setLoading(false)
   }, [])
 
@@ -414,6 +433,39 @@ export default function Admin() {
     await sendStatusUpdate(orderId, status)
 
     setSavingId(null)
+  }
+
+  async function handleAddReturn(e) {
+    e.preventDefault()
+    if (!returnForm.orderId || !returnForm.reason.trim()) return
+
+    setReturnBusy('new')
+    const { error } = await createReturn({
+      orderId: returnForm.orderId,
+      reason: returnForm.reason.trim(),
+    })
+    setReturnBusy(null)
+
+    if (error) {
+      setLoadError("Couldn't log that return. Try again.")
+      return
+    }
+
+    setReturnForm({ orderId: '', reason: '' })
+    reload()
+  }
+
+  async function handleResolveReturn(id) {
+    setReturnBusy(id)
+    const { error } = await resolveReturn(id)
+    setReturnBusy(null)
+
+    if (error) {
+      setLoadError("Couldn't update that return. Try again.")
+      return
+    }
+
+    reload()
   }
 
   // Rendered, printed, then dropped once the dialog closes. Waiting for
@@ -565,12 +617,15 @@ export default function Admin() {
       </aside>
 
       <main className="main">
+      <div className={tab === 'overview' ? 'overview-dark' : tab === 'orders' ? 'orders-dark' : ''}>
         <header className="top">
           <div>
             <div className="admin-crumb mono">
               ADMIN / {TAB_LABELS[tab].toUpperCase()}
               {tab === 'overview' &&
                 ` / ${OVERVIEW_SUBS.find((s) => s.key === overviewSub).label.toUpperCase()}`}
+              {tab === 'orders' &&
+                ` / ${ORDERS_SUBS.find((s) => s.key === ordersSub).label.toUpperCase()}`}
             </div>
             <h1 className="display">{TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
@@ -584,7 +639,7 @@ export default function Admin() {
         {loading && <div className="loading mono">Loading…</div>}
 
         {!loading && tab === 'overview' && (
-          <div className="overview-dark">
+          <div>
             <div className="subtabs mono">
               {OVERVIEW_SUBS.map((s) => (
                 <button
@@ -838,6 +893,20 @@ export default function Admin() {
         )}
 
         {!loading && tab === 'orders' && !addingOrder && (
+          <>
+          <div className="subtabs mono">
+            {ORDERS_SUBS.map((s) => (
+              <button
+                key={s.key}
+                className={`subtab ${ordersSub === s.key ? 'active' : ''}`}
+                onClick={() => setOrdersSub(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {ordersSub === 'list' && (
           <section className="panel">
             <div className="chips mono">
               {['all', ...STATUSES].map((s) => (
@@ -1063,6 +1132,109 @@ export default function Admin() {
               ))}
             </div>
           </section>
+          )}
+
+          {ordersSub === 'returns' && (
+            <>
+              <form className="pform" onSubmit={handleAddReturn}>
+                <div className="pform-head">
+                  <h3 className="display">Log a return</h3>
+                </div>
+                <div className="pf-note">
+                  For a refund or return raised over DM or a call — this doesn't
+                  touch stock or the order itself, it's just a record to track
+                  down to resolved.
+                </div>
+                <div className="pf-grid">
+                  <label className="pf-field">
+                    <span className="mono">ORDER</span>
+                    <select
+                      value={returnForm.orderId}
+                      onChange={(e) => setReturnForm({ ...returnForm, orderId: e.target.value })}
+                    >
+                      <option value="">Select order</option>
+                      {orders.map((o) => (
+                        <option key={o.id} value={o.id}>{o.id} — {o.customer_name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="pf-field">
+                    <span className="mono">REASON</span>
+                    <input
+                      value={returnForm.reason}
+                      onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
+                      placeholder="Wrong size, changed mind, damaged…"
+                    />
+                  </label>
+                </div>
+                <button type="submit" className="mof-submit mono" disabled={returnBusy === 'new'}>
+                  {returnBusy === 'new' ? 'Logging…' : 'Log return'}
+                </button>
+              </form>
+
+              <section className="panel">
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
+                  REFUNDS &amp; RETURNS
+                </div>
+                {returns.length === 0 && <div className="empty mono">No returns logged.</div>}
+                {returns.map((r) => (
+                  <div className="mini-row" key={r.id}>
+                    <div>
+                      <div className="mini-id mono">{r.order_id}</div>
+                      <div className="mini-name">{r.reason}</div>
+                      {r.orders?.customer_name && (
+                        <div className="mono dim" style={{ marginTop: '3px', fontSize: '11px' }}>
+                          {r.orders.customer_name}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mini-right">
+                      <span className={`pill ${r.status === 'open' ? 'pending' : 'delivered'} mono`}>
+                        {r.status}
+                      </span>
+                      {r.status === 'open' && (
+                        <button
+                          className="courier-btn ghost mono"
+                          disabled={returnBusy === r.id}
+                          onClick={() => handleResolveReturn(r.id)}
+                        >
+                          {returnBusy === r.id ? 'Saving…' : 'Mark resolved'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+
+          {ordersSub === 'abandoned' && (
+            <section className="panel">
+              <div className="panel-label mono" style={{ marginBottom: '6px' }}>
+                ABANDONED CART
+              </div>
+              <div className="panel-note" style={{ marginBottom: '18px' }}>
+                Checkouts the storefront saw items reach but never turned into an
+                order. Clears itself the moment that same browser's order goes through.
+              </div>
+              {abandonedCarts.length === 0 && <div className="empty mono">Nothing abandoned right now.</div>}
+              {abandonedCarts.map((c) => (
+                <div className="mini-row" key={c.session_id}>
+                  <div>
+                    <div className="mini-name">{c.customer_name || 'Anonymous'}</div>
+                    <div className="mini-id mono" style={{ marginTop: '3px' }}>
+                      {(c.items || []).map((it) => `${it.name} × ${it.qty}`).join(', ')}
+                    </div>
+                  </div>
+                  <div className="mini-right">
+                    <div className="mono">{taka(c.cart_value)}</div>
+                    <div className="mono dim">{shortDate(c.last_active)}</div>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
+          </>
         )}
 
         {!loading && tab === 'products' && editing && (
@@ -1189,6 +1361,7 @@ export default function Admin() {
         )}
         {!loading && tab === 'links' && <LinkGenerator products={products} />}
         {tab === 'about' && <AboutManager />}
+      </div>
       </main>
 
       {slipOrder && <PackingSlip order={slipOrder} />}

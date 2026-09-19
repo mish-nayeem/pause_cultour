@@ -98,6 +98,65 @@ export async function updateOrderStatus(orderId, status) {
   return { error: null }
 }
 
+// ---------- Refunds & returns ----------
+
+export async function fetchReturns() {
+  const { data, error } = await supabase
+    .from('order_returns')
+    .select('*, orders(customer_name, customer_phone)')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[Supabase] fetchReturns failed:', error.message)
+    return { returns: [], error }
+  }
+  return { returns: data, error: null }
+}
+
+export async function createReturn({ orderId, reason }) {
+  const { error } = await supabase.from('order_returns').insert({
+    order_id: orderId,
+    reason,
+  })
+
+  if (error) {
+    console.error('[Supabase] createReturn failed:', error.message)
+    return { error }
+  }
+  return { error: null }
+}
+
+export async function resolveReturn(id, note) {
+  const { error } = await supabase
+    .from('order_returns')
+    .update({ status: 'resolved', note: note || null, resolved_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[Supabase] resolveReturn failed:', error.message)
+    return { error }
+  }
+  return { error: null }
+}
+
+// ---------- Abandoned carts ----------
+
+// Unconverted only — the moment a session's order goes through,
+// markCartConverted (src/lib/abandonedCart.js) takes it off this list.
+export async function fetchAbandonedCarts() {
+  const { data, error } = await supabase
+    .from('abandoned_carts')
+    .select('*')
+    .is('converted_order_id', null)
+    .order('last_active', { ascending: false })
+
+  if (error) {
+    console.error('[Supabase] fetchAbandonedCarts failed:', error.message)
+    return { carts: [], error }
+  }
+  return { carts: data, error: null }
+}
+
 // A sale agreed over DM never touches the checkout page, so nothing takes the
 // pieces off the shelf or counts the revenue unless it goes through here too.
 // Routed through the same place_order the website uses — the stock lock,

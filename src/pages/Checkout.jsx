@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { sendOrderConfirmation } from '../lib/email.js'
 import { getAttribution } from '../lib/attribution.js'
+import { saveAbandonedCart, markCartConverted } from '../lib/abandonedCart.js'
 import { BKASH_NUMBER, DISTRICTS, quote, isTrxId } from '../lib/delivery.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './checkout.css'
@@ -55,6 +56,19 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [copied, setCopied] = useState(false)
+
+  // Debounced so this doesn't fire on every keystroke — the admin panel's
+  // Abandoned Cart list is for spotting a checkout that stalled, not a
+  // live feed, so a couple of seconds' lag costs nothing.
+  useEffect(() => {
+    if (items.length === 0) return
+
+    const t = setTimeout(() => {
+      saveAbandonedCart({ name: form.name, phone: form.phone, items, cartValue: subtotal })
+    }, 2000)
+
+    return () => clearTimeout(t)
+  }, [items, form.name, form.phone, subtotal])
 
   if (items.length === 0) {
     return (
@@ -205,6 +219,7 @@ export default function Checkout() {
     // but this never throws — a mail failure can't block the order. Only the id
     // is sent; the function reads the order back from the database itself.
     await sendOrderConfirmation(orderId)
+    await markCartConverted(orderId)
 
     setSubmitting(false)
     clearCart()

@@ -1166,21 +1166,25 @@
   border-color: transparent;
 }
 
-/* ---------- Overview: dark theme ---------- */
+/* ---------- Dark-themed sections ---------- */
 
 /* Every panel/stat/chart/table rule in this file reads its colors off
    --paper, --paper-dim, --ink, --steel, --steel-line and --cobalt — so
-   redefining those five tokens for Overview's own subtree reskins all of it
-   dark without duplicating a single rule. Scoped to this one tab rather than
-   the whole .admin, since the rest of the panel is being redone the same way
-   one section at a time, not all at once. */
-.overview-dark {
+   redefining those tokens for a tab's own subtree reskins all of it dark
+   without duplicating a single rule. One class per tab (each just its own
+   accent — see below) rather than doing this on .admin itself, since the
+   rest of the panel is being redone the same way one section at a time, not
+   all at once. Wraps the header too, and cancels all of .main's padding on
+   every side (not just top/sides) so the dark fill reaches every edge of the
+   content column instead of leaving the page's own cream showing through
+   below it. */
+.overview-dark,
+.orders-dark {
   --paper: #1E1B24;
   --paper-dim: #151318;
   --ink: #F5F3F7;
   --steel: #9B96A8;
   --steel-line: rgba(255, 255, 255, 0.08);
-  --cobalt: #3FC1FF;
 
   /* body sets color: var(--ink) once, and that computed (light-theme) value
      is what descendants inherit — plain `color` isn't re-resolved per
@@ -1190,28 +1194,51 @@
      and every unstyled descendant inherits the right value from here down. */
   color: var(--ink);
   background: var(--paper-dim);
-  margin: -28px -32px 0;
-  padding: 28px 32px 40px;
+  /* .main stretches to the sidebar's 100vh as a grid item regardless of how
+     tall its own content is, so falling short of that height would leave
+     .admin's own (light) background showing through below this div — match
+     the sidebar's height so the dark fill always reaches the bottom. */
+  min-height: 100vh;
+  margin: -28px -32px -60px;
+  padding: 28px 32px 60px;
 }
+
+.overview-dark { --cobalt: #3FC1FF; }
+.orders-dark { --cobalt: #FF5E7E; }
 
 /* Hardcoded rgba(22,22,15,…)/rgba(237,234,225,…) literals elsewhere in this
    file assume a light surface — they don't move when the tokens above do, so
-   the handful actually used inside Overview get their own dark-appropriate
+   the handful actually used inside these tabs get their own dark-appropriate
    values here. */
-.overview-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
+.overview-dark .stat-ico,
+.orders-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
 .overview-dark .stat-ico.warn { background: rgba(63, 193, 255, 0.14); }
-.overview-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
-.overview-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
-.overview-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
+.orders-dark .stat-ico.warn { background: rgba(255, 94, 126, 0.14); }
+.overview-dark .stat-ico.good,
+.orders-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
+.overview-dark .hbar-track,
+.orders-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
+.overview-dark .bar-tip .dim,
+.orders-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
+.overview-dark .trow:hover,
+.orders-dark .trow:hover { background: rgba(255, 255, 255, 0.03); }
+.overview-dark .tdetail,
+.orders-dark .tdetail { background: rgba(255, 255, 255, 0.02); }
 
 /* Status pills as soft glow badges instead of an outline — reads more like a
    dark UI's own idiom than the storefront-style bordered pill would. */
-.overview-dark .pill { border: none; }
-.overview-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
-.overview-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
-.overview-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
-.overview-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
+.overview-dark .pill,
+.orders-dark .pill { border: none; }
+.overview-dark .pill.pending,
+.orders-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
+.overview-dark .pill.shipped,
+.orders-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
+.overview-dark .pill.delivered,
+.orders-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
+.overview-dark .pill.cancelled,
+.orders-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
 
 @media (max-width: 760px) {
-  .overview-dark { margin: -20px -16px 0; padding: 20px 16px 40px; }
+  .overview-dark,
+  .orders-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
 }
