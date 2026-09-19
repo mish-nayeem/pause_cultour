@@ -12,6 +12,7 @@ import Admin from './pages/Admin.jsx'
 import Info from './pages/Info.jsx'
 import About from './pages/About.jsx'
 import Track from './pages/Track.jsx'
+import PageViewTracker from './components/PageViewTracker.jsx'
 import { captureAttribution } from './lib/attribution.js'
 import './styles/global.css'
 
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <CartProvider>
+        <PageViewTracker />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />

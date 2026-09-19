@@ -609,6 +609,114 @@ export const emailCampaignsApi = metricApi('email_campaigns')
 export const socialStatsApi = metricApi('social_stats')
 export const couponStatsApi = metricApi('coupon_stats')
 
+// ---------- Analytics ----------
+
+// Last `days` days only — this table grows with every page the storefront
+// ever renders, and nothing in Analytics looks further back than a window
+// anyway.
+export async function fetchPageViews(days = 30) {
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+
+  const { data, error } = await supabase
+    .from('page_views')
+    .select('session_id, path, created_at')
+    .gte('created_at', since.toISOString())
+
+  if (error) {
+    console.error('[Supabase] fetchPageViews failed:', error.message)
+    return { views: [], error }
+  }
+  return { views: data, error: null }
+}
+
+// A raw path is too specific to read at a glance (every product is its own
+// URL) — grouped into the same handful of page types the store actually has.
+function pageType(path) {
+  if (path === '/') return 'Homepage'
+  if (path === '/shop') return 'Shop'
+  if (path.startsWith('/product/')) return 'Product page'
+  if (path === '/cart') return 'Cart'
+  if (path === '/checkout') return 'Checkout'
+  if (path === '/order-confirmed') return 'Order confirmed'
+  if (path === '/about') return 'About'
+  if (path === '/track') return 'Track order'
+  return path
+}
+
+// One row per page type: how many times it was viewed, and — of the
+// sessions that landed there first — what fraction never viewed a second
+// page. A page can only "bounce" as an entry point, so bounces are counted
+// against each session's first pageview, not every page it happened to visit.
+export function trafficByPage(views) {
+  const bySession = new Map()
+  views.forEach((v) => {
+    const arr = bySession.get(v.session_id) || []
+    arr.push(v)
+    bySession.set(v.session_id, arr)
+  })
+
+  const stats = new Map()
+  const bump = (type) => {
+    const s = stats.get(type) || { page: type, visits: 0, entries: 0, bounces: 0 }
+    stats.set(type, s)
+    return s
+  }
+
+  bySession.forEach((sessionViews) => {
+    sessionViews.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    sessionViews.forEach((v) => { bump(pageType(v.path)).visits += 1 })
+
+    const entry = bump(pageType(sessionViews[0].path))
+    entry.entries += 1
+    if (sessionViews.length === 1) entry.bounces += 1
+  })
+
+  return [...stats.values()]
+    .map((s) => ({ ...s, bounceRate: s.entries > 0 ? (s.bounces / s.entries) * 100 : 0 }))
+    .sort((a, b) => b.visits - a.visits)
+}
+
+// Unique visiting sessions vs orders placed in the same window — the two
+// halves of a conversion rate, read off data that's already real on both
+// sides once page views exist at all.
+export function conversionRate(views, orders, days = 14) {
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+
+  const visitors = new Set(
+    views.filter((v) => new Date(v.created_at) >= since).map((v) => v.session_id)
+  ).size
+
+  const orderCount = orders.filter(
+    (o) => new Date(o.created_at) >= since && o.status !== 'cancelled'
+  ).length
+
+  return {
+    visitors,
+    orders: orderCount,
+    rate: visitors > 0 ? (orderCount / visitors) * 100 : 0,
+  }
+}
+
+// Highest-selling districts — straight off customer_area, which every order
+// already has, so this needed no new tracking at all.
+export function salesByDistrict(orders) {
+  const tally = new Map()
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      const key = o.customer_area || 'Unknown'
+      const prev = tally.get(key) || { name: key, orders: 0, value: 0 }
+      prev.orders += 1
+      prev.value += Number(o.total ?? o.subtotal)
+      tally.set(key, prev)
+    })
+
+  return [...tally.values()].sort((a, b) => b.orders - a.orders)
+}
+
 // ---------- Product write operations ----------
 
 // The UI keeps products in the camelCase shape the storefront uses; the table

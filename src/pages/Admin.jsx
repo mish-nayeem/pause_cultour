@@ -29,6 +29,10 @@ import {
   emailCampaignsApi,
   socialStatsApi,
   couponStatsApi,
+  fetchPageViews,
+  trafficByPage,
+  conversionRate,
+  salesByDistrict,
 } from '../lib/admin.js'
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { cld } from '../lib/cloudinary.js'
@@ -68,6 +72,7 @@ const TAB_LABELS = {
   products: 'Products / Inventory',
   customers: 'Customers',
   marketing: 'Marketing',
+  analytics: 'Analytics',
   hero: 'Homepage hero',
   menu: 'Nav menus',
   about: 'About us page',
@@ -82,6 +87,7 @@ const SECTION_COLORS = {
   products: '#3DDC97',
   customers: '#FFC14D',
   marketing: '#7C6CFF',
+  analytics: '#3FC1FF',
   hero: '#3DDC97',
   menu: '#FFC14D',
   about: '#FF5E7E',
@@ -122,6 +128,13 @@ const MARKETING_SUBS = [
   { key: 'links', label: 'Tracked links' },
 ]
 
+const ANALYTICS_SUBS = [
+  { key: 'traffic', label: 'Visitor traffic' },
+  { key: 'conversion', label: 'Conversion rate' },
+  { key: 'location', label: 'Location map' },
+  { key: 'category', label: 'Sold by category' },
+]
+
 // Which tabs have had their dark-theme pass — see the shared rule these
 // classes share in admin.css. A tab with no entry here just renders in the
 // original light theme until its own turn comes.
@@ -131,6 +144,7 @@ const TAB_THEME = {
   products: 'products-dark',
   customers: 'customers-dark',
   marketing: 'marketing-dark',
+  analytics: 'analytics-dark',
 }
 
 function taka(n) {
@@ -362,6 +376,8 @@ export default function Admin() {
   const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
   const [couponDraft, setCouponDraft] = useState({ code: '', uses: '', revenue: '' })
   const [marketingBusy, setMarketingBusy] = useState(null)
+  const [analyticsSub, setAnalyticsSub] = useState('traffic')
+  const [pageViews, setPageViews] = useState([])
   const [productsSub, setProductsSub] = useState('catalog')
   const [customersSub, setCustomersSub] = useState('list')
   const [allReviews, setAllReviews] = useState([])
@@ -384,7 +400,7 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p, c, w, r, ac, rv, as, ec, ss, cs] = await Promise.all([
+    const [o, p, c, w, r, ac, rv, as, ec, ss, cs, pv] = await Promise.all([
       fetchOrders(),
       fetchAdminProducts(),
       fetchAllNavCategories(),
@@ -396,6 +412,7 @@ export default function Admin() {
       emailCampaignsApi.fetch(),
       socialStatsApi.fetch(),
       couponStatsApi.fetch(),
+      fetchPageViews(),
     ])
 
     if (o.error) {
@@ -415,6 +432,7 @@ export default function Admin() {
     setEmailCampaigns(ec.rows)
     setSocialStats(ss.rows)
     setCouponStats(cs.rows)
+    setPageViews(pv.views)
     setLoading(false)
   }, [])
 
@@ -436,6 +454,9 @@ export default function Admin() {
   const custList = useMemo(() => customerList(orders), [orders])
   const custSplit = useMemo(() => repeatVsNew(orders), [orders])
   const margins = useMemo(() => costAndMargin(products), [products])
+  const traffic = useMemo(() => trafficByPage(pageViews), [pageViews])
+  const conversion = useMemo(() => conversionRate(pageViews, orders), [pageViews, orders])
+  const byDistrict = useMemo(() => salesByDistrict(orders), [orders])
 
   // One row per product, every size's count sitting side by side — same
   // stock-chips a product's catalog row already shows, just without the rest
@@ -662,6 +683,7 @@ export default function Admin() {
     { key: 'products', label: 'Products / Inventory', badge: null },
     { key: 'customers', label: 'Customers', badge: demand.length > 0 ? wishRows.length : null },
     { key: 'marketing', label: 'Marketing', badge: null },
+    { key: 'analytics', label: 'Analytics', badge: null },
     { key: 'hero', label: 'Homepage', badge: null },
     { key: 'menu', label: 'Nav menus', badge: null },
     { key: 'about', label: 'About us', badge: null },
@@ -732,6 +754,8 @@ export default function Admin() {
                 ` / ${CUSTOMERS_SUBS.find((s) => s.key === customersSub).label.toUpperCase()}`}
               {tab === 'marketing' &&
                 ` / ${MARKETING_SUBS.find((s) => s.key === marketingSub).label.toUpperCase()}`}
+              {tab === 'analytics' &&
+                ` / ${ANALYTICS_SUBS.find((s) => s.key === analyticsSub).label.toUpperCase()}`}
             </div>
             <h1 className="display">{TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
@@ -1826,6 +1850,64 @@ export default function Admin() {
           )}
 
           {marketingSub === 'links' && <LinkGenerator products={products} />}
+          </>
+        )}
+
+        {!loading && tab === 'analytics' && (
+          <>
+          <div className="subtabs mono">
+            {ANALYTICS_SUBS.map((s) => (
+              <button
+                key={s.key}
+                className={`subtab ${analyticsSub === s.key ? 'active' : ''}`}
+                onClick={() => setAnalyticsSub(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {analyticsSub === 'traffic' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>VISITOR TRAFFIC</div>
+            <div className="panel-note" style={{ marginBottom: '18px' }}>
+              Site visits and bounce rate, last 30 days. Logged by the storefront itself.
+            </div>
+            {traffic.length === 0 && <div className="empty mono">No visits logged yet.</div>}
+            {traffic.map((r) => (
+              <div className="mini-row" key={r.page}>
+                <div className="mini-name">{r.page}</div>
+                <div className="mini-right">
+                  <div className="mono">{r.visits} visit{r.visits === 1 ? '' : 's'}</div>
+                  <div className="mono dim">{r.bounceRate.toFixed(0)}% bounce</div>
+                </div>
+              </div>
+            ))}
+          </section>
+          )}
+
+          {analyticsSub === 'conversion' && (
+          <div className="stat-row three">
+            <StatCard icon={<IconBox />} label="VISITORS (14 DAYS)" value={conversion.visitors} />
+            <StatCard icon={<IconTag />} label="ORDERS (14 DAYS)" value={conversion.orders} />
+            <StatCard icon={<IconCash />} tone="good" label="CONVERSION RATE" value={`${conversion.rate.toFixed(2)}%`} />
+          </div>
+          )}
+
+          {analyticsSub === 'location' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>HIGHEST-SELLING DISTRICTS</div>
+            {byDistrict.length === 0 && <div className="empty mono">No orders yet.</div>}
+            <RankBars rows={byDistrict} empty="No orders yet." accent="cobalt" countKey="orders" countLabel="orders" />
+          </section>
+          )}
+
+          {analyticsSub === 'category' && (
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>SOLD BY CATEGORY</div>
+            <RankBars rows={byCategory} empty="No category has sold anything yet." accent="cobalt" />
+          </section>
+          )}
           </>
         )}
         {tab === 'about' && <AboutManager />}

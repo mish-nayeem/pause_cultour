@@ -585,3 +585,37 @@ create policy "Signed-in admins manage social stats"
 drop policy if exists "Signed-in admins manage coupon stats" on coupon_stats;
 create policy "Signed-in admins manage coupon stats"
   on coupon_stats for all to authenticated using (true) with check (true);
+
+
+-- ---------------------------------------------------------------------------
+-- Page views
+-- ---------------------------------------------------------------------------
+-- Behind Analytics' Visitor traffic and Conversion rate sub-tabs — logged by
+-- the storefront itself on every page it renders. See src/lib/analytics.js
+-- and src/components/PageViewTracker.jsx.
+
+create table if not exists page_views (
+  id bigint generated always as identity primary key,
+  session_id text not null,
+  path text not null,
+  referrer text,
+  created_at timestamptz default now()
+);
+
+create index if not exists page_views_session_idx on page_views (session_id);
+create index if not exists page_views_created_idx on page_views (created_at);
+
+alter table page_views enable row level security;
+
+drop policy if exists "Anyone can log a page view" on page_views;
+create policy "Anyone can log a page view"
+  on page_views for insert
+  to anon
+  with check (true);
+
+drop policy if exists "Signed-in admins read page views" on page_views;
+create policy "Signed-in admins read page views"
+  on page_views for all
+  to authenticated
+  using (true)
+  with check (true);

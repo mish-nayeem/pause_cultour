@@ -1182,7 +1182,8 @@
 .orders-dark,
 .products-dark,
 .customers-dark,
-.marketing-dark {
+.marketing-dark,
+.analytics-dark {
   --paper: #1E1B24;
   --paper-dim: #151318;
   --ink: #F5F3F7;
@@ -1211,6 +1212,7 @@
 .products-dark { --cobalt: #3DDC97; }
 .customers-dark { --cobalt: #FFC14D; }
 .marketing-dark { --cobalt: #7C6CFF; }
+.analytics-dark { --cobalt: #3FC1FF; }
 
 /* A <select>'s own open dropdown panel ignores most of the styling above —
    Chrome/Edge on Windows render it with a plain white background regardless,
@@ -1221,7 +1223,8 @@
 .orders-dark select option,
 .products-dark select option,
 .customers-dark select option,
-.marketing-dark select option {
+.marketing-dark select option,
+.analytics-dark select option {
   background-color: var(--paper);
   color: var(--ink);
 }
@@ -1234,8 +1237,10 @@
 .orders-dark .stat-ico,
 .products-dark .stat-ico,
 .customers-dark .stat-ico,
-.marketing-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
-.overview-dark .stat-ico.warn { background: rgba(63, 193, 255, 0.14); }
+.marketing-dark .stat-ico,
+.analytics-dark .stat-ico { background: rgba(255, 255, 255, 0.07); }
+.overview-dark .stat-ico.warn,
+.analytics-dark .stat-ico.warn { background: rgba(63, 193, 255, 0.14); }
 .orders-dark .stat-ico.warn { background: rgba(255, 94, 126, 0.14); }
 .products-dark .stat-ico.warn { background: rgba(61, 220, 151, 0.14); }
 .customers-dark .stat-ico.warn { background: rgba(255, 193, 77, 0.14); }
@@ -1244,27 +1249,32 @@
 .orders-dark .stat-ico.good,
 .products-dark .stat-ico.good,
 .customers-dark .stat-ico.good,
-.marketing-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
+.marketing-dark .stat-ico.good,
+.analytics-dark .stat-ico.good { background: rgba(255, 255, 255, 0.92); color: #151318; }
 .overview-dark .hbar-track,
 .orders-dark .hbar-track,
 .products-dark .hbar-track,
 .customers-dark .hbar-track,
-.marketing-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
+.marketing-dark .hbar-track,
+.analytics-dark .hbar-track { background: rgba(255, 255, 255, 0.08); }
 .overview-dark .bar-tip .dim,
 .orders-dark .bar-tip .dim,
 .products-dark .bar-tip .dim,
 .customers-dark .bar-tip .dim,
-.marketing-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
+.marketing-dark .bar-tip .dim,
+.analytics-dark .bar-tip .dim { color: rgba(21, 19, 24, 0.6); }
 .overview-dark .trow:hover,
 .orders-dark .trow:hover,
 .products-dark .trow:hover,
 .customers-dark .trow:hover,
-.marketing-dark .trow:hover { background: rgba(255, 255, 255, 0.03); }
+.marketing-dark .trow:hover,
+.analytics-dark .trow:hover { background: rgba(255, 255, 255, 0.03); }
 .overview-dark .tdetail,
 .orders-dark .tdetail,
 .products-dark .tdetail,
 .customers-dark .tdetail,
-.marketing-dark .tdetail { background: rgba(255, 255, 255, 0.02); }
+.marketing-dark .tdetail,
+.analytics-dark .tdetail { background: rgba(255, 255, 255, 0.02); }
 
 /* Status pills as soft glow badges instead of an outline — reads more like a
    dark UI's own idiom than the storefront-style bordered pill would. */
@@ -1272,27 +1282,32 @@
 .orders-dark .pill,
 .products-dark .pill,
 .customers-dark .pill,
-.marketing-dark .pill { border: none; }
+.marketing-dark .pill,
+.analytics-dark .pill { border: none; }
 .overview-dark .pill.pending,
 .orders-dark .pill.pending,
 .products-dark .pill.pending,
 .customers-dark .pill.pending,
-.marketing-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
+.marketing-dark .pill.pending,
+.analytics-dark .pill.pending { background: rgba(255, 193, 77, 0.15); color: #FFC14D; }
 .overview-dark .pill.shipped,
 .orders-dark .pill.shipped,
 .products-dark .pill.shipped,
 .customers-dark .pill.shipped,
-.marketing-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
+.marketing-dark .pill.shipped,
+.analytics-dark .pill.shipped { background: rgba(63, 193, 255, 0.15); color: #3FC1FF; }
 .overview-dark .pill.delivered,
 .orders-dark .pill.delivered,
 .products-dark .pill.delivered,
 .customers-dark .pill.delivered,
-.marketing-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
+.marketing-dark .pill.delivered,
+.analytics-dark .pill.delivered { background: rgba(61, 220, 151, 0.15); color: #3DDC97; }
 .overview-dark .pill.cancelled,
 .orders-dark .pill.cancelled,
 .products-dark .pill.cancelled,
 .customers-dark .pill.cancelled,
-.marketing-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
+.marketing-dark .pill.cancelled,
+.analytics-dark .pill.cancelled { background: rgba(255, 94, 126, 0.15); color: #FF5E7E; }
 
 /* Marketing's own delete-row buttons sit inline with the row rather than
    stacked under a mini-right block, since these rows are only ever a name
@@ -1304,5 +1319,6 @@
   .orders-dark,
   .products-dark,
   .customers-dark,
-  .marketing-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
+  .marketing-dark,
+  .analytics-dark { margin: -20px -16px -50px; padding: 20px 16px 50px; }
 }
