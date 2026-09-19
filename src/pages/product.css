@@ -1,13 +1,13 @@
 .crumb {
   padding: 22px 40px 0;
   font-size: 11.5px;
-  color: var(--steel);
+  font-weight: 500;
+  color: var(--ink);
   letter-spacing: 0.04em;
 }
 
-.crumb a { color: var(--steel); text-decoration: none; }
-.crumb a:hover { color: var(--ink); }
-.crumb span { color: var(--ink); }
+.crumb a { color: var(--ink); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
 
 .pdp {
   display: grid;
@@ -139,28 +139,6 @@
   display: block;
 }
 
-.frame-tag {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--paper);
-  background: rgba(22, 22, 15, 0.55);
-  backdrop-filter: blur(3px);
-  padding: 5px 10px;
-}
-
-.frame-tag .dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--signal);
-}
-
 /* Handles for the phone rail — the desktop grid has nothing to page through. */
 .rail-nav { display: none; }
 
@@ -184,23 +162,24 @@
   margin-bottom: 14px;
 }
 
-.info .code { color: var(--steel); font-size: 12px; letter-spacing: 0.05em; margin-bottom: 0; }
+.info .code { color: var(--ink); font-weight: 500; font-size: 12px; letter-spacing: 0.05em; margin-bottom: 0; }
 
 .share-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   flex-shrink: 0;
   border: none;
   background: none;
   padding: 0;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--steel);
+  color: var(--ink);
   cursor: pointer;
 }
 
-.share-btn:hover { color: var(--ink); }
+.share-btn:hover { color: var(--cobalt); }
 
 .info h1 {
   font-size: clamp(28px, 3vw, 40px);
@@ -216,7 +195,7 @@
 .info .desc {
   font-size: 14px;
   line-height: 1.7;
-  color: #3a3a30;
+  color: var(--ink);
   max-width: 46ch;
   margin-bottom: 30px;
 }
@@ -224,54 +203,59 @@
 .field-label {
   font-size: 11px;
   letter-spacing: 0.07em;
-  color: var(--steel);
+  font-weight: 500;
+  color: var(--ink);
   margin-bottom: 10px;
 }
 
 .sizes {
   display: flex;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 18px;
   margin-bottom: 28px;
 }
 
+/* Bare letters, no box. The selected size is the full-strength one with a bar
+   under it; the rest sit back until hovered. */
 .size-opt {
-  min-width: 46px;
-  height: 46px;
-  padding: 0 12px;
-  border: 1px solid var(--steel-line);
+  padding: 0 2px 6px;
+  border: none;
+  border-bottom: 3px solid transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  /* Monoton's striped letters only resolve at a larger size — any smaller and
+     the lines blur into a grey smudge. */
+  font-family: 'Monoton', sans-serif;
+  font-size: 30px;
+  line-height: 1;
+  opacity: 0.4;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
 }
 
-.size-opt:hover { border-color: var(--ink); }
+.size-opt:hover { opacity: 0.8; }
 
 .size-opt.active {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  opacity: 1;
+  border-bottom-color: var(--ink);
 }
 
 .size-opt.disabled {
-  color: var(--steel-line);
+  color: var(--steel);
+  opacity: 0.35;
   text-decoration: line-through;
   cursor: not-allowed;
 }
 
-.size-opt.disabled:hover { border-color: var(--steel-line); }
+.size-opt.disabled:hover { opacity: 0.35; }
 
 /* A sold-out size can still be picked — that's how the shopper says which
    size to email them about — so it has to read as selected while staying
    struck through and clearly not buyable. */
 .size-opt.disabled.active {
-  background: transparent;
-  color: var(--steel);
-  border-color: var(--ink);
+  opacity: 0.6;
+  border-bottom-color: var(--ink);
 }
 
 .add-cart:disabled {
@@ -377,12 +361,13 @@
   display: inline-block;
   margin-top: 34px;
   font-size: 12px;
+  font-weight: 500;
   text-decoration: none;
-  color: var(--steel);
+  color: var(--ink);
   align-self: flex-start;
 }
 
-.back-link:hover { color: var(--ink); }
+.back-link:hover { text-decoration: underline; }
 
 /* ---------- Details / size chart sheet ---------- */
 

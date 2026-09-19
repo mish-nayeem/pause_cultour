@@ -9,6 +9,16 @@ import './home.css'
 
 const SLIDE_MS = 5000
 
+// [plain, accent] pairs — the accent word is picked out in the signal colour.
+// Lines come from the brand's own copy (see the footer): everything on hold,
+// made in Dhaka, small drops.
+const TICKER = [
+  ['EVERYTHING', 'ON HOLD'],
+  ['CUT & SEWN IN', 'DHAKA'],
+  ['RELEASED IN', 'SMALL DROPS'],
+  ["WHEN IT'S GONE,", "IT'S GONE"],
+]
+
 export default function Home() {
   const [slides, setSlides] = useState([])
   const [active, setActive] = useState(0)
@@ -74,6 +84,22 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {/* Two identical halves; the track slides left by exactly one half, so
+          the loop restarts on an identical frame with no visible jump. */}
+      <div className="ticker" aria-hidden="true">
+        <div className="ticker-track">
+          {[0, 1].map((half) => (
+            <div className="ticker-half" key={half}>
+              {[...TICKER, ...TICKER].map(([plain, accent], i) => (
+                <span className="ticker-item" key={i}>
+                  {plain} <em>{accent}</em>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
 
       <Footer />
     </>

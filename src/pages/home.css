@@ -89,7 +89,47 @@
   transform: scale(1.15);
 }
 
+/* ---------- Sliding ticker ---------- */
+
+.ticker {
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 18px 0;
+  margin-top: 10px;
+  white-space: nowrap;
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-slide 40s linear infinite;
+}
+
+.ticker-half { display: flex; flex-shrink: 0; }
+
+.ticker-item {
+  font-family: 'Anton', sans-serif;
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0 42px;
+}
+
+.ticker-item em { font-style: normal; color: var(--signal); }
+
+@keyframes ticker-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation-duration: 120s; }
+}
+
 @media (max-width: 860px) {
+  .ticker { padding: 14px 0; }
+  .ticker-item { font-size: 14px; padding: 0 28px; }
   .hero-full {
     height: calc(92vh - 16px);
     margin: 8px;

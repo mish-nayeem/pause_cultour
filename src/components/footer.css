@@ -65,28 +65,38 @@
   padding-bottom: 44px;
 }
 
+/* Column labels and links use the condensed display face, uppercase, so the
+   footer reads like the reference: tiny heading, big tight link list. */
 .foot-label {
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  color: var(--steel);
-  margin-bottom: 16px;
+  font-family: 'Anton', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 14px;
 }
 
 .foot-about p {
-  font-size: 13.5px;
-  line-height: 1.7;
-  color: #3a3a30;
+  font-family: 'Anton', sans-serif;
+  font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
   max-width: 34ch;
 }
 
 .foot-col {
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 5px;
 }
 
 .foot-col a {
-  font-size: 13.5px;
+  font-family: 'Anton', sans-serif;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
   color: var(--ink);
   text-decoration: none;
   width: fit-content;
@@ -107,26 +117,38 @@
   border-top: 1px solid var(--steel-line);
 }
 
-.socials { display: flex; gap: 16px; }
+.socials { display: flex; gap: 12px; }
 
+/* Solid ink circles with paper-coloured glyphs — the old thin grey outlines
+   nearly vanished against the footer's beige background. */
 .socials a {
-  color: var(--steel);
+  color: var(--paper);
+  background: var(--ink);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
   display: flex;
-  transition: color 0.15s ease;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.socials a:hover { color: var(--ink); }
+.socials a svg { width: 22px; height: 22px; }
+
+.socials a:hover { background: var(--cobalt); transform: translateY(-2px); }
 
 .foot-fine {
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  color: var(--steel);
+  font-family: 'Anton', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
 }
 
 @media (max-width: 860px) {
   .site-footer { padding: 40px 20px 26px; }
   .foot-top { margin-bottom: 38px; }
   .foot-top h3 { font-size: 22px; }
+  .foot-col a, .foot-about p { font-size: 16px; }
   .sub-form { flex-direction: column; }
   .sub-input { border-right: 1px solid var(--steel-line); border-bottom: none; }
   .sub-btn { padding: 14px; }
