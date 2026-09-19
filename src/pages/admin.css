@@ -1206,6 +1206,17 @@
 .overview-dark { --cobalt: #3FC1FF; }
 .orders-dark { --cobalt: #FF5E7E; }
 
+/* A <select>'s own open dropdown panel ignores most of the styling above —
+   Chrome/Edge on Windows render it with a plain white background regardless,
+   so the light text this scope gives every element (inherited from `color`
+   on the wrapper) turned invisible against it. Styling the options
+   themselves is the one thing that panel does respect. */
+.overview-dark select option,
+.orders-dark select option {
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
 /* Hardcoded rgba(22,22,15,…)/rgba(237,234,225,…) literals elsewhere in this
    file assume a light surface — they don't move when the tokens above do, so
    the handful actually used inside these tabs get their own dark-appropriate
