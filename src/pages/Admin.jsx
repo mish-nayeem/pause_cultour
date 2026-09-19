@@ -1332,7 +1332,10 @@ export default function Admin() {
                   <div className="pthumb">
                     {Array.isArray(p.images) && p.images[0] && <img src={cld(p.images[0], { w: 120 })} alt="" />}
                   </div>
-                  <div className="tc name">{p.name}</div>
+                  <div className="tc name">
+                    {p.name}
+                    <div className="mini-id mono" style={{ marginTop: '2px' }}>{p.id}</div>
+                  </div>
                   <div className="tc mono dim">{p.variant}</div>
                   <div className="tc mono">{taka(p.price)}</div>
                   <div className="tc mono dim">
@@ -1378,7 +1381,7 @@ export default function Admin() {
                 <div className="mini-row" key={p.id}>
                   <div>
                     <div className="mini-name">{p.name}</div>
-                    <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.variant}</div>
+                    <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.id} · {p.variant}</div>
                   </div>
                   <span className="stock-chips">
                     {(p.sizes || []).map((s) => {
@@ -1406,10 +1409,10 @@ export default function Admin() {
             </div>
             {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
             {top.map((p, i) => (
-              <div className="mini-row" key={p.name}>
+              <div className="mini-row" key={p.id || p.name}>
                 <div>
-                  <div className="mini-id mono">{String(i + 1).padStart(2, '0')}</div>
-                  <div className="mini-name">{p.name}</div>
+                  <div className="mini-name">{String(i + 1).padStart(2, '0')} · {p.name}</div>
+                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.id || '—'}</div>
                 </div>
                 <div className="mini-right">
                   <div className="mono">{p.units} sold</div>
@@ -1431,7 +1434,7 @@ export default function Admin() {
               <div className="mini-row" key={m.id}>
                 <div>
                   <div className="mini-name">{m.name}</div>
-                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{m.variant}</div>
+                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{m.id} · {m.variant}</div>
                 </div>
                 <div className="mini-right">
                   <div className="mono">{m.margin.toFixed(0)}% margin</div>

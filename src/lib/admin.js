@@ -310,10 +310,13 @@ export function topProducts(orders, limit = 5) {
     .filter((o) => o.status !== 'cancelled')
     .forEach((o) => {
       ;(o.order_items || []).forEach((item) => {
-        const prev = tally.get(item.product_name) || { name: item.product_name, units: 0, value: 0 }
+        // Grouped by id rather than name — two products sharing a name (a
+        // colour variant, say) would otherwise merge into one bestseller.
+        const key = item.product_id || item.product_name
+        const prev = tally.get(key) || { id: item.product_id, name: item.product_name, units: 0, value: 0 }
         prev.units += item.qty
         prev.value += item.qty * Number(item.price)
-        tally.set(item.product_name, prev)
+        tally.set(key, prev)
       })
     })
 
