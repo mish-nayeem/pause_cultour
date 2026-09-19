@@ -9,6 +9,8 @@ import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import OrderConfirmed from './pages/OrderConfirmed.jsx'
 import Admin from './pages/Admin.jsx'
+import Login from './pages/Login.jsx'
+import Account from './pages/Account.jsx'
 import Info from './pages/Info.jsx'
 import About from './pages/About.jsx'
 import Track from './pages/Track.jsx'
@@ -31,6 +33,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order-confirmed" element={<OrderConfirmed />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/account" element={<Account />} />
 
           {/* Static pages. Explicit paths rather than /info/:slug so the URLs
               read as real pages and are worth sharing. */}

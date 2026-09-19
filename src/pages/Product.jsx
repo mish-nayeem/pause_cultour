@@ -8,6 +8,8 @@ import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
 import { availableSizes, isAllSoldOut, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
 import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
+import { currentUser } from '../lib/auth.js'
+import { isAdminEmail } from '../lib/admin.js'
 import { fetchRatingSummary, submitReview } from '../lib/reviews.js'
 import usePageMeta, { useProductSchema } from '../lib/usePageMeta.js'
 import './product.css'
@@ -64,6 +66,15 @@ export default function Product() {
   const [capped, setCapped] = useState(false)
   const [wishEmail, setWishEmail] = useState(savedEmail)
   const [wishState, setWishState] = useState('idle') // idle | saving | error
+
+  // A signed-in customer's list is the rows under their account email, so the
+  // restock form starts with that address rather than whatever was typed last.
+  // Not for the admin — their login isn't a shopper's address.
+  useEffect(() => {
+    currentUser().then((u) => {
+      if (u?.email && !isAdminEmail(u.email)) setWishEmail(u.email)
+    })
+  }, [])
   const [wishDone, setWishDone] = useState(null) // the size just signed up for
   const [sheet, setSheet] = useState(null) // null | 'details' | 'sizes'
   const [shot, setShot] = useState(0)
@@ -304,11 +315,6 @@ export default function Product() {
                   alt={`${product.name} — view ${i + 1}`}
                   loading={i > 1 ? 'lazy' : undefined}
                 />
-                {i === 0 && (
-                  <div className="frame-tag mono">
-                    <span className="dot" /> FRAME {String(i + 1).padStart(5, '0')} / PAUSED
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -344,7 +350,7 @@ export default function Product() {
           <div className="code-row">
             <div className="code mono">{product.sku} · {product.variant.toUpperCase()}</div>
             <button type="button" className="share-btn mono" onClick={handleShare}>
-              <IconShare width="13" height="13" />
+              <IconShare width="15" height="15" strokeWidth="2.2" />
               {shared ? 'LINK COPIED' : 'SHARE'}
             </button>
           </div>

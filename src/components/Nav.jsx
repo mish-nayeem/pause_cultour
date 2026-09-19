@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
-import { IconLock } from './Icons.jsx'
+import { IconUser } from './Icons.jsx'
+import { watchUser } from '../lib/auth.js'
+import { isAdminEmail } from '../lib/admin.js'
 import './nav.css'
 
 // The mark is a flat PNG, so its thickness is faked by stacking copies a
@@ -22,6 +24,8 @@ export default function Nav({ overlay = false }) {
   const [categories, setCategories] = useState([])
   const [drops, setDrops] = useState([])
 
+  const [user, setUser] = useState(null)
+
   const closeTimer = useRef(null)
 
   // Closing on a delay rather than the instant the pointer leaves: the trip
@@ -38,6 +42,13 @@ export default function Nav({ overlay = false }) {
   }
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
+
+  useEffect(() => watchUser(setUser), [])
+
+  // The person icon leads to wherever this visitor belongs: the admin panel
+  // for the owner, their account for a customer, the login page for a guest.
+  const accountLink = !user ? '/login' : isAdminEmail(user.email) ? '/admin' : '/account'
+  const accountLabel = !user ? 'Log in' : isAdminEmail(user.email) ? 'Admin panel' : 'My account'
 
   // Both menus are admin-managed lists, so an entry can be pulled the day it
   // sells out without touching the products behind it.
@@ -66,6 +77,16 @@ export default function Nav({ overlay = false }) {
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
+  // Every page but the homepage gets a way back. React Router numbers each
+  // history entry; idx 0 means this page was the first one opened in the tab
+  // (a shared link, a fresh bookmark), where navigate(-1) would leave the site.
+  const showBack = location.pathname !== '/'
+
+  function goBack() {
+    if (window.history.state?.idx > 0) navigate(-1)
+    else navigate('/')
+  }
+
   function goCategory(category) {
     navigate(category === 'ALL' ? '/shop' : `/shop?c=${encodeURIComponent(category)}`)
   }
@@ -80,9 +101,16 @@ export default function Nav({ overlay = false }) {
 
   return (
     <div
-      className={`nav-wrap ${overlay ? 'overlay' : ''}`}
+      className={`nav-wrap ${overlay ? 'overlay' : ''} ${showBack ? 'has-back' : ''}`}
       onMouseLeave={scheduleClose}
     >
+      {showBack && (
+        <button type="button" className="back-btn" onClick={goBack} aria-label="Go back">
+          <span className="back-arrow" aria-hidden="true" />
+          <span className="back-text">BACK</span>
+        </button>
+      )}
+
       <header className="site-header">
         <Link to="/" className="logo" aria-label="PAUSE — home">
           <span className="logo-3d">
@@ -127,8 +155,8 @@ export default function Nav({ overlay = false }) {
               <Link to="/cart" className="cart">CART ({count})</Link>
             </li>
             <li onMouseEnter={() => showMenu(null)}>
-              <Link to="/admin" className="admin-link" title="Admin" aria-label="Admin">
-                <IconLock width="14" height="14" />
+              <Link to={accountLink} className="admin-link" title={accountLabel} aria-label={accountLabel}>
+                <IconUser width="15" height="15" />
               </Link>
             </li>
           </ul>
@@ -185,8 +213,8 @@ export default function Nav({ overlay = false }) {
           <div className="mob-links mono">
             <Link to="/about">ABOUT US</Link>
             <Link to="/cart">CART ({count})</Link>
-            <Link to="/admin" className="mob-admin">
-              <IconLock width="13" height="13" /> ADMIN
+            <Link to={accountLink} className="mob-admin">
+              <IconUser width="13" height="13" /> {user ? accountLabel.toUpperCase() : 'LOG IN / SIGN UP'}
             </Link>
           </div>
         </div>

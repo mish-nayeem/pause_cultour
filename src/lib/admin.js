@@ -36,22 +36,7 @@ export function isAdminEmail(email) {
 
 // ---------- Auth ----------
 
-export async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) {
-    console.error('[Supabase] signIn failed:', error.message)
-    return { session: null, error }
-  }
-
-  // A valid Supabase account that isn't the admin gets signed straight back out,
-  // so no non-admin session is ever left sitting in local storage.
-  if (!isAdminEmail(data.session?.user?.email)) {
-    await supabase.auth.signOut()
-    return { session: null, error: { message: 'not_admin' } }
-  }
-
-  return { session: data.session, error: null }
-}
+// Signing in lives in auth.js — one login for admins and customers.
 
 export async function signOut() {
   await supabase.auth.signOut()
@@ -61,11 +46,9 @@ export async function getSession() {
   const { data } = await supabase.auth.getSession()
   const session = data.session
 
-  // Guards against a stale or hand-crafted session for a non-admin account.
-  if (session && !isAdminEmail(session.user?.email)) {
-    await supabase.auth.signOut()
-    return null
-  }
+  // A signed-in customer isn't an admin — but they're still a customer, so
+  // this reports "no admin session" without ending their login.
+  if (session && !isAdminEmail(session.user?.email)) return null
 
   return session
 }

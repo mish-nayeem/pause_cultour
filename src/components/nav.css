@@ -13,6 +13,42 @@
   pointer-events: none;
 }
 
+/* ---------- Back button ---------- */
+
+/* A white card at the left edge, level with the pill. It's inside the sticky
+   nav wrapper, so it stays put while the page scrolls. */
+.back-btn {
+  position: absolute;
+  top: 24px;
+  left: 20px;
+  z-index: 2;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: #fff;
+  color: var(--ink);
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(22, 22, 15, 0.18);
+  font-family: 'Anton', sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.back-btn:hover { transform: translateX(-2px); }
+
+.back-arrow {
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 7px solid currentColor;
+}
+
 /* On the hero, the nav floats over the image instead of pushing it down. */
 .nav-wrap.overlay {
   position: absolute;
@@ -277,6 +313,23 @@
 
 @media (max-width: 860px) {
   .nav-wrap { padding: 12px 12px 0; }
+
+  /* The pill spans the screen here, so the button sits inside its left end
+     as a bare arrow, and the pill makes room for it. */
+  .has-back .site-header { padding-left: 46px; }
+
+  .back-btn {
+    top: 12px;
+    left: 12px;
+    height: 46px;
+    padding: 0 0 0 20px;
+    background: none;
+    color: var(--paper);
+    box-shadow: none;
+  }
+
+  .back-btn:hover { transform: none; }
+  .back-text { display: none; }
 
   .site-header {
     gap: 14px;

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import AdminLogin from './AdminLogin.jsx'
+import { Link, Navigate } from 'react-router-dom'
 import {
   getSession,
   signOut,
@@ -666,7 +665,7 @@ export default function Admin() {
   }
 
   if (!session) {
-    return <AdminLogin onSignedIn={setSession} />
+    return <Navigate to="/login?next=/admin" replace />
   }
 
   const windowValue = series.reduce((s, d) => s + d.value, 0)
