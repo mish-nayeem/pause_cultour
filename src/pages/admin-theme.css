@@ -27,7 +27,7 @@
   --paper: #ffffff;
   --paper-dim: #eef5f0;
   --ink: #15271d;
-  --steel: #566a5e;
+  --steel: #35493e;
   --steel-line: rgba(21, 39, 29, 0.1);
   --cobalt: #0b8a43;
   --side-bg: linear-gradient(180deg, #14a656 0%, #0a7d3e 100%);
@@ -47,7 +47,7 @@
   --paper: #ffffff;
   --paper-dim: #edf2f9;
   --ink: #14233a;
-  --steel: #566880;
+  --steel: #33496a;
   --steel-line: rgba(20, 35, 58, 0.1);
   --cobalt: #1d5fb4;
   --side-bg: linear-gradient(180deg, #1c63b8 0%, #0f3f80 100%);
@@ -67,7 +67,7 @@
   --paper: #25282d;
   --paper-dim: #17191c;
   --ink: #f1f2f4;
-  --steel: #a3a8b1;
+  --steel: #cdd1d8;
   --steel-line: rgba(255, 255, 255, 0.09);
   --cobalt: #3fc1ff;
   --side-bg: #212429;
@@ -113,7 +113,36 @@
   letter-spacing: -0.015em;
 }
 
-.admin .main { font-size: 14px; line-height: 1.5; }
+.admin .main { font-size: 14px; line-height: 1.5; font-weight: 500; }
+
+/* Labels, hints and placeholders were reading too pale. Labels and headings
+   in forms go bold, hints go medium, and what's typed into a field is full
+   strength. */
+.admin :is(.pf-label, .pf-field > span, .fl, .dlabel, .stat-label, .panel-label, .field-label) {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.admin :is(.pf-hint, .pf-note, .panel-note, .stat-note, .top-sub, .admin-crumb, .dim, .empty, .loading) {
+  color: var(--steel);
+  font-weight: 500;
+}
+
+.admin :is(input, select, textarea) { color: var(--ink); font-weight: 500; }
+
+.admin ::placeholder {
+  color: color-mix(in srgb, var(--ink) 68%, transparent);
+  opacity: 1;
+}
+
+/* A locked field (an existing product's ID) stays readable rather than
+   fading to grey. */
+.admin :is(input, select, textarea):disabled,
+.admin :is(input, textarea)[readonly] {
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  -webkit-text-fill-color: color-mix(in srgb, var(--ink) 78%, transparent);
+  opacity: 1;
+}
 .admin .top h1 { font-size: 30px; }
 .admin .admin-crumb { letter-spacing: 0.06em; font-weight: 600; }
 .admin .stat-value { font-weight: 800; letter-spacing: -0.02em; }
@@ -431,3 +460,35 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
   .tab-wrap { animation: none; }
   .admin * { transition: none !important; }
 }
+
+/* ---------- WhatsApp links ---------- */
+
+.admin .wa-mini {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 8px;
+  color: #1fa855;
+  border-radius: 50%;
+  padding: 3px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.admin .wa-mini:hover { background: rgba(31, 168, 85, 0.16); transform: scale(1.1); }
+
+.admin .wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  margin-right: 8px;
+  padding: 9px 15px;
+  border-radius: var(--r-ctl);
+  border: 1px solid #1fa855;
+  color: #1fa855;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.admin .wa-btn:hover { background: #1fa855; color: #fff; }

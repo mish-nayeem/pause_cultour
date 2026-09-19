@@ -46,6 +46,7 @@ import { fetchAllNavCategories } from '../lib/navCategories.js'
 import { stockMap, totalStock, LOW_STOCK_AT } from '../lib/stock.js'
 import { fetchWishlist, groupDemand } from '../lib/wishlist.js'
 import { COURIERS, courierLabel, sendToCourier, syncCourierStatus } from '../lib/courier.js'
+import { whatsappLink, shopToCustomerMessage } from '../lib/whatsapp.js'
 import {
   IconTag,
   IconBox,
@@ -60,6 +61,7 @@ import {
   IconTrend,
   IconStar,
   IconClock,
+  IconChat,
   IconImage,
 } from '../components/Icons.jsx'
 import './admin.css'
@@ -1117,7 +1119,20 @@ export default function Admin() {
                         </span>
                       )}
                     </div>
-                    <div className="tc mono">{o.customer_phone}</div>
+                    <div className="tc mono">
+                      {o.customer_phone}
+                      <a
+                        className="wa-mini"
+                        href={whatsappLink(o.customer_phone, shopToCustomerMessage(o))}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Message on WhatsApp"
+                        aria-label={`Message ${o.customer_name} on WhatsApp`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <IconChat width="14" height="14" />
+                      </a>
+                    </div>
                     <div className="tc mono dim">{shortDate(o.created_at)}</div>
                     <div className="tc mono price">
                       {taka(o.total ?? o.subtotal)}
@@ -1281,6 +1296,16 @@ export default function Admin() {
                             </button>
                           </div>
                         )}
+
+                        <a
+                          className="wa-btn"
+                          href={whatsappLink(o.customer_phone, shopToCustomerMessage(o))}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <IconChat width="15" height="15" />
+                          WhatsApp customer
+                        </a>
 
                         <button className="courier-btn ghost mono slip-btn" onClick={() => setSlipOrder(o)}>
                           Print packing slip
