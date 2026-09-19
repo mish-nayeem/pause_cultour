@@ -1,0 +1,50 @@
+/* Page numbers — shared by the shop and the product page. */
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 44px 20px 70px;
+}
+
+.pager-btn {
+  min-width: 46px;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--steel-line);
+  border-radius: 6px;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pager-btn:hover { border-color: var(--ink); }
+
+.pager-btn.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+  cursor: default;
+}
+
+.pager-btn.wide { padding: 0 22px; }
+
+.pager-gap {
+  min-width: 30px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .pager { gap: 7px; padding: 32px 12px 50px; }
+  .pager-btn { min-width: 40px; height: 40px; padding: 0 10px; font-size: 14px; }
+  .pager-btn.wide { padding: 0 14px; }
+  .pager-gap { min-width: 18px; }
+}

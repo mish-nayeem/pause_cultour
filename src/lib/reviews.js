@@ -1,21 +1,19 @@
 import { supabase } from './supabaseClient.js'
 
-// Who said what stays between the reviewer and the admin panel — the
-// storefront only ever needs the rating itself for the star average, so
-// that's all this asks the query for. Postgrest only sends back the columns
-// a query selects regardless of what RLS would otherwise allow through, so
-// a name or comment never reaches the browser here at all.
-export async function fetchRatingSummary(productId) {
+// Every review for a product, newest first — the star average and the list
+// behind the reviews icon both come from this one query.
+export async function fetchReviews(productId) {
   const { data, error } = await supabase
     .from('product_reviews')
-    .select('rating')
+    .select('id, customer_name, rating, comment, created_at')
     .eq('product_id', productId)
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('[Supabase] fetchRatingSummary failed:', error.message)
-    return { ratings: [], error }
+    console.error('[Supabase] fetchReviews failed:', error.message)
+    return { reviews: [], error }
   }
-  return { ratings: data.map((r) => r.rating), error: null }
+  return { reviews: data, error: null }
 }
 
 export async function submitReview({ productId, name, rating, comment }) {

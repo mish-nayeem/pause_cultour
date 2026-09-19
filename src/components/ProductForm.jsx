@@ -5,6 +5,7 @@ import { saveProduct, deleteProduct } from '../lib/admin.js'
 import { IconX } from './Icons.jsx'
 import { stockForSizes, stockMap } from '../lib/stock.js'
 import { sendRestockAlert } from '../lib/email.js'
+import { parseDetails, serializeDetails, mergeLabels, rememberedLabels, rememberLabels } from '../lib/details.js'
 import './product-form.css'
 
 const BLANK = {
@@ -61,7 +62,19 @@ function blankChart(sizes) {
   }
 }
 
-export default function ProductForm({ existing, categories = [], onDone, onCancel }) {
+// A new product starts with the labels used on earlier ones (Fabric, Fit…),
+// values empty. A saved product starts with what it has.
+function initialDetailRows(existing, labels) {
+  if (existing) {
+    const rows = parseDetails(existing.details)
+    return rows.length > 0 ? rows : [{ label: '', value: '' }]
+  }
+  return labels.length > 0
+    ? labels.map((label) => ({ label, value: '' }))
+    : [{ label: '', value: '' }]
+}
+
+export default function ProductForm({ existing, categories = [], detailLabels = [], onDone, onCancel }) {
   const isNewRecord = !existing
   const [p, setP] = useState(existing ? fromRow(existing) : BLANK)
   const [uploading, setUploading] = useState(false)
@@ -72,9 +85,19 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
   const [newCategory, setNewCategory] = useState('')
   const fileRef = useRef(null)
 
+  const knownLabels = mergeLabels(detailLabels, rememberedLabels())
+  const [detailRows, setDetailRows] = useState(() => initialDetailRows(existing, knownLabels))
+
   // A product either keeps counts or it doesn't; the form shows one of two
   // states rather than a checkbox plus a dead set of inputs.
   const tracking = stockMap(p) !== null
+
+  // The rows are the source of truth while editing; `details` is the text they
+  // serialise to, kept in step so the save path stays the same as ever.
+  function updateDetailRows(next) {
+    setDetailRows(next)
+    setP((prev) => ({ ...prev, details: serializeDetails(next) }))
+  }
 
   function set(field, value) {
     setP((prev) => ({ ...prev, [field]: value }))
@@ -213,6 +236,8 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
 
     setSaving(true)
     setError('')
+
+    rememberLabels(detailRows.map((row) => row.label))
 
     const { error: saveError } = await saveProduct(
       { ...p, id: p.id.trim(), price: Number(p.price) },
@@ -456,19 +481,61 @@ export default function ProductForm({ existing, categories = [], onDone, onCance
         />
       </label>
 
-      <label className="pf-field">
-        <span className="mono">DETAILS</span>
-        <textarea
-          rows={6}
-          value={p.details}
-          onChange={(e) => set('details', e.target.value)}
-          placeholder={'Oversized fit\nChain stitch embroidery\nBranded metal zipper\nShell: 55% wool, 45% polyester'}
-        />
-        <em className="pf-hint mono">
-          One line per bullet. These sit behind the DETAILS button on the product
-          page — leave it empty and that button doesn't show at all.
-        </em>
-      </label>
+      {/* ---- Details ---- */}
+      <div className="pf-label mono">DETAILS</div>
+      <div className="pf-note mono">
+        Name on the left (Fabric, Fit…), the detail on the right. Customers only
+        see rows with both filled in — leave either side empty and that row stays
+        hidden. Names you've used before come back on every new product.
+      </div>
+
+      <div className="pf-detail-grid">
+        {detailRows.map((row, i) => (
+          <div className="pf-detail-row" key={i}>
+            <input
+              className="mono"
+              list="pf-detail-labels"
+              value={row.label}
+              onChange={(e) =>
+                updateDetailRows(detailRows.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
+              }
+              placeholder="Fabric"
+            />
+            <input
+              value={row.value}
+              onChange={(e) =>
+                updateDetailRows(detailRows.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))
+              }
+              placeholder="100% cotton"
+            />
+            <button
+              type="button"
+              className="pf-chart-x"
+              onClick={() => {
+                const next = detailRows.filter((_, j) => j !== i)
+                updateDetailRows(next.length > 0 ? next : [{ label: '', value: '' }])
+              }}
+              title="Remove row"
+            >
+              <IconX width="12" height="12" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <datalist id="pf-detail-labels">
+        {knownLabels.map((l) => (
+          <option key={l} value={l} />
+        ))}
+      </datalist>
+
+      <button
+        type="button"
+        className="pf-chart-add mono"
+        onClick={() => updateDetailRows([...detailRows, { label: '', value: '' }])}
+      >
+        + Add row
+      </button>
 
       {/* ---- Sizes ---- */}
       <div className="pf-grid">

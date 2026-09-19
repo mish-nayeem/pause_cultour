@@ -10,7 +10,7 @@
 
 .auth-split {
   width: 100%;
-  max-width: 820px;
+  max-width: 860px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -33,7 +33,7 @@
 
 .auth-rule {
   width: 1px;
-  height: 220px;
+  height: 340px;
   background: rgba(237, 234, 225, 0.16);
 }
 
@@ -41,53 +41,73 @@
 
 .auth-panel {
   width: 100%;
-  max-width: 330px;
+  max-width: 350px;
+  padding: 8px 0;
 }
 
-.auth-tabs {
-  display: flex;
-  gap: 22px;
-  margin-bottom: 26px;
+.auth-title {
   font-size: 12px;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 22px;
 }
 
-.auth-tabs button {
-  background: none;
+.auth-lead {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(237, 234, 225, 0.8);
+  margin-bottom: 20px;
+}
+
+/* Google's own colours on a light button, like every "Sign in with Google". */
+.auth-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 22px;
+  padding: 12px 16px;
   border: none;
-  padding: 0 0 6px;
-  color: rgba(237, 234, 225, 0.5);
-  border-bottom: 2px solid transparent;
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  letter-spacing: inherit;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
-.auth-tabs button:hover { color: var(--paper); }
+.auth-google:hover { opacity: 0.88; }
 
-.auth-tabs button.on {
+.auth-field {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.auth-field span {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--paper);
-  border-bottom-color: var(--paper);
+  margin-bottom: 8px;
 }
 
-.auth-input {
+.auth-field input {
   display: block;
   width: 100%;
   background: transparent;
-  border: 1px solid rgba(237, 234, 225, 0.28);
+  border: 1px solid rgba(237, 234, 225, 0.4);
   border-radius: 6px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
+  padding: 13px 14px;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--paper);
 }
 
-.auth-input::placeholder { color: rgba(237, 234, 225, 0.5); }
-
-.auth-input:focus {
+.auth-field input:focus {
   outline: none;
   border-color: var(--paper);
 }
@@ -95,7 +115,7 @@
 .auth-msg {
   font-size: 12px;
   line-height: 1.5;
-  margin: 2px 0 14px;
+  margin: 0 0 16px;
 }
 
 .auth-msg.bad { color: #ff7a63; }
@@ -104,26 +124,89 @@
 .auth-btn {
   display: block;
   width: 100%;
-  margin-top: 8px;
   padding: 15px;
   border: 1px solid var(--paper);
   border-radius: 6px;
   background: var(--paper);
   color: var(--ink);
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .auth-btn:hover { opacity: 0.88; }
 .auth-btn:disabled { opacity: 0.55; cursor: default; }
 
+/* Remember me on the left, forgot-password on the right, on one line. */
+.auth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.auth-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: rgba(237, 234, 225, 0.85);
+  cursor: pointer;
+}
+
+.auth-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--paper);
+  cursor: pointer;
+}
+
+.auth-link {
+  background: none;
+  border: none;
+  padding: 0 0 2px;
+  font-size: 12px;
+  color: var(--paper);
+  border-bottom: 1px solid var(--paper);
+  cursor: pointer;
+}
+
+.auth-link:hover { opacity: 0.75; }
+
+/* "I'm new here. Create an account" under a rule. */
+.auth-switch {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(237, 234, 225, 0.16);
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: rgba(237, 234, 225, 0.85);
+}
+
+.auth-switch button {
+  background: none;
+  border: none;
+  padding: 0 0 1px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--paper);
+  border-bottom: 1px solid var(--paper);
+  cursor: pointer;
+}
+
+.auth-switch button:hover { opacity: 0.75; }
+
 .auth-foot {
-  margin-top: 22px;
+  margin-top: 18px;
+  text-align: center;
   font-size: 12px;
   letter-spacing: 0.04em;
 }
@@ -138,16 +221,16 @@
 /* ---------- Phone ---------- */
 
 @media (max-width: 720px) {
-  .auth-wrap { align-items: flex-start; padding: 48px 20px 32px; }
+  .auth-wrap { align-items: flex-start; padding: 44px 20px 32px; }
 
   .auth-split {
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 28px 0;
+    gap: 26px 0;
   }
 
   .auth-mark { justify-self: center; }
   .auth-mark img { width: 88px; height: 88px; }
 
-  .auth-rule { width: 100%; max-width: 330px; height: 1px; }
+  .auth-rule { width: 100%; max-width: 350px; height: 1px; }
 }

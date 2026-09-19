@@ -11,20 +11,27 @@ import OrderConfirmed from './pages/OrderConfirmed.jsx'
 import Admin from './pages/Admin.jsx'
 import Login from './pages/Login.jsx'
 import Account from './pages/Account.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import Info from './pages/Info.jsx'
 import About from './pages/About.jsx'
 import Track from './pages/Track.jsx'
 import PageViewTracker from './components/PageViewTracker.jsx'
+import RecoveryRedirect from './components/RecoveryRedirect.jsx'
+import SmoothScroll from './components/SmoothScroll.jsx'
 import { captureAttribution } from './lib/attribution.js'
+import { startSessionPolicy } from './lib/sessionPolicy.js'
 import './styles/global.css'
 
 captureAttribution()
+startSessionPolicy()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <CartProvider>
         <PageViewTracker />
+        <SmoothScroll />
+        <RecoveryRedirect />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
@@ -35,6 +42,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/admin" element={<Admin />} />
           <Route path="/login" element={<Login />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Static pages. Explicit paths rather than /info/:slug so the URLs
               read as real pages and are worth sharing. */}

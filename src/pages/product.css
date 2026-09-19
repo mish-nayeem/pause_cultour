@@ -19,47 +19,100 @@
 
 /* ---------- Reviews ---------- */
 
+/* Kept deliberately small: a compact form under the product, with the actual
+   reviews tucked behind the icon. */
 .reviews-section {
-  max-width: 700px;
-  padding: 0 40px 80px;
+  max-width: 460px;
+  padding: 0 40px 60px;
 }
 
 .reviews-head {
   display: flex;
-  align-items: baseline;
-  gap: 16px;
-  margin-bottom: 20px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.reviews-head h2 { font-size: 26px; }
+.reviews-head h2 { font-size: 20px; }
 
-.reviews-avg { font-size: 15px; color: var(--cobalt); letter-spacing: 0.02em; }
-.reviews-avg-detail { color: var(--steel); font-size: 12px; }
+/* The icon carries the count; clicking it opens the list of who said what. */
+.reviews-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 11px 5px 9px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.reviews-toggle:hover,
+.reviews-toggle.on { background: var(--ink); color: var(--paper); }
+
+.reviews-avg { font-size: 13px; color: var(--cobalt); letter-spacing: 0.02em; margin-left: auto; }
+.reviews-avg-detail { color: var(--ink); font-size: 11px; }
+
+.reviews-list {
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--steel-line);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.review-item { padding: 11px 14px; border-bottom: 1px solid var(--steel-line); }
+.review-item:last-child { border-bottom: none; }
+
+.review-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.review-name { font-size: 13px; font-weight: 700; }
+.review-stars { font-size: 12px; color: var(--cobalt); white-space: nowrap; }
+
+.review-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
 
 .reviews-empty {
-  color: var(--steel);
-  margin-bottom: 24px;
+  color: var(--ink);
+  font-size: 12px;
+  padding: 14px;
 }
 
 .review-form {
   border-top: 1px solid var(--steel-line);
-  padding-top: 24px;
+  padding-top: 14px;
 }
 
 .review-form-row {
   display: flex;
-  gap: 12px;
-  margin: 12px 0;
+  gap: 8px;
+  margin: 8px 0;
 }
 
 .review-form-row input {
   flex: 1;
+  min-width: 0;
   border: 1px solid var(--steel-line);
   border-radius: 8px;
   background: var(--paper);
-  padding: 11px 14px;
+  padding: 8px 12px;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
 }
 
@@ -67,9 +120,9 @@
   border: 1px solid var(--steel-line);
   border-radius: 8px;
   background: var(--paper);
-  padding: 11px 14px;
+  padding: 8px 10px;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
 }
 
@@ -78,12 +131,12 @@
   border: 1px solid var(--steel-line);
   border-radius: 8px;
   background: var(--paper);
-  padding: 11px 14px;
+  padding: 8px 12px;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
   resize: vertical;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .review-form-row input:focus,
@@ -94,7 +147,7 @@
   display: block;
   color: var(--signal);
   font-size: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   font-style: normal;
 }
 
@@ -103,8 +156,8 @@
   color: var(--paper);
   border: none;
   border-radius: 8px;
-  padding: 12px 22px;
-  font-size: 13px;
+  padding: 9px 18px;
+  font-size: 12px;
   letter-spacing: 0.05em;
   cursor: pointer;
 }
@@ -112,8 +165,7 @@
 .review-form button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 @media (max-width: 640px) {
-  .reviews-section { padding: 0 20px 60px; }
-  .review-form-row { flex-direction: column; }
+  .reviews-section { padding: 0 20px 50px; max-width: none; }
 }
 
 /* ---------- Left: gallery ---------- */
@@ -215,48 +267,57 @@
   margin-bottom: 28px;
 }
 
-/* Bare letters, no box. The selected size is the full-strength one with a bar
-   under it; the rest sit back until hovered. */
+/* Small rounded boxes. Hover lifts and darkens the outline so it's clear which
+   one the pointer is on; the picked size is filled in. */
 .size-opt {
-  padding: 0 2px 6px;
-  border: none;
-  border-bottom: 3px solid transparent;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--steel-line);
+  border-radius: 10px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Monoton's striped letters only resolve at a larger size — any smaller and
-     the lines blur into a grey smudge. */
-  font-family: 'Monoton', sans-serif;
-  font-size: 30px;
-  line-height: 1;
-  opacity: 0.4;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
   cursor: pointer;
-  transition: opacity 0.15s ease, border-color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
-.size-opt:hover { opacity: 0.8; }
-
-.size-opt.active {
-  opacity: 1;
-  border-bottom-color: var(--ink);
+.size-opt:hover {
+  border-color: var(--ink);
+  background: rgba(22, 22, 15, 0.08);
+  transform: translateY(-2px);
 }
 
+.size-opt:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+
+.size-opt.active,
+.size-opt.active:hover {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+/* Sold out: struck through and faded, but still pickable — that's how the
+   shopper says which size to email them about. */
 .size-opt.disabled {
   color: var(--steel);
-  opacity: 0.35;
   text-decoration: line-through;
-  cursor: not-allowed;
 }
 
-.size-opt.disabled:hover { opacity: 0.35; }
-
-/* A sold-out size can still be picked — that's how the shopper says which
-   size to email them about — so it has to read as selected while staying
-   struck through and clearly not buyable. */
-.size-opt.disabled.active {
-  opacity: 0.6;
-  border-bottom-color: var(--ink);
+.size-opt.disabled.active,
+.size-opt.disabled.active:hover {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
 }
+
+.size-opt:disabled { cursor: not-allowed; }
+.size-opt:disabled:hover { transform: none; background: transparent; border-color: var(--steel-line); }
 
 .add-cart:disabled {
   background: var(--steel-line);
@@ -270,6 +331,7 @@
   background: var(--ink);
   color: var(--paper);
   border: none;
+  border-radius: 12px;
   font-size: 13.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -282,6 +344,25 @@
 
 .add-cart::before { content: '▶'; font-size: 9px; color: var(--cobalt); }
 .add-cart:hover { background: #23231a; }
+
+/* The sold-out state: an outlined button instead of a dead grey one. */
+.add-cart.notify {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+}
+
+.add-cart.notify::before { content: none; }
+
+/* Already queued for this size: filled and still, nothing left to press. */
+.add-cart.listed {
+  background: var(--ink);
+  color: var(--paper);
+  cursor: default;
+}
+
+.add-cart.listed:hover { background: var(--ink); }
+.add-cart.notify:hover { background: var(--ink); color: var(--paper); }
 
 .added-note {
   font-size: 11.5px;
@@ -369,28 +450,41 @@
 
 .back-link:hover { text-decoration: underline; }
 
-/* ---------- Details / size chart sheet ---------- */
+/* ---------- Details / size chart panel ---------- */
 
+/* A frosted-glass card floating in the middle of the screen — the page shows
+   through it, blurred. Same on a phone and a desktop: centred, with a margin
+   all round, never docked to an edge. */
 .sheet-back {
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: rgba(22, 22, 15, 0.55);
-  backdrop-filter: blur(3px);
+  background: rgba(22, 22, 15, 0.22);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
   animation: sheet-fade 0.16s ease-out;
 }
 
 .sheet {
-  background: var(--ink);
-  color: var(--paper);
-  width: min(680px, 100%);
-  max-height: 84vh;
+  width: min(720px, 100%);
+  max-height: 82vh;
   overflow-y: auto;
-  padding: 26px 28px 30px;
+  padding: 28px 30px 32px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(
+    100deg,
+    rgba(22, 22, 15, 0.62) 0%,
+    rgba(70, 68, 62, 0.5) 45%,
+    rgba(200, 198, 190, 0.42) 100%
+  );
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  backdrop-filter: blur(22px) saturate(1.15);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   animation: sheet-rise 0.2s ease-out;
 }
 
@@ -400,8 +494,8 @@
 }
 
 @keyframes sheet-rise {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .sheet-head {
@@ -413,54 +507,67 @@
 }
 
 .sheet-eyebrow {
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  color: var(--steel);
-  margin-bottom: 8px;
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  margin-bottom: 10px;
 }
 
 .sheet-head h1,
 .sheet-head h2 {
-  font-size: clamp(20px, 2.6vw, 28px);
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  font-size: clamp(22px, 3vw, 32px);
+  letter-spacing: 0.01em;
   line-height: 1.05;
-  color: var(--paper);
+  color: #fff;
 }
 
 .sheet-close {
   flex-shrink: 0;
-  background: rgba(237, 234, 225, 0.12);
+  background: #fff;
   border: none;
-  color: var(--paper);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  padding: 9px 16px;
+  border-radius: 4px;
+  color: #8b8a82;
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  padding: 12px 20px;
+  text-shadow: none;
   cursor: pointer;
 }
 
-.sheet-close:hover { background: var(--paper); color: var(--ink); }
+.sheet-close:hover { background: var(--ink); color: #fff; }
 
 .sheet-list {
   list-style: none;
-  margin-top: 18px;
+  margin-top: 22px;
 }
 
 .sheet-list li {
   position: relative;
-  padding-left: 16px;
-  font-size: 13px;
-  line-height: 1.75;
-  color: rgba(237, 234, 225, 0.82);
+  padding-left: 14px;
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  line-height: 1.55;
+  text-transform: uppercase;
+  color: #fff;
 }
 
 .sheet-list li::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 10px;
+  top: 7px;
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--signal);
+  background: #fff;
 }
 
 .sheet-table-wrap { overflow-x: auto; }
@@ -468,33 +575,39 @@
 .sheet-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
-  min-width: 420px;
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  min-width: 340px;
 }
 
 .sheet-table th {
   text-align: right;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--steel);
+  font-weight: 400;
+  color: #fff;
   padding: 0 0 10px 14px;
-  border-bottom: 1px solid rgba(237, 234, 225, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .sheet-table td {
   text-align: right;
-  padding: 11px 0 11px 14px;
-  border-bottom: 1px solid rgba(237, 234, 225, 0.12);
-  color: var(--paper);
+  padding: 10px 0 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
 .sheet-table .row-label {
   text-align: left;
   padding-left: 0;
-  color: var(--steel);
-  letter-spacing: 0.05em;
   white-space: nowrap;
 }
+
+/* Details follow the size chart's layout: the name on the left, the value
+   pushed to the right edge like the last column of a chart row. */
+.detail-table .row-label { width: 40%; padding-right: 18px; }
+.detail-table .detail-cell { text-align: right; padding-left: 0; }
 
 .sheet-table tr:last-child td { border-bottom: none; }
 
@@ -570,12 +683,12 @@
 
   .colour-chip { width: 50px; height: 50px; }
 
-  .sheet-back { padding: 0; align-items: flex-end; }
+  .sheet-back { padding: 16px; }
 
   .sheet {
-    width: 100%;
-    max-height: 88vh;
-    padding: 22px 20px 28px;
+    max-height: 80vh;
+    padding: 22px 20px 26px;
+    border-radius: 22px;
   }
 }
 
@@ -583,6 +696,7 @@
 
 .wish {
   border: 1px solid var(--steel-line);
+  border-radius: 12px;
   padding: 16px;
   margin-top: 16px;
 }
@@ -608,7 +722,7 @@
   font-family: 'Inter', sans-serif;
   font-size: 13.5px;
   color: var(--ink);
-  border-radius: 0;
+  border-radius: 8px;
 }
 
 .wish-row input:focus { outline: none; border-color: var(--cobalt); }
@@ -617,6 +731,7 @@
   background: var(--ink);
   color: var(--paper);
   border: none;
+  border-radius: 8px;
   padding: 0 16px;
   font-size: 11px;
   letter-spacing: 0.06em;
@@ -626,6 +741,16 @@
 
 .wish-row button:hover { background: var(--cobalt); }
 .wish-row button:disabled { background: var(--steel-line); cursor: not-allowed; }
+
+/* Asks the shopper to pick a size first — red so it isn't missed. */
+.wish-alert {
+  color: var(--signal);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.wish-note.bad { color: var(--signal); }
 
 .wish-note {
   font-size: 10.5px;

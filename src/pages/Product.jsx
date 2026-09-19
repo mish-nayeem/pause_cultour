@@ -2,21 +2,23 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
-import { IconShare } from '../components/Icons.jsx'
+import YouMayLike from '../components/YouMayLike.jsx'
+import { IconShare, IconChat } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
 import { cld } from '../lib/cloudinary.js'
 import { useCart } from '../context/CartContext.jsx'
-import { availableSizes, isAllSoldOut, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
+import { availableSizes, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
 import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
 import { currentUser } from '../lib/auth.js'
+import { parseDetails } from '../lib/details.js'
 import { isAdminEmail } from '../lib/admin.js'
-import { fetchRatingSummary, submitReview } from '../lib/reviews.js'
+import { fetchReviews, submitReview } from '../lib/reviews.js'
 import usePageMeta, { useProductSchema } from '../lib/usePageMeta.js'
 import './product.css'
 
-// Slides over the page for the DETAILS and SIZE CHART panels. Escape and a
-// click on the backdrop both close it, since the button is easy to miss on a
-// phone.
+// A frosted-glass panel that floats in the middle of the screen for the
+// DETAILS and SIZE CHART tables. CLOSE, Escape and a click outside all dismiss
+// it, since the button is easy to miss on a phone.
 function Sheet({ eyebrow, title, onClose, children }) {
   useEffect(() => {
     function onKey(e) {
@@ -76,10 +78,13 @@ export default function Product() {
     })
   }, [])
   const [wishDone, setWishDone] = useState(null) // the size just signed up for
+  const [notifyOpen, setNotifyOpen] = useState(false) // the restock box under the button
   const [sheet, setSheet] = useState(null) // null | 'details' | 'sizes'
   const [shot, setShot] = useState(0)
   const [shared, setShared] = useState(false)
-  const [ratings, setRatings] = useState([])
+  const [reviews, setReviews] = useState([])
+  const [showReviews, setShowReviews] = useState(false)
+  const wishRef = useRef(null)
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' })
   const [reviewState, setReviewState] = useState('idle') // idle | saving | error | done
 
@@ -109,9 +114,7 @@ export default function Product() {
       setLoading(false)
     })
 
-    // Jumping to the top matters here because the sticky column keeps its
-    // scroll position when moving between products otherwise.
-    window.scrollTo(0, 0)
+    // Landing at the top on a new product is handled site-wide (SmoothScroll).
     return () => { active = false }
   }, [id])
 
@@ -134,9 +137,11 @@ export default function Product() {
     let active = true
     setReviewForm({ name: '', rating: 5, comment: '' })
     setReviewState('idle')
+    setShowReviews(false)
+    setNotifyOpen(false)
 
-    fetchRatingSummary(id).then(({ ratings }) => {
-      if (active) setRatings(ratings)
+    fetchReviews(id).then(({ reviews }) => {
+      if (active) setReviews(reviews)
     })
     return () => { active = false }
   }, [id])
@@ -161,8 +166,8 @@ export default function Product() {
       return
     }
 
-    const { ratings: fresh } = await fetchRatingSummary(id)
-    setRatings(fresh)
+    const { reviews: fresh } = await fetchReviews(id)
+    setReviews(fresh)
     setReviewState('done')
   }
 
@@ -179,6 +184,11 @@ export default function Product() {
     const next = Math.max(0, Math.min(shot + dir, product.images.length - 1))
     el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' })
   }
+
+  useEffect(() => {
+    if (!notifyOpen || !activeSize) return
+    wishRef.current?.querySelector('input')?.focus({ preventScroll: true })
+  }, [notifyOpen, activeSize])
 
   async function handleWishlist(e) {
     e.preventDefault()
@@ -203,6 +213,7 @@ export default function Product() {
 
     setWishState('idle')
     setWishDone(activeSize)
+    setNotifyOpen(false)
   }
 
   // Tagged with its own source, same as a link built in the admin panel, so
@@ -278,10 +289,9 @@ export default function Product() {
     )
   }
 
-  const detailLines = product.details
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
+  // Only rows with both the name and the detail filled in are shown — a lone
+  // value with no name isn't a detail a shopper can make sense of.
+  const detailLines = parseDetails(product.details).filter((row) => row.label && row.value)
 
   // Read straight from the browser's note each render — no state to keep in
   // step when the shopper switches size.
@@ -291,6 +301,18 @@ export default function Product() {
   const hasChart = Boolean(chart?.columns?.length && chart?.rows?.length)
   const chartNotes = (chart?.notes || []).map((n) => n.trim()).filter(Boolean)
 
+  const unavailable = !activeSize || isSoldOut(product, activeSize)
+
+  const onList = Boolean(activeSize && (wishDone === activeSize || joined))
+
+  // Opening the box is the whole job of the button; once a size is picked the
+  // email field takes focus so the shopper can just type.
+  function handleNotifyClick() {
+    if (onList) return
+    setNotifyOpen((open) => !open)
+  }
+
+  const ratings = reviews.map((r) => r.rating)
   const avgRating = ratings.length > 0
     ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
     : 0
@@ -364,36 +386,43 @@ export default function Product() {
               const out = isSoldOut(product, s)
 
               return (
-                <div
+                <button
+                  type="button"
                   key={s}
                   className={`size-opt ${out ? 'disabled' : ''} ${activeSize === s ? 'active' : ''}`}
+                  aria-pressed={activeSize === s}
+                  title={out ? `${s} — sold out, tap to be notified` : s}
                   onClick={() => {
                     setActiveSize(s)
                     setWishState('idle')
                   }}
                 >
                   {s}
-                </div>
+                </button>
               )
             })}
             {/* Anything struck off by hand that was never in the size list. */}
             {soldOutSizes(product)
               .filter((s) => !product.sizes.includes(s))
               .map((s) => (
-                <div key={s} className="size-opt disabled">{s}</div>
+                <button type="button" key={s} className="size-opt disabled" disabled>{s}</button>
               ))}
           </div>
 
+          {/* Nothing to buy here, so the button becomes the way to ask for it
+              back: it opens the email box below. */}
           <button
-            className="add-cart mono"
-            onClick={handleAddToCart}
-            disabled={!activeSize || isSoldOut(product, activeSize)}
+            className={`add-cart mono ${unavailable ? 'notify' : ''} ${onList ? 'listed' : ''}`}
+            onClick={unavailable ? handleNotifyClick : handleAddToCart}
+            aria-expanded={unavailable ? notifyOpen : undefined}
           >
-            {!activeSize || isSoldOut(product, activeSize)
-              ? 'Sold out'
-              : justAdded
-                ? 'Added to cart ✓'
-                : 'Add to cart'}
+            {onList
+              ? "You're on the list ✓"
+              : unavailable
+                ? 'Notify me when available'
+                : justAdded
+                  ? 'Added to cart ✓'
+                  : 'Add to cart'}
           </button>
           {capped && (
             <div className="added-note mono">
@@ -403,21 +432,12 @@ export default function Product() {
 
           {/* A sold-out size is a dead end otherwise. Leaving an address turns
               it into the queue for the next run — and tells us which sizes to
-              actually make more of. */}
-          {(isAllSoldOut(product) || (activeSize && isSoldOut(product, activeSize))) && (
-            <div className="wish">
+              actually make more of. Hidden until the button is pressed, and
+              gone again once the shopper is on the list. */}
+          {unavailable && notifyOpen && !onList && (
+            <div className="wish" ref={wishRef}>
               {!activeSize ? (
-                <>
-                  <div className="wish-head mono">EMAIL ME WHEN IT'S BACK</div>
-                  <div className="wish-note mono" style={{ marginTop: 0 }}>
-                    Pick the size you're after, above.
-                  </div>
-                </>
-              ) : wishDone === activeSize || joined ? (
-                <div className="wish-done mono">
-                  You're on the list for {activeSize} — we'll email you the day
-                  it's back.
-                </div>
+                <div className="wish-alert mono">Select your size from above.</div>
               ) : (
                 <form onSubmit={handleWishlist}>
                   <div className="wish-head mono">EMAIL ME WHEN {activeSize} IS BACK</div>
@@ -430,10 +450,10 @@ export default function Product() {
                       aria-label="Your email address"
                     />
                     <button type="submit" className="mono" disabled={wishState === 'saving'}>
-                      {wishState === 'saving' ? '…' : 'NOTIFY ME'}
+                      {wishState === 'saving' ? '…' : 'DONE'}
                     </button>
                   </div>
-                  <div className="wish-note mono">
+                  <div className={`wish-note mono ${wishState === 'error' ? 'bad' : ''}`}>
                     {wishState === 'error'
                       ? "That didn't go through — check the address and try again."
                       : 'One email, only for this size. Nothing else.'}
@@ -489,6 +509,16 @@ export default function Product() {
       <div className="reviews-section">
         <div className="reviews-head">
           <h2 className="display">Reviews</h2>
+          <button
+            type="button"
+            className={`reviews-toggle mono ${showReviews ? 'on' : ''}`}
+            onClick={() => setShowReviews((v) => !v)}
+            aria-expanded={showReviews}
+            aria-label={`${showReviews ? 'Hide' : 'Show'} reviews (${reviews.length})`}
+          >
+            <IconChat width="17" height="17" />
+            <span className="reviews-count">{reviews.length}</span>
+          </button>
           {ratings.length > 0 && (
             <div className="reviews-avg mono">
               {'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}
@@ -497,7 +527,24 @@ export default function Product() {
           )}
         </div>
 
-        {ratings.length === 0 && <p className="mono reviews-empty">No reviews yet — be the first.</p>}
+        {showReviews && (
+          <ul className="reviews-list">
+            {reviews.length === 0 && (
+              <li className="reviews-empty mono">No reviews yet — be the first.</li>
+            )}
+            {reviews.map((r) => (
+              <li key={r.id} className="review-item">
+                <div className="review-item-top">
+                  <span className="review-name">{r.customer_name}</span>
+                  <span className="review-stars mono">
+                    {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                  </span>
+                </div>
+                {r.comment && <p className="review-text">{r.comment}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <form className="review-form" onSubmit={handleReviewSubmit}>
           <div className="field-label mono">LEAVE A REVIEW</div>
@@ -518,7 +565,7 @@ export default function Product() {
           </div>
           <textarea
             placeholder="What did you think? (optional)"
-            rows={3}
+            rows={2}
             value={reviewForm.comment}
             onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
           />
@@ -535,13 +582,22 @@ export default function Product() {
         </form>
       </div>
 
+      <YouMayLike currentId={product.id} />
+
       {sheet === 'details' && (
         <Sheet eyebrow="DETAILS" title={product.name} onClose={() => setSheet(null)}>
-          <ul className="sheet-list">
-            {detailLines.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
+          <div className="sheet-table-wrap">
+            <table className="sheet-table detail-table">
+              <tbody>
+                {detailLines.map((row, i) => (
+                  <tr key={i}>
+                    <td className="row-label">{row.label}</td>
+                    <td className="detail-cell">{row.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Sheet>
       )}
 

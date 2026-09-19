@@ -7,7 +7,11 @@ import { fetchMenuCategories } from '../lib/navCategories.js'
 import { cld } from '../lib/cloudinary.js'
 import { isAllSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
+import Pager from '../components/Pager.jsx'
+import { scrollToTarget } from '../lib/smoothScroll.js'
 import './shop.css'
+
+const PAGE_SIZE = 24
 
 export default function Shop() {
   const [params, setParams] = useSearchParams()
@@ -51,9 +55,23 @@ export default function Shop() {
     return products.filter((p) => p.category === active)
   }, [products, active, activeDrop])
 
+  // The page lives in the address (?p=2) so Back returns to it and a page can
+  // be shared. Picking a different category or drop drops it, starting over at 1.
+  const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
+  const page = Math.min(Math.max(1, Number(params.get('p')) || 1), totalPages)
+  const pageItems = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
   function pick(c) {
     if (c === 'ALL') setParams({})
     else setParams({ c })
+  }
+
+  function goToPage(n) {
+    const next = new URLSearchParams(params)
+    if (n <= 1) next.delete('p')
+    else next.set('p', String(n))
+    setParams(next)
+    scrollToTarget(0)
   }
 
   return (
@@ -66,9 +84,6 @@ export default function Shop() {
           <h1 className="display">
             {activeDrop || (active === 'ALL' ? 'Everything' : active)}
           </h1>
-        </div>
-        <div className="shop-count mono">
-          {shown.length} {shown.length === 1 ? 'piece' : 'pieces'}
         </div>
       </div>
 
@@ -110,7 +125,7 @@ export default function Shop() {
 
       {!loading && !loadError && shown.length > 0 && (
         <div className="shop-grid">
-          {shown.map((p) => (
+          {pageItems.map((p) => (
             <Link to={`/product/${p.id}`} className="scard" key={p.id}>
               <div className="sthumb">
                 <img src={cld(p.images[0], { w: 500 })} alt={p.name} />
@@ -131,6 +146,8 @@ export default function Shop() {
           ))}
         </div>
       )}
+
+      {!loading && !loadError && <Pager page={page} totalPages={totalPages} onChange={goToPage} />}
 
       <Footer />
     </>

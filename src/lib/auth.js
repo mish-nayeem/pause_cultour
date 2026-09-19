@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { isAdminEmail } from './admin.js'
+import { clearRemember } from './sessionPolicy.js'
 
 // One login for everyone. Whether the account is the admin's is decided by the
 // same email allowlist the admin panel uses — the caller sends admins to
@@ -62,6 +63,7 @@ export async function currentUser() {
 }
 
 export async function signOutUser() {
+  clearRemember()
   await supabase.auth.signOut()
 }
 
@@ -73,4 +75,37 @@ export function watchUser(callback) {
     callback(session?.user || null)
   })
   return () => data.subscription.unsubscribe()
+}
+
+// Google sign-in. Needs the Google provider switched on in Supabase
+// (Authentication → Sign In / Providers) — until then this comes back with an
+// error and nothing else happens. The browser leaves for Google and returns to
+// /account, where the person can carry on.
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/account` },
+  })
+
+  if (error) console.error('[Supabase] signInWithGoogle failed:', error.message)
+  return { error }
+}
+
+// The mail is sent whether or not the address has an account, and the caller
+// shows the same message either way — so this can't be used to find out who is
+// registered.
+export async function sendPasswordReset(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/reset-password`,
+  })
+
+  if (error) console.error('[Supabase] sendPasswordReset failed:', error.message)
+  return { error }
+}
+
+export async function updatePassword(password) {
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) console.error('[Supabase] updatePassword failed:', error.message)
+  return { error }
 }

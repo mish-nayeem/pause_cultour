@@ -1,10 +1,10 @@
 :root {
-  --paper: #EDEAE1;
-  --paper-dim: #E2DFD5;
+  --paper: #FCFBF8;
+  --paper-dim: #F3F1EC;
   --ink: #16160F;
   --cobalt: #2A4DFF;
   --steel: #8B8A82;
-  --steel-line: #C9C6BA;
+  --steel-line: #E0DDD5;
   --signal: #FF4426;
 }
 
@@ -14,8 +14,13 @@
   box-sizing: border-box;
 }
 
+/* Bright, near-white — a hair warm rather than cold, with a soft glow at the
+   top so a page never reads as flat paper. */
 body {
-  background: var(--paper);
+  background:
+    radial-gradient(1100px 420px at 50% -80px, #ffffff 0%, rgba(255, 255, 255, 0) 72%),
+    var(--paper);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;

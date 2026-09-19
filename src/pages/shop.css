@@ -18,12 +18,6 @@
   line-height: 1;
 }
 
-.shop-count {
-  font-size: 11.5px;
-  color: var(--steel);
-  letter-spacing: 0.05em;
-}
-
 /* ---------- Filters ---------- */
 
 .filters {
@@ -34,24 +28,51 @@
   border-bottom: 1px solid var(--steel-line);
 }
 
+/* Rounded chips. Hovering lifts one a little and tints it, so the pointer's
+   target is obvious; the picked one is filled and stays put. */
 .filters button {
-  background: none;
+  background: transparent;
   border: 1px solid var(--steel-line);
+  border-radius: 10px;
   color: var(--ink);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11.5px;
+  font-weight: 500;
   letter-spacing: 0.05em;
-  padding: 8px 15px;
+  padding: 9px 17px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.filters button:hover { border-color: var(--ink); }
+.filters button:hover {
+  transform: translateY(-2px);
+  border-color: var(--ink);
+  background: rgba(22, 22, 15, 0.07);
+  box-shadow: 0 6px 14px rgba(22, 22, 15, 0.12);
+}
 
-.filters button.on {
+.filters button:active { transform: translateY(0) scale(0.97); box-shadow: none; }
+
+.filters button:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+
+.filters button.on,
+.filters button.on:hover {
   background: var(--ink);
   color: var(--paper);
   border-color: var(--ink);
+  transform: none;
+  box-shadow: none;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filters button { transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+  .filters button:hover { transform: none; }
 }
 
 /* ---------- Grid ---------- */
@@ -59,16 +80,29 @@
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--steel-line);
+  gap: 0;
+  background: var(--paper);
   border-bottom: 1px solid var(--steel-line);
 }
 
+/* The hairlines between tiles are each tile's own right and bottom edge, not
+   the grid's background showing through a gap — so a spot with no tile in it
+   (after a large tile, or on a short last row) stays the page's white. */
 .scard {
+  position: relative;
   background: var(--paper);
   text-decoration: none;
   color: var(--ink);
   display: block;
+}
+
+/* Drawn over the photo, so the line shows between two pictures too. */
+.scard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset -1px -1px 0 var(--steel-line);
+  pointer-events: none;
 }
 
 .sthumb {

@@ -47,58 +47,62 @@ export default function Footer() {
 
   return (
     <footer className="site-footer">
-      <div className="foot-top">
-        <h3 className="display">Join the list</h3>
-        <form className="sub-form" onSubmit={handleSubscribe}>
-          <input
-            type="email"
-            className="sub-input"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value)
-              if (state !== 'idle') setState('idle')
-            }}
-            aria-label="Email address"
-          />
-          <button type="submit" className="sub-btn mono" disabled={state === 'saving'}>
-            {state === 'saving' ? 'Joining…' : 'Join'}
-          </button>
-        </form>
-        {message && (
-          <div className={`sub-msg mono ${state === 'error' ? 'bad' : 'good'}`}>{message}</div>
-        )}
-      </div>
+      <div className="foot-main">
+        <div className="foot-left">
+          <div className="foot-top">
+            <h3 className="display">Join the list</h3>
+            <form className="sub-form" onSubmit={handleSubscribe}>
+              <input
+                type="email"
+                className="sub-input"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (state !== 'idle') setState('idle')
+                }}
+                aria-label="Email address"
+              />
+              <button type="submit" className="sub-btn mono" disabled={state === 'saving'}>
+                {state === 'saving' ? 'Joining…' : 'Join'}
+              </button>
+            </form>
+            {message && (
+              <div className={`sub-msg mono ${state === 'error' ? 'bad' : 'good'}`}>{message}</div>
+            )}
+          </div>
 
-      <div className="foot-cols">
-        <div className="foot-about">
-          <div className="foot-label">PAUSE</div>
-          <p>
-            Everything on hold. Streetwear cut and sewn in Dhaka, released in
-            small drops — when a drop is gone, it's gone.
-          </p>
+          <div className="foot-about">
+            <div className="foot-label mono">PAUSE</div>
+            <p>
+              Everything on hold. Streetwear cut and sewn in Dhaka, released in
+              small drops — when a drop is gone, it's gone.
+            </p>
+          </div>
         </div>
 
-        <div className="foot-col">
-          <div className="foot-label">SHOP</div>
-          <Link to="/shop">All products</Link>
-          <Link to="/shop?c=NEW">New arrivals</Link>
-          <Link to="/cart">Your cart</Link>
-        </div>
+        <div className="foot-cols">
+          <div className="foot-col">
+            <div className="foot-label mono">SHOP</div>
+            <Link to="/shop">All products</Link>
+            <Link to="/shop?c=NEW">New arrivals</Link>
+            <Link to="/cart">Your cart</Link>
+          </div>
 
-        <div className="foot-col">
-          <div className="foot-label">SUPPORT</div>
-          <Link to="/track">Track order</Link>
-          <Link to="/contact">Contact us</Link>
-          <Link to="/size-guide">Size guide</Link>
-          <Link to="/delivery">Delivery info</Link>
-        </div>
+          <div className="foot-col">
+            <div className="foot-label mono">SUPPORT</div>
+            <Link to="/track">Track order</Link>
+            <Link to="/contact">Contact us</Link>
+            <Link to="/size-guide">Size guide</Link>
+            <Link to="/delivery">Delivery info</Link>
+          </div>
 
-        <div className="foot-col">
-          <div className="foot-label">LEGAL</div>
-          <Link to="/privacy">Privacy policy</Link>
-          <Link to="/terms">Terms</Link>
-          <Link to="/refunds">Refund policy</Link>
+          <div className="foot-col">
+            <div className="foot-label mono">LEGAL</div>
+            <Link to="/privacy">Privacy policy</Link>
+            <Link to="/terms">Terms</Link>
+            <Link to="/refunds">Refund policy</Link>
+          </div>
         </div>
       </div>
 
@@ -122,7 +126,10 @@ export default function Footer() {
             </svg>
           </a>
         </div>
-        <div className="foot-fine">© {new Date().getFullYear()} PAUSE · DHAKA, BD</div>
+        <a href={INSTAGRAM} target="_blank" rel="noreferrer" className="foot-brand" aria-label="PAUSE on Instagram">
+          @pause.<em>cultour</em>
+        </a>
+        <div className="foot-fine mono">© {new Date().getFullYear()} PAUSE · DHAKA, BD</div>
       </div>
     </footer>
   )
