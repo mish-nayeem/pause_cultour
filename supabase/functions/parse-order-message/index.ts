@@ -24,14 +24,14 @@ const corsHeaders = {
 
 // Flash is Google's free-tier, multimodal model. Google retires specific
 // model names fairly often, so this tries a list in order and moves on when
-// one 404s. `gemini-flash-latest` is Google's own moving alias and outlives
-// any single version; the pinned ones are fallbacks. Set a GEMINI_MODEL
-// secret to put your own choice first without redeploying.
+// one 404s (retired) or 503s (overloaded). The current model goes first; the
+// rest are fallbacks, and 2.0 is left out because Google has shut it down.
+// Set a GEMINI_MODEL secret to put your own choice first without redeploying.
 const GEMINI_MODELS = [
   Deno.env.get('GEMINI_MODEL'),
+  'gemini-3.6-flash',
   'gemini-flash-latest',
   'gemini-2.5-flash',
-  'gemini-2.0-flash',
 ].filter((m): m is string => !!m)
 
 const DISTRICTS = [
@@ -115,18 +115,23 @@ ${text ? `\nMessage text:\n${text}` : ''}`
 
     let res: Response | null = null
     let lastDetail = ''
-    for (const model of GEMINI_MODELS) {
-      res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
-      )
-      if (res.ok) break
+    outer: for (const model of GEMINI_MODELS) {
+      // Overload spikes are usually over in a second or two, so a 503 gets one
+      // short retry on the same model before moving to the next one.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+        )
+        if (res.ok) break outer
 
-      lastDetail = `${model}: ${res.status} ${await res.text()}`
-      console.error('[Gemini] request failed:', lastDetail)
-      // A missing/retired model (404) or one that's overloaded right now (503)
-      // is worth trying the next name for — each model has its own capacity.
-      // A bad key or a quota hit would fail identically on every one of them.
+        lastDetail = `${model}: ${res.status} ${await res.text()}`
+        console.error('[Gemini] request failed:', lastDetail)
+        if (res.status !== 503) break
+        await new Promise((r) => setTimeout(r, 1500))
+      }
+      // A bad key or a quota hit would fail identically on every model, so
+      // only a missing (404) or overloaded (503) one moves on to the next.
       if (res.status !== 404 && res.status !== 503) break
     }
 
