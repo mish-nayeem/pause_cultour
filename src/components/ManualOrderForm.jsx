@@ -21,6 +21,97 @@ const DM_SOURCES = [
   { value: 'in_person', label: 'In person / other' },
 ]
 
+const NO_CATEGORY = '__none'
+const EMPTY_DRAFT = { category: '', productId: '', size: '', qty: 1 }
+
+function categoryOf(product) {
+  return product?.category || NO_CATEGORY
+}
+
+// Category → product → size → qty, used both for adding an item by hand and for
+// correcting one of Gemini's guesses. The category step narrows a long catalog
+// down, and every product is listed with its ID so two similarly named ones
+// can't be mixed up.
+function ItemPicker({ products, value, onChange, onAdd, addLabel = 'Add', onDismiss }) {
+  const [problem, setProblem] = useState('')
+
+  const categories = useMemo(() => {
+    const named = [...new Set(products.map((p) => p.category).filter(Boolean))].sort()
+    return products.some((p) => !p.category) ? [...named, NO_CATEGORY] : named
+  }, [products])
+
+  const shown = value.category ? products.filter((p) => categoryOf(p) === value.category) : products
+  const product = products.find((p) => String(p.id) === value.productId) || null
+  const sizes = product ? availableSizes(product) : []
+
+  function set(patch) {
+    setProblem('')
+    onChange({ ...value, ...patch })
+  }
+
+  function handleAdd() {
+    if (!product) return setProblem('Pick a product first.')
+    if (!value.size) return setProblem('Pick a size.')
+    onAdd()
+  }
+
+  return (
+    <div className="mof-picker">
+      <div className="mof-pick-row">
+        <select
+          value={value.category}
+          onChange={(e) => set({ category: e.target.value, productId: '', size: '' })}
+        >
+          <option value="">All categories</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>{c === NO_CATEGORY ? 'Uncategorised' : c}</option>
+          ))}
+        </select>
+        <select
+          value={value.productId}
+          onChange={(e) => {
+            const picked = products.find((p) => String(p.id) === e.target.value)
+            // Choosing a product also files it under its category, so the
+            // category box never disagrees with what's selected next to it.
+            set({
+              productId: e.target.value,
+              size: '',
+              category: picked ? categoryOf(picked) : value.category,
+            })
+          }}
+        >
+          <option value="">Select product</option>
+          {shown.map((p) => (
+            <option key={p.id} value={p.id}>{p.id} · {p.name} — {p.variant}</option>
+          ))}
+        </select>
+      </div>
+      <div className="mof-pick-row small">
+        <select value={value.size} onChange={(e) => set({ size: e.target.value })} disabled={!product}>
+          <option value="">Size</option>
+          {sizes.map((sz) => (
+            <option key={sz} value={sz}>{sz}</option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min="1"
+          value={value.qty}
+          onChange={(e) => set({ qty: Math.max(1, Number(e.target.value)) })}
+        />
+        <button type="button" className="mof-add-btn mono" onClick={handleAdd}>{addLabel}</button>
+        {onDismiss && (
+          <button type="button" className="mof-item-x" onClick={onDismiss} title="Dismiss this suggestion">×</button>
+        )}
+      </div>
+      {problem && <em className="pf-hint mono mof-problem">{problem}</em>}
+      {product && sizes.length === 0 && (
+        <em className="pf-hint mono">Every size of this product is sold out.</em>
+      )}
+    </div>
+  )
+}
+
 export default function ManualOrderForm({ products, onCancel, onDone }) {
   const [form, setForm] = useState({
     name: '', phone: '', email: '', address: '', district: '', note: '',
@@ -28,7 +119,9 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
   const [source, setSource] = useState(DM_SOURCES[0].value)
   const [trxId, setTrxId] = useState('')
   const [items, setItems] = useState([])
-  const [draft, setDraft] = useState({ productId: '', size: '', qty: 1 })
+  const [draft, setDraft] = useState(EMPTY_DRAFT)
+  // Gemini's guesses, left for a person to confirm — never added on their own.
+  const [suggestions, setSuggestions] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -36,9 +129,6 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
   const [pickedImage, setPickedImage] = useState(null) // { base64, mimeType, name }
   const [extracting, setExtracting] = useState(false)
   const [extractNote, setExtractNote] = useState('')
-
-  const draftProduct = products.find((p) => String(p.id) === draft.productId) || null
-  const draftSizes = draftProduct ? availableSizes(draftProduct) : []
 
   const subtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0)
   const bill = useMemo(() => quote(subtotal, form.district), [subtotal, form.district])
@@ -48,29 +138,28 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  function addItem() {
-    if (!draftProduct || !draft.size || draft.qty < 1) return
+  function addItem({ productId, size, qty }) {
+    const product = products.find((p) => String(p.id) === productId)
+    if (!product || !size || qty < 1) return
 
     setItems((prev) => {
-      const existing = prev.find((it) => it.product_id === draftProduct.id && it.size === draft.size)
+      const existing = prev.find((it) => it.product_id === product.id && it.size === size)
       if (existing) {
         return prev.map((it) =>
-          it === existing ? { ...it, qty: it.qty + Number(draft.qty) } : it
+          it === existing ? { ...it, qty: it.qty + Number(qty) } : it
         )
       }
       return [
         ...prev,
         {
-          product_id: draftProduct.id,
-          product_name: draftProduct.name,
-          size: draft.size,
-          price: Number(draftProduct.price),
-          qty: Number(draft.qty),
+          product_id: product.id,
+          product_name: product.name,
+          size,
+          price: Number(product.price),
+          qty: Number(qty),
         },
       ]
     })
-
-    setDraft({ productId: '', size: '', qty: 1 })
   }
 
   function removeItem(i) {
@@ -121,30 +210,28 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
     }))
 
     const guesses = extracted.items || []
-    const matched = []
 
-    guesses.forEach((guess) => {
-      const product = products.find(
-        (p) => `${p.name} — ${p.variant}`.toLowerCase() === String(guess.product_match || '').toLowerCase()
-      )
-      if (!product) return
+    setSuggestions(
+      guesses.map((guess, i) => {
+        const product = products.find(
+          (p) => `${p.name} — ${p.variant}`.toLowerCase() === String(guess.product_match || '').toLowerCase()
+        )
+        const size = String(guess.size || '').toUpperCase()
 
-      matched.push({
-        product_id: product.id,
-        product_name: product.name,
-        size: String(guess.size || '').toUpperCase(),
-        price: Number(product.price),
-        qty: Number(guess.qty) || 1,
+        return {
+          key: `${Date.now()}-${i}`,
+          category: product ? categoryOf(product) : '',
+          productId: product ? String(product.id) : '',
+          size: product && availableSizes(product).includes(size) ? size : '',
+          qty: Number(guess.qty) || 1,
+        }
       })
-    })
+    )
 
-    if (matched.length > 0) setItems((prev) => [...prev, ...matched])
-
-    const missed = guesses.length - matched.length
     setExtractNote(
-      missed > 0
-        ? `Filled in what it could read. ${missed} item${missed > 1 ? 's' : ''} didn't match a product — add ${missed > 1 ? 'them' : 'it'} below.`
-        : 'Filled in below — check it over before placing the order.'
+      guesses.length > 0
+        ? "Filled in the details. Gemini's item guesses are below — fix any that are wrong, then add them."
+        : 'Filled in the details. It found no items, so add them below.'
     )
   }
 
@@ -245,46 +332,46 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
 
       {error && <div className="pf-error mono">{error}</div>}
 
-      <div className="pf-label mono">ITEMS</div>
-      <div className="mof-add-row">
-        <select
-          value={draft.productId}
-          onChange={(e) => setDraft({ productId: e.target.value, size: '', qty: 1 })}
-        >
-          <option value="">Select product</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>{p.name} — {p.variant}</option>
+      {suggestions.length > 0 && (
+        <div className="mof-suggest">
+          <div className="pf-label mono" style={{ marginTop: 0 }}>GEMINI'S GUESS — CHECK EACH ONE</div>
+          {suggestions.map((sg) => (
+            <ItemPicker
+              key={sg.key}
+              products={products}
+              value={sg}
+              addLabel="Add to order"
+              onChange={(next) =>
+                setSuggestions((prev) => prev.map((x) => (x.key === sg.key ? { ...x, ...next } : x)))
+              }
+              onAdd={() => {
+                addItem(sg)
+                setSuggestions((prev) => prev.filter((x) => x.key !== sg.key))
+              }}
+              onDismiss={() => setSuggestions((prev) => prev.filter((x) => x.key !== sg.key))}
+            />
           ))}
-        </select>
-        <select
-          value={draft.size}
-          onChange={(e) => setDraft({ ...draft, size: e.target.value })}
-          disabled={!draftProduct}
-        >
-          <option value="">Size</option>
-          {draftSizes.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <input
-          type="number"
-          min="1"
-          value={draft.qty}
-          onChange={(e) => setDraft({ ...draft, qty: Math.max(1, Number(e.target.value)) })}
-        />
-        <button type="button" className="mof-add-btn mono" onClick={addItem} disabled={!draftProduct || !draft.size}>
-          Add
-        </button>
-      </div>
-      {draftProduct && draftSizes.length === 0 && (
-        <em className="pf-hint mono">Every size of this product is sold out.</em>
+        </div>
       )}
+
+      <div className="pf-label mono">ITEMS</div>
+      <ItemPicker
+        products={products}
+        value={draft}
+        onChange={setDraft}
+        onAdd={() => {
+          addItem(draft)
+          setDraft(EMPTY_DRAFT)
+        }}
+      />
 
       {items.length > 0 ? (
         <div className="mof-items">
           {items.map((it, i) => (
             <div className="mof-item" key={`${it.product_id}-${it.size}`}>
-              <span>{it.product_name} · {it.size} × {it.qty}</span>
+              <span>
+                <span className="mono mof-item-id">{it.product_id}</span> {it.product_name} · {it.size} × {it.qty}
+              </span>
               <span className="mono">{taka(it.price * it.qty)}</span>
               <button type="button" className="mof-item-x" onClick={() => removeItem(i)}>×</button>
             </div>
