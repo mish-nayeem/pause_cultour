@@ -523,7 +523,7 @@
 }
 
 @media (max-width: 760px) {
-  .admin { grid-template-columns: 1fr; }
+  .admin { grid-template-columns: minmax(0, 1fr); }
 
   /* The sidebar becomes an off-canvas drawer under the burger button rather
      than a horizontal-scrolling strip — with 8+ sections (and more coming),

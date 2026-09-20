@@ -396,7 +396,8 @@
 /* ---------- Phone ---------- */
 
 @media (max-width: 760px) {
-  .admin { grid-template-columns: 1fr; }
+  .admin { grid-template-columns: minmax(0, 1fr); overflow-x: clip; }
+  .admin .main { min-width: 0; }
 
   .admin .admin-topbar { background: var(--side-bg); color: var(--side-text); }
   .admin .side { border-radius: 0 26px 26px 0; }
@@ -405,6 +406,18 @@
   .top-right { align-items: flex-start; }
   .admin .top h1 { font-size: 26px; }
   .admin .table { padding: 4px 14px; }
+
+  /* Search + "New order" stack instead of squeezing side by side; the search
+     box takes the full row so its placeholder isn't cut off. */
+  .admin .orders-head { flex-wrap: wrap; gap: 10px; }
+  .admin .search-wrap { flex: 1 1 100%; max-width: none; }
+  .admin .orders-head-right { width: 100%; justify-content: space-between; }
+
+  /* Anything that can be wider than a phone scrolls inside its own box
+     rather than stretching the whole page. */
+  .admin .panel { min-width: 0; max-width: 100%; }
+  .admin .main img, .admin .main video { max-width: 100%; }
+  .admin .main :is(table, pre) { max-width: 100%; }
 }
 
 /* ---------- Motion + scrolling ---------- */
