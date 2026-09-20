@@ -22,10 +22,17 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Flash is Google's free-tier, multimodal model. Google retires these
-// fairly often — if this one starts 404ing, the error names its
-// replacement directly; swap this one string for whatever it says.
-const GEMINI_MODEL = 'gemini-3.6-flash'
+// Flash is Google's free-tier, multimodal model. Google retires specific
+// model names fairly often, so this tries a list in order and moves on when
+// one 404s. `gemini-flash-latest` is Google's own moving alias and outlives
+// any single version; the pinned ones are fallbacks. Set a GEMINI_MODEL
+// secret to put your own choice first without redeploying.
+const GEMINI_MODELS = [
+  Deno.env.get('GEMINI_MODEL'),
+  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+].filter((m): m is string => !!m)
 
 const DISTRICTS = [
   'Dhaka', 'Bagerhat', 'Bandarban', 'Barguna', 'Barishal', 'Bhola', 'Bogura', 'Brahmanbaria',
@@ -101,21 +108,38 @@ ${text ? `\nMessage text:\n${text}` : ''}`
       parts.push({ inlineData: { mimeType: mimeType || 'image/jpeg', data: image } })
     }
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: { responseMimeType: 'application/json' },
-        }),
-      }
-    )
+    const body = JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { responseMimeType: 'application/json' },
+    })
 
-    if (!res.ok) {
-      console.error('[Gemini] request failed:', await res.text())
-      return new Response(JSON.stringify({ error: 'Could not reach Gemini' }), {
+    let res: Response | null = null
+    let lastDetail = ''
+    for (const model of GEMINI_MODELS) {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+      )
+      if (res.ok) break
+
+      lastDetail = `${model}: ${res.status} ${await res.text()}`
+      console.error('[Gemini] request failed:', lastDetail)
+      // A missing/retired model (404) or one that's overloaded right now (503)
+      // is worth trying the next name for — each model has its own capacity.
+      // A bad key or a quota hit would fail identically on every one of them.
+      if (res.status !== 404 && res.status !== 503) break
+    }
+
+    if (!res || !res.ok) {
+      // Gemini's own message (bad key, quota, unknown model…) goes back to the
+      // admin form, since that's the only place anyone will see it.
+      let reason = lastDetail
+      try {
+        reason = JSON.parse(lastDetail.slice(lastDetail.indexOf('{'))).error?.message || lastDetail
+      } catch {
+        // Not JSON — the raw text is still more useful than nothing.
+      }
+      return new Response(JSON.stringify({ error: `Gemini: ${reason}`.slice(0, 300) }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
