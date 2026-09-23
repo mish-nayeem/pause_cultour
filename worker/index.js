@@ -42,10 +42,21 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
 }
 
+// TEMPORARY — proves whether this Worker actually runs for a given request
+// and, if it falls through to the static build, why. Stamped onto every
+// response as x-worker-debug. Remove once /product/* previews are confirmed
+// working from a real bot request.
+async function fallthrough(request, env, reason) {
+  const res = await env.ASSETS.fetch(request)
+  const headers = new Headers(res.headers)
+  headers.set('x-worker-debug', reason)
+  return new Response(res.body, { status: res.status, headers })
+}
+
 export default {
   async fetch(request, env) {
     const userAgent = request.headers.get('user-agent') || ''
-    if (!BOT_PATTERN.test(userAgent)) return env.ASSETS.fetch(request)
+    if (!BOT_PATTERN.test(userAgent)) return fallthrough(request, env, 'not-a-bot')
 
     const url = new URL(request.url)
     const id = decodeURIComponent(url.pathname.split('/').pop())
@@ -55,16 +66,16 @@ export default {
     // time, since it's a separate script, never bundled by Vite.
     const supabaseUrl = env.VITE_SUPABASE_URL
     const supabaseKey = env.VITE_SUPABASE_ANON_KEY
-    if (!supabaseUrl || !supabaseKey) return env.ASSETS.fetch(request)
+    if (!supabaseUrl || !supabaseKey) return fallthrough(request, env, 'missing-env')
 
     const res = await fetch(
       `${supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=name,variant,description,price,images`,
       { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
     )
-    if (!res.ok) return env.ASSETS.fetch(request)
+    if (!res.ok) return fallthrough(request, env, `supabase-failed-${res.status}`)
 
     const [product] = await res.json()
-    if (!product) return env.ASSETS.fetch(request)
+    if (!product) return fallthrough(request, env, 'product-not-found')
 
     const title = `${product.name} — PAUSE`
     const description = `${product.name} — ${product.variant}, ৳${Number(product.price).toLocaleString()}. ${product.description || ''}`.trim()
@@ -94,7 +105,7 @@ export default {
 </html>`
 
     return new Response(html, {
-      headers: { 'content-type': 'text/html; charset=utf-8' },
+      headers: { 'content-type': 'text/html; charset=utf-8', 'x-worker-debug': 'served-og' },
     })
   },
 }
