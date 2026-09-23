@@ -2,6 +2,15 @@
   "name": "pause-cultour",
   "compatibility_date": "2026-09-23",
   "main": "worker/index.js",
+  // The dashboard's Bindings/Variables UI is disabled for a Worker managed by
+  // this config file — this "vars" block is the only place to set them.
+  // The anon key is safe to commit: it's already shipped in the built JS
+  // bundle for every visitor, and Supabase RLS (not secrecy of this key) is
+  // what actually protects the data.
+  "vars": {
+    "VITE_SUPABASE_URL": "https://rzylwwrpzkqjyxxkstjo.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6eWx3d3Jwemtxanl4eGtzdGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMDAwMzUsImV4cCI6MjEwNDc3NjAzNX0.obmW3bA-wrUdd19Nd9QNGWXVuLlaanxpBJgdmG9vDGM"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
