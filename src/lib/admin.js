@@ -81,6 +81,25 @@ export async function updateOrderStatus(orderId, status) {
   return { error: null }
 }
 
+// ---------- Blocked attempts (rate limiter) ----------
+
+// Fake or scripted place_order calls the rate limiter turned away — who they
+// claimed to be (phone/email/name) and which IP made the attempt. See
+// supabase-migration-rate-limiting.sql and -blocked-attempts.sql.
+export async function fetchBlockedAttempts() {
+  const { data, error } = await supabase
+    .from('blocked_attempts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200)
+
+  if (error) {
+    console.error('[Supabase] fetchBlockedAttempts failed:', error.message)
+    return { attempts: [], error }
+  }
+  return { attempts: data, error: null }
+}
+
 // ---------- Refunds & returns ----------
 
 export async function fetchReturns() {

@@ -221,6 +221,33 @@ $$;
 revoke all on function public.check_rate_limit(text, int, int) from public;
 grant execute on function public.check_rate_limit(text, int, int) to anon, authenticated;
 
+-- Who a blocked place_order attempt claimed to be — the rate limiter itself
+-- only ever knew an IP and a bucket name, not the phone/email/name a fake
+-- order was made up with. place_order (security definer) is the only
+-- writer, the same way it already writes to orders/order_items despite
+-- those having no anon/authenticated insert policy either. Read from the
+-- admin panel's Orders → Security tab.
+
+create table if not exists blocked_attempts (
+  id         bigint generated always as identity primary key,
+  action     text not null,
+  ip         text,
+  phone      text,
+  email      text,
+  name       text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists blocked_attempts_created_idx on blocked_attempts (created_at desc);
+
+alter table blocked_attempts enable row level security;
+
+drop policy if exists "Signed-in admins read blocked attempts" on blocked_attempts;
+create policy "Signed-in admins read blocked attempts"
+  on blocked_attempts for select
+  to authenticated
+  using (public.is_admin());
+
 
 -- ---------------------------------------------------------------------------
 -- place_order — the only way an order gets written
@@ -268,6 +295,14 @@ begin
   -- lockout mid-batch. A real shopper places one order per cart, not eight
   -- in an hour, so this only ever bites a script.
   if not public.is_admin() and not public.check_rate_limit('place_order', 8, 3600) then
+    insert into blocked_attempts (action, ip, phone, email, name)
+    values (
+      'place_order',
+      public.client_ip(),
+      o ->> 'customer_phone',
+      o ->> 'customer_email',
+      o ->> 'customer_name'
+    );
     raise exception 'RATE_LIMITED';
   end if;
 

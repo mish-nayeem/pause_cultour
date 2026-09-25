@@ -20,6 +20,7 @@ import {
   createReturn,
   resolveReturn,
   fetchAbandonedCarts,
+  fetchBlockedAttempts,
   customerList,
   repeatVsNew,
   costAndMargin,
@@ -107,6 +108,7 @@ const ORDERS_SUBS = [
   { key: 'list', label: 'Order list' },
   { key: 'returns', label: 'Refunds & returns' },
   { key: 'abandoned', label: 'Abandoned cart' },
+  { key: 'security', label: 'Security' },
 ]
 
 const PRODUCTS_SUBS = [
@@ -380,6 +382,7 @@ export default function Admin() {
   const [ordersSub, setOrdersSub] = useState('list')
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
+  const [blockedAttempts, setBlockedAttempts] = useState([])
   const [returnForm, setReturnForm] = useState({ orderId: '', reason: '' })
   const [returnBusy, setReturnBusy] = useState(null)
   const [adSpendDraft, setAdSpendDraft] = useState({ channel: '', spend: '', revenue: '' })
@@ -411,7 +414,7 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p, c, w, r, ac, rv, as, ec, ss, cs, pv] = await Promise.all([
+    const [o, p, c, w, r, ac, rv, as, ec, ss, cs, pv, ba] = await Promise.all([
       fetchOrders(),
       fetchAdminProducts(),
       fetchAllNavCategories(),
@@ -424,6 +427,7 @@ export default function Admin() {
       socialStatsApi.fetch(),
       couponStatsApi.fetch(),
       fetchPageViews(),
+      fetchBlockedAttempts(),
     ])
 
     if (o.error) {
@@ -444,6 +448,7 @@ export default function Admin() {
     setSocialStats(ss.rows)
     setCouponStats(cs.rows)
     setPageViews(pv.views)
+    setBlockedAttempts(ba.attempts)
     setLoading(false)
   }, [])
 
@@ -1414,6 +1419,39 @@ export default function Admin() {
                   <div className="mini-right">
                     <div className="mono">{taka(c.cart_value)}</div>
                     <div className="mono dim">{shortDate(c.last_active)}</div>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {ordersSub === 'security' && (
+            <section className="panel">
+              <div className="panel-label mono" style={{ marginBottom: '6px' }}>
+                BLOCKED ORDER ATTEMPTS
+              </div>
+              <div className="panel-note" style={{ marginBottom: '18px' }}>
+                place_order refuses more than 8 orders an hour from the same
+                IP (see supabase-migration-rate-limiting.sql) — every one it
+                turned away shows up here with whatever phone, email and name
+                it was made up with, so a burst of fake orders is something
+                you can actually see instead of just a blocked customer you
+                never hear about.
+              </div>
+              {blockedAttempts.length === 0 && (
+                <div className="empty mono">No blocked attempts — nothing's tripped the limit.</div>
+              )}
+              {blockedAttempts.map((a) => (
+                <div className="mini-row" key={a.id}>
+                  <div>
+                    <div className="mini-name">{a.name || 'No name given'}</div>
+                    <div className="mini-id mono" style={{ marginTop: '3px' }}>
+                      {a.phone || '—'}{a.email ? ` · ${a.email}` : ''}
+                    </div>
+                  </div>
+                  <div className="mini-right">
+                    <div className="mono">{a.ip || 'unknown IP'}</div>
+                    <div className="mono dim">{shortDate(a.created_at)}</div>
                   </div>
                 </div>
               ))}
