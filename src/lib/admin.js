@@ -68,11 +68,15 @@ export async function fetchOrders() {
   return { orders: data, error: null }
 }
 
+// Routed through update_order_status rather than a plain table update — it's
+// the function that gives a size's stock back when an order is cancelled (a
+// COD refusal never returned it on its own before) and best-effort reverses
+// that if the cancel gets corrected back to another status.
 export async function updateOrderStatus(orderId, status) {
-  const { error } = await supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', orderId)
+  const { error } = await supabase.rpc('update_order_status', {
+    p_order_id: orderId,
+    p_new_status: status,
+  })
 
   if (error) {
     console.error('[Supabase] updateOrderStatus failed:', error.message)

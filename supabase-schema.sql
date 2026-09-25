@@ -411,6 +411,85 @@ grant execute on function place_order(jsonb) to anon, authenticated;
 
 
 -- ---------------------------------------------------------------------------
+-- update_order_status — cancelling restocks, un-cancelling reverses it
+-- ---------------------------------------------------------------------------
+-- place_order takes stock down the moment an order is placed. Cancelling one
+-- (a COD refusal — the whole reason customerIndex/riskLevel in
+-- src/lib/admin.js exists) never gave it back on its own; refused orders
+-- alone could sink a size to 0 and show "sold out" while the pieces sit on
+-- the shelf. Restoring only fires on the transition INTO 'cancelled', so
+-- re-saving an already-cancelled order never double-restores; reversing it
+-- (an admin correcting a mistaken cancel) is best-effort and floors at 0
+-- rather than failing the status change outright.
+
+create or replace function update_order_status(p_order_id text, p_new_status text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  old_status text;
+  item       record;
+  cur_stock  jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'NOT_ALLOWED';
+  end if;
+
+  select status into old_status from orders where id = p_order_id for update;
+
+  if not found then
+    raise exception 'ORDER_NOT_FOUND';
+  end if;
+
+  if p_new_status = 'cancelled' and old_status is distinct from 'cancelled' then
+    for item in
+      select product_id, size, qty from order_items where order_id = p_order_id
+    loop
+      select stock into cur_stock from products where id::text = item.product_id for update;
+
+      -- Only add back into a size the product still tracks — an untracked
+      -- product (no stock map) never had anything taken off it to begin with.
+      if cur_stock is not null and cur_stock ? item.size then
+        update products
+           set stock = jsonb_set(
+             stock,
+             array[item.size],
+             to_jsonb(coalesce((stock ->> item.size)::int, 0) + item.qty)
+           )
+         where id::text = item.product_id;
+      end if;
+    end loop;
+  end if;
+
+  if old_status = 'cancelled' and p_new_status is distinct from 'cancelled' then
+    for item in
+      select product_id, size, qty from order_items where order_id = p_order_id
+    loop
+      select stock into cur_stock from products where id::text = item.product_id for update;
+
+      if cur_stock is not null and cur_stock ? item.size then
+        update products
+           set stock = jsonb_set(
+             stock,
+             array[item.size],
+             to_jsonb(greatest(0, coalesce((stock ->> item.size)::int, 0) - item.qty))
+           )
+         where id::text = item.product_id;
+      end if;
+    end loop;
+  end if;
+
+  update orders set status = p_new_status where id = p_order_id;
+end;
+$$;
+
+revoke all on function update_order_status(text, text) from public;
+grant execute on function update_order_status(text, text) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
 -- Courier hand-off
 -- ---------------------------------------------------------------------------
 -- Filled in when an order is pushed to a courier from the admin panel. The
