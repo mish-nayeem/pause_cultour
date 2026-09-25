@@ -133,7 +133,15 @@ set search_path = public
 as $$
 declare
   o          jsonb := payload -> 'order';
-  new_id     text  := o ->> 'id';
+  -- Generated below, not trusted from the caller — a client-made-up id
+  -- (the old 'PC' + Math.random() over 6 digits, ~900,000 possibilities)
+  -- was small enough to brute-force against send-order-confirmation's
+  -- unauthenticated orderId lookup. 'PC' (storefront) or 'PM' (manual/DM
+  -- sale) is still the caller's choice; anything else collapses to 'PC'.
+  id_prefix  text  := case when (o ->> 'id_prefix') in ('PC', 'PM')
+                        then o ->> 'id_prefix' else 'PC' end;
+  new_id     text;
+  attempt    int := 0;
   item       jsonb;
   cur_stock  jsonb;
   -- Not called `found`: plpgsql owns that name, and a SELECT INTO that
@@ -144,10 +152,6 @@ declare
   want       int;
   size_key   text;
 begin
-  if new_id is null then
-    raise exception 'MISSING_ORDER_ID';
-  end if;
-
   if jsonb_typeof(payload -> 'items') <> 'array'
      or jsonb_array_length(payload -> 'items') = 0 then
     raise exception 'EMPTY_CART';
@@ -185,32 +189,47 @@ begin
     end if;
   end loop;
 
-  insert into orders (
-    id, customer_name, customer_phone, customer_email, customer_address,
-    customer_area, customer_note, subtotal, delivery_zone, delivery_fee,
-    total, advance_amount, advance_method, advance_trx_id,
-    utm_source, utm_medium, utm_campaign, utm_content, utm_term
-  ) values (
-    new_id,
-    o ->> 'customer_name',
-    o ->> 'customer_phone',
-    o ->> 'customer_email',
-    o ->> 'customer_address',
-    o ->> 'customer_area',
-    o ->> 'customer_note',
-    (o ->> 'subtotal')::numeric,
-    o ->> 'delivery_zone',
-    (o ->> 'delivery_fee')::numeric,
-    (o ->> 'total')::numeric,
-    (o ->> 'advance_amount')::numeric,
-    o ->> 'advance_method',
-    o ->> 'advance_trx_id',
-    o ->> 'utm_source',
-    o ->> 'utm_medium',
-    o ->> 'utm_campaign',
-    o ->> 'utm_content',
-    o ->> 'utm_term'
-  );
+  -- Id generated here, retried only on the (extremely unlikely) collision —
+  -- the stock already taken above is never double-counted since only this
+  -- insert, not the loop above it, runs again.
+  loop
+    new_id := id_prefix || lpad(floor(random() * 10000000000)::bigint::text, 10, '0');
+
+    begin
+      insert into orders (
+        id, customer_name, customer_phone, customer_email, customer_address,
+        customer_area, customer_note, subtotal, delivery_zone, delivery_fee,
+        total, advance_amount, advance_method, advance_trx_id,
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term
+      ) values (
+        new_id,
+        o ->> 'customer_name',
+        o ->> 'customer_phone',
+        o ->> 'customer_email',
+        o ->> 'customer_address',
+        o ->> 'customer_area',
+        o ->> 'customer_note',
+        (o ->> 'subtotal')::numeric,
+        o ->> 'delivery_zone',
+        (o ->> 'delivery_fee')::numeric,
+        (o ->> 'total')::numeric,
+        (o ->> 'advance_amount')::numeric,
+        o ->> 'advance_method',
+        o ->> 'advance_trx_id',
+        o ->> 'utm_source',
+        o ->> 'utm_medium',
+        o ->> 'utm_campaign',
+        o ->> 'utm_content',
+        o ->> 'utm_term'
+      );
+      exit;
+    exception when unique_violation then
+      attempt := attempt + 1;
+      if attempt >= 5 then
+        raise exception 'ORDER_ID_COLLISION';
+      end if;
+    end;
+  end loop;
 
   -- Aliased `e`, not `item`: `item` is a variable in this function, and a
   -- table alias by the same name would be read as the variable — every line

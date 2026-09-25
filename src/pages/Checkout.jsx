@@ -149,19 +149,19 @@ export default function Checkout() {
     setSubmitting(true)
     setSubmitError('')
 
-    const orderId = 'PC' + Math.floor(100000 + Math.random() * 900000)
-
     const trxId = needsAdvance ? form.trxId.trim().toUpperCase() : null
     const attribution = getAttribution()
 
     // One call, one transaction: the order, its lines and the stock coming off
     // each size either all happen or none do. Two people reaching for the last
     // piece of a size means the second one is turned away here rather than
-    // both being sold it.
-    const { error: orderError } = await supabase.rpc('place_order', {
+    // both being sold it. The order id itself is generated inside place_order
+    // now, not here — a client-made-up id was guessable, see
+    // supabase-migration-secure-order-id.sql.
+    const { data: orderId, error: orderError } = await supabase.rpc('place_order', {
       payload: {
         order: {
-          id: orderId,
+          id_prefix: 'PC',
           customer_name: form.name,
           customer_phone: form.phone,
           customer_email: form.email.trim() || null,

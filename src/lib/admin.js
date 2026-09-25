@@ -147,13 +147,13 @@ export async function fetchAbandonedCarts() {
 // checkout order gets, so a DM sale can't oversell a size the website has
 // already sold out, and it shows up in every count exactly like any other.
 export async function createManualOrder({ order, items }) {
-  const { error } = await supabase.rpc('place_order', { payload: { order, items } })
+  const { data, error } = await supabase.rpc('place_order', { payload: { order, items } })
 
   if (error) {
     console.error('[Supabase] createManualOrder failed:', error.message)
-    return { error }
+    return { id: null, error }
   }
-  return { error: null }
+  return { id: data, error: null }
 }
 
 // Reads a screenshot or pasted text of a DM order and asks Gemini to guess

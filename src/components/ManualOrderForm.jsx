@@ -254,12 +254,11 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
 
     setSubmitting(true)
 
-    const orderId = 'PM' + Math.floor(100000 + Math.random() * 900000)
     const cleanTrxId = needsAdvance && trxId.trim() ? trxId.trim().toUpperCase() : null
 
-    const { error: submitError } = await createManualOrder({
+    const { id: orderId, error: submitError } = await createManualOrder({
       order: {
-        id: orderId,
+        id_prefix: 'PM',
         customer_name: form.name,
         customer_phone: form.phone,
         customer_email: form.email.trim() || null,
