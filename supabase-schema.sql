@@ -620,9 +620,14 @@ create policy "Anyone can join the wishlist"
   to anon, authenticated
   with check (public.rate_limit_ok('wishlist_join', 5, 3600));
 
+-- AFTER, not BEFORE: a BEFORE trigger's own insert into rate_limit_hits
+-- would already be visible to the WITH CHECK evaluated right after it,
+-- making a real row's own hit count against the check that's about to let
+-- it through — the exact 5th real join would fail by one, having just
+-- recorded the hit that pushed it over.
 drop trigger if exists wishlist_rate_limit_hit on wishlist;
 create trigger wishlist_rate_limit_hit
-  before insert on wishlist
+  after insert on wishlist
   for each row execute function public.record_rate_limit_hit('wishlist_join', '3600');
 
 drop policy if exists "Signed-in admins manage the wishlist" on wishlist;
@@ -854,9 +859,10 @@ create policy "Anyone can leave a review"
   to anon, authenticated
   with check (public.rate_limit_ok('product_review', 3, 86400));
 
+-- AFTER, not BEFORE — see the same note on wishlist_rate_limit_hit above.
 drop trigger if exists product_reviews_rate_limit_hit on product_reviews;
 create trigger product_reviews_rate_limit_hit
-  before insert on product_reviews
+  after insert on product_reviews
   for each row execute function public.record_rate_limit_hit('product_review', '86400');
 
 drop policy if exists "Signed-in admins manage reviews" on product_reviews;
