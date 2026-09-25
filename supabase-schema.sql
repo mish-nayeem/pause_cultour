@@ -746,7 +746,9 @@ alter table products add column if not exists cost numeric;
 -- Product reviews
 -- ---------------------------------------------------------------------------
 -- Anyone can leave one from the product page — no login, no purchase check,
--- same trust level as the wishlist signup.
+-- same trust level as the wishlist signup. It lands in 'pending' and only
+-- shows on the product page once an admin approves it from the admin
+-- panel's Customers → Reviews tab.
 
 create table if not exists product_reviews (
   id bigint generated always as identity primary key,
@@ -754,18 +756,25 @@ create table if not exists product_reviews (
   customer_name text not null,
   rating int not null check (rating between 1 and 5),
   comment text,
+  status text not null default 'pending'
+    check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz default now()
 );
 
 create index if not exists product_reviews_product_idx on product_reviews (product_id);
+create index if not exists product_reviews_status_idx on product_reviews (status);
 
 alter table product_reviews enable row level security;
 
+-- Customers and visitors only ever see approved reviews. An authenticated
+-- admin still sees every status — "Signed-in admins manage reviews" below
+-- already grants that (for all, using is_admin()), and Postgres OR's
+-- multiple permissive SELECT policies together for the same role.
 drop policy if exists "Anyone can read reviews" on product_reviews;
-create policy "Anyone can read reviews"
+create policy "Anyone can read approved reviews"
   on product_reviews for select
-  to anon
-  using (true);
+  to anon, authenticated
+  using (status = 'approved');
 
 -- Capped at 3 reviews per IP per day (check_rate_limit, defined above).
 drop policy if exists "Anyone can leave a review" on product_reviews;
