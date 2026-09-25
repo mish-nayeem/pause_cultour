@@ -8,6 +8,7 @@ import { getAttribution } from '../lib/attribution.js'
 import { saveAbandonedCart, markCartConverted } from '../lib/abandonedCart.js'
 import { BKASH_NUMBER, DISTRICTS, quote, isTrxId } from '../lib/delivery.js'
 import usePageMeta from '../lib/usePageMeta.js'
+import { Sentry } from '../lib/sentry.js'
 import './checkout.css'
 
 function money(n) {
@@ -199,6 +200,10 @@ export default function Checkout() {
       setSubmitting(false)
       setSubmitError(orderMessage(orderError))
       console.error('[Supabase] place_order failed:', orderError.message)
+      // A failed checkout is caught and handled gracefully right here, so it
+      // would never otherwise reach Sentry's automatic unhandled-error
+      // capture — this is the one place a lost sale needs reporting by hand.
+      Sentry.captureException(orderError, { tags: { flow: 'checkout' } })
       return
     }
 

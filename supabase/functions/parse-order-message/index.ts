@@ -15,6 +15,13 @@
 // Secrets needed (Edge Functions → Secrets): GEMINI_API_KEY
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
+// so without this, scope from one request could bleed into another if the
+// isolate is reused. No DSN set (SENTRY_DSN secret missing) makes every call
+// below a safe no-op.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -177,6 +184,11 @@ ${text ? `\nMessage text:\n${text}` : ''}`
     })
   } catch (err) {
     console.error('[parse-order-message]', err.message)
+    Sentry.captureException(err)
+    // The isolate can be torn down the instant this function returns —
+    // without waiting for the event to actually reach Sentry, it may never
+    // arrive at all.
+    await Sentry.flush(2000)
     return new Response(JSON.stringify({ error: 'Unexpected error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

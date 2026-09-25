@@ -21,6 +21,13 @@
 //   send-order-confirmation already uses.
 
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
+// so without this, scope from one request could bleed into another if the
+// isolate is reused. No DSN set (SENTRY_DSN secret missing) makes every call
+// below a safe no-op.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email'
 
@@ -125,66 +132,82 @@ Deno.serve(async (req) => {
   const secret = Deno.env.get('SEND_EMAIL_HOOK_SECRET')?.replace('v1,whsec_', '')
   if (!secret) return fail(500, 'SEND_EMAIL_HOOK_SECRET is not set')
 
-  const payload = await req.text()
-  const headers = Object.fromEntries(req.headers)
-
-  let event: {
-    user: { email: string }
-    email_data: {
-      token_hash: string
-      redirect_to: string
-      email_action_type: string
-    }
-  }
-
+  // Wraps everything past this point — previously nothing did, so a genuine
+  // bug (a bad Brevo response, an unexpected shape in the payload) would
+  // have surfaced as Deno's own unhandled-error 500 with no Sentry report at
+  // all, only the bad-signature case below was ever caught.
   try {
-    event = new Webhook(secret).verify(payload, headers) as typeof event
+    const payload = await req.text()
+    const headers = Object.fromEntries(req.headers)
+
+    let event: {
+      user: { email: string }
+      email_data: {
+        token_hash: string
+        redirect_to: string
+        email_action_type: string
+      }
+    }
+
+    try {
+      event = new Webhook(secret).verify(payload, headers) as typeof event
+    } catch (err) {
+      // Not a bug — a bad or replayed signature, expected from time to time
+      // on an endpoint left open to the internet. Not worth an alert.
+      console.error('[auth-email] bad signature:', (err as Error).message)
+      return fail(401, 'Invalid signature')
+    }
+
+    const { user, email_data } = event
+    const copy = COPY[email_data.email_action_type]
+    if (!copy) {
+      return fail(400, `Unsupported email type: ${email_data.email_action_type}`)
+    }
+
+    const apiKey = Deno.env.get('BREVO_API_KEY')
+    const fromEmail = Deno.env.get('BREVO_FROM_EMAIL')
+    const fromName = Deno.env.get('BREVO_FROM_NAME') ?? 'PAUSE'
+    if (!apiKey || !fromEmail) return fail(500, 'BREVO_API_KEY or BREVO_FROM_EMAIL is not set')
+
+    // The same link Supabase's own mailer would have built: it verifies the
+    // token, then sends the person on to redirect_to (the site's /account page).
+    const link =
+      `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify` +
+      `?token=${encodeURIComponent(email_data.token_hash)}` +
+      `&type=${encodeURIComponent(email_data.email_action_type)}` +
+      `&redirect_to=${encodeURIComponent(email_data.redirect_to)}`
+
+    const res = await fetch(BREVO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { email: fromEmail, name: fromName },
+        to: [{ email: user.email }],
+        subject: copy.subject,
+        htmlContent: buildHtml(copy, link),
+      }),
+    })
+
+    if (!res.ok) {
+      console.error(`[Brevo] auth email failed: ${res.status} ${await res.text()}`)
+      return fail(502, "Couldn't send the email. Try again in a moment.")
+    }
+
+    return new Response(JSON.stringify({}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
   } catch (err) {
-    console.error('[auth-email] bad signature:', (err as Error).message)
-    return fail(401, 'Invalid signature')
+    console.error('[send-auth-email]', (err as Error).message)
+    Sentry.captureException(err)
+    // The isolate can be torn down the instant this function returns —
+    // without waiting for the event to actually reach Sentry, it may never
+    // arrive at all.
+    await Sentry.flush(2000)
+    return fail(500, 'Unexpected error')
   }
-
-  const { user, email_data } = event
-  const copy = COPY[email_data.email_action_type]
-  if (!copy) {
-    return fail(400, `Unsupported email type: ${email_data.email_action_type}`)
-  }
-
-  const apiKey = Deno.env.get('BREVO_API_KEY')
-  const fromEmail = Deno.env.get('BREVO_FROM_EMAIL')
-  const fromName = Deno.env.get('BREVO_FROM_NAME') ?? 'PAUSE'
-  if (!apiKey || !fromEmail) return fail(500, 'BREVO_API_KEY or BREVO_FROM_EMAIL is not set')
-
-  // The same link Supabase's own mailer would have built: it verifies the
-  // token, then sends the person on to redirect_to (the site's /account page).
-  const link =
-    `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify` +
-    `?token=${encodeURIComponent(email_data.token_hash)}` +
-    `&type=${encodeURIComponent(email_data.email_action_type)}` +
-    `&redirect_to=${encodeURIComponent(email_data.redirect_to)}`
-
-  const res = await fetch(BREVO_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'api-key': apiKey,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({
-      sender: { email: fromEmail, name: fromName },
-      to: [{ email: user.email }],
-      subject: copy.subject,
-      htmlContent: buildHtml(copy, link),
-    }),
-  })
-
-  if (!res.ok) {
-    console.error(`[Brevo] auth email failed: ${res.status} ${await res.text()}`)
-    return fail(502, "Couldn't send the email. Try again in a moment.")
-  }
-
-  return new Response(JSON.stringify({}), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
 })

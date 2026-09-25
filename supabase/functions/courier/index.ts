@@ -31,6 +31,13 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
+// so without this, scope (tags, context) from one request could bleed into
+// another if the isolate is reused. No DSN set (SENTRY_DSN secret missing)
+// makes every call below a safe no-op.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -322,7 +329,8 @@ Deno.serve(async (req) => {
     return json({ error: 'action must be create or status' }, 400)
   } catch (err) {
     // NOT_CONFIGURED and COURIER_SAID are meant for the admin panel to read,
-    // so they travel as-is; anything else is ours to debug from the logs.
+    // so they travel as-is and aren't worth an alert; anything else is a real
+    // bug worth Sentry knowing about.
     const message = String(err.message ?? '')
     console.error('[courier]', message)
 
@@ -332,6 +340,12 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    Sentry.captureException(err)
+    // The isolate can be torn down the instant this function returns —
+    // without waiting for the event to actually reach Sentry, it may never
+    // arrive at all.
+    await Sentry.flush(2000)
 
     return new Response(JSON.stringify({ error: 'Unexpected error' }), {
       status: 500,

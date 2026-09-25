@@ -22,6 +22,13 @@
 //   ADMIN_EMAIL (falls back to ADMIN_NOTIFY_EMAIL), SITE_URL
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
+// so without this, scope from one request could bleed into another if the
+// isolate is reused. No DSN set (SENTRY_DSN secret missing) makes every call
+// below a safe no-op.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -233,6 +240,11 @@ Deno.serve(async (req) => {
     return json({ sent: notified.length, waiting: waiting.length })
   } catch (err) {
     console.error('[send-restock-alert]', err.message)
+    Sentry.captureException(err)
+    // The isolate can be torn down the instant this function returns —
+    // without waiting for the event to actually reach Sentry, it may never
+    // arrive at all.
+    await Sentry.flush(2000)
     return json({ error: 'Unexpected error' }, 500)
   }
 })
