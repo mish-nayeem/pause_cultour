@@ -24,6 +24,24 @@ create table if not exists order_items (
 );
 
 -- ---------------------------------------------------------------------------
+-- One place that says who the admin is
+-- ---------------------------------------------------------------------------
+-- Every "admin" policy below calls this rather than checking `to authenticated`
+-- alone. `to authenticated` matches ANY signed-in account — once customers can
+-- create their own accounts (see src/lib/auth.js), a customer is
+-- `authenticated` too, and a policy that stops at the role would hand them
+-- full read/write on every admin-only table in this file. Change the email
+-- here (and in VITE_ADMIN_EMAIL) if it's ever different from the one below.
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+as $$
+  select coalesce(lower(auth.jwt() ->> 'email') = 'mish.nayeem@gmail.com', false)
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Delivery charge and the outside-Dhaka advance
 -- ---------------------------------------------------------------------------
 -- Added after the first orders were already taken, so every column is
@@ -324,8 +342,8 @@ drop policy if exists "Signed-in admins manage the wishlist" on wishlist;
 create policy "Signed-in admins manage the wishlist"
   on wishlist for all
   to authenticated
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 
 -- ---------------------------------------------------------------------------
@@ -368,8 +386,8 @@ drop policy if exists "Signed-in admins manage the shop menu" on nav_categories;
 create policy "Signed-in admins manage the shop menu"
   on nav_categories for all
   to authenticated
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 
 -- ---------------------------------------------------------------------------
@@ -420,8 +438,8 @@ drop policy if exists "Signed-in admins manage the about page" on about_blocks;
 create policy "Signed-in admins manage the about page"
   on about_blocks for all
   to authenticated
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 
 -- ---------------------------------------------------------------------------
@@ -449,8 +467,8 @@ drop policy if exists "Signed-in admins manage returns" on order_returns;
 create policy "Signed-in admins manage returns"
   on order_returns for all
   to authenticated
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 
 -- ---------------------------------------------------------------------------
@@ -494,8 +512,8 @@ drop policy if exists "Signed-in admins manage abandoned carts" on abandoned_car
 create policy "Signed-in admins manage abandoned carts"
   on abandoned_carts for all
   to authenticated
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 
 -- ---------------------------------------------------------------------------
@@ -542,8 +560,8 @@ drop policy if exists "Signed-in admins manage reviews" on product_reviews;
 create policy "Signed-in admins manage reviews"
   on product_reviews for all
   to authenticated
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 
 -- ---------------------------------------------------------------------------
@@ -591,19 +609,19 @@ alter table coupon_stats enable row level security;
 
 drop policy if exists "Signed-in admins manage ad spend" on ad_spend;
 create policy "Signed-in admins manage ad spend"
-  on ad_spend for all to authenticated using (true) with check (true);
+  on ad_spend for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists "Signed-in admins manage email campaigns" on email_campaigns;
 create policy "Signed-in admins manage email campaigns"
-  on email_campaigns for all to authenticated using (true) with check (true);
+  on email_campaigns for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists "Signed-in admins manage social stats" on social_stats;
 create policy "Signed-in admins manage social stats"
-  on social_stats for all to authenticated using (true) with check (true);
+  on social_stats for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists "Signed-in admins manage coupon stats" on coupon_stats;
 create policy "Signed-in admins manage coupon stats"
-  on coupon_stats for all to authenticated using (true) with check (true);
+  on coupon_stats for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 
 -- ---------------------------------------------------------------------------
@@ -636,5 +654,5 @@ drop policy if exists "Signed-in admins read page views" on page_views;
 create policy "Signed-in admins read page views"
   on page_views for all
   to authenticated
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
