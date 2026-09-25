@@ -582,22 +582,6 @@ export async function fetchAllReviews() {
   return { reviews: data, error: null }
 }
 
-// A review only shows on the product page once it's 'approved' — see
-// supabase-migration-review-moderation.sql. Customers post straight into
-// 'pending'; this is the only way one leaves it.
-export async function setReviewStatus(id, status) {
-  const { error } = await supabase
-    .from('product_reviews')
-    .update({ status })
-    .eq('id', id)
-
-  if (error) {
-    console.error('[Supabase] setReviewStatus failed:', error.message)
-    return { error }
-  }
-  return { error: null }
-}
-
 // ---------- Marketing (manual entry) ----------
 
 // Four tables, one identical shape each — fetch/add/remove, admin-only, no

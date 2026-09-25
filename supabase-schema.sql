@@ -821,9 +821,9 @@ alter table products add column if not exists cost numeric;
 -- Product reviews
 -- ---------------------------------------------------------------------------
 -- Anyone can leave one from the product page — no login, no purchase check,
--- same trust level as the wishlist signup. It lands in 'pending' and only
--- shows on the product page once an admin approves it from the admin
--- panel's Customers → Reviews tab.
+-- same trust level as the wishlist signup, and it shows immediately. No
+-- admin approval step — that was tried and undone; rate limiting (below) is
+-- the actual protection against spam.
 
 create table if not exists product_reviews (
   id bigint generated always as identity primary key,
@@ -831,39 +831,32 @@ create table if not exists product_reviews (
   customer_name text not null,
   rating int not null check (rating between 1 and 5),
   comment text,
-  status text not null default 'pending'
-    check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz default now()
 );
 
 create index if not exists product_reviews_product_idx on product_reviews (product_id);
-create index if not exists product_reviews_status_idx on product_reviews (status);
 
 alter table product_reviews enable row level security;
 
--- Customers and visitors only ever see approved reviews. An authenticated
--- admin still sees every status — "Signed-in admins manage reviews" below
--- already grants that (for all, using is_admin()), and Postgres OR's
--- multiple permissive SELECT policies together for the same role.
 drop policy if exists "Anyone can read reviews" on product_reviews;
-create policy "Anyone can read approved reviews"
+create policy "Anyone can read reviews"
   on product_reviews for select
   to anon, authenticated
-  using (status = 'approved');
+  using (true);
 
--- Capped at 3 reviews per IP per day. rate_limit_ok/record_rate_limit_hit,
+-- Capped at 3 reviews per IP per hour. rate_limit_ok/record_rate_limit_hit,
 -- defined above, split the check from the count for it to work correctly.
 drop policy if exists "Anyone can leave a review" on product_reviews;
 create policy "Anyone can leave a review"
   on product_reviews for insert
   to anon, authenticated
-  with check (public.rate_limit_ok('product_review', 3, 86400));
+  with check (public.rate_limit_ok('product_review', 3, 3600));
 
 -- AFTER, not BEFORE — see the same note on wishlist_rate_limit_hit above.
 drop trigger if exists product_reviews_rate_limit_hit on product_reviews;
 create trigger product_reviews_rate_limit_hit
   after insert on product_reviews
-  for each row execute function public.record_rate_limit_hit('product_review', '86400');
+  for each row execute function public.record_rate_limit_hit('product_review', '3600');
 
 drop policy if exists "Signed-in admins manage reviews" on product_reviews;
 create policy "Signed-in admins manage reviews"

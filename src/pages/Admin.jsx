@@ -25,7 +25,6 @@ import {
   repeatVsNew,
   costAndMargin,
   fetchAllReviews,
-  setReviewStatus,
   adSpendApi,
   emailCampaignsApi,
   socialStatsApi,
@@ -386,7 +385,6 @@ export default function Admin() {
   const [blockedAttempts, setBlockedAttempts] = useState([])
   const [returnForm, setReturnForm] = useState({ orderId: '', reason: '' })
   const [returnBusy, setReturnBusy] = useState(null)
-  const [reviewBusy, setReviewBusy] = useState(null)
   const [adSpendDraft, setAdSpendDraft] = useState({ channel: '', spend: '', revenue: '' })
   const [emailDraft, setEmailDraft] = useState({ campaign: '', open_rate: '', click_rate: '' })
   const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
@@ -574,22 +572,6 @@ export default function Admin() {
 
     if (error) {
       setLoadError("Couldn't update that return. Try again.")
-      return
-    }
-
-    reload()
-  }
-
-  // A review only reaches the product page once it's 'approved' — customers
-  // posting one always land in 'pending' first (see
-  // supabase-migration-review-moderation.sql).
-  async function handleReviewAction(id, status) {
-    setReviewBusy(id)
-    const { error } = await setReviewStatus(id, status)
-    setReviewBusy(null)
-
-    if (error) {
-      setLoadError("Couldn't update that review. Try again.")
       return
     }
 
@@ -1685,49 +1667,19 @@ export default function Admin() {
 
           {customersSub === 'reviews' && (
           <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '6px' }}>REVIEWS</div>
-            <div className="panel-note" style={{ marginBottom: '18px' }}>
-              A review only shows on its product page once approved here —
-              every one a customer posts lands in Pending first.
-            </div>
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>REVIEWS</div>
             {allReviews.length === 0 && <div className="empty mono">No reviews yet.</div>}
             {allReviews.map((r) => {
               const product = products.find((p) => String(p.id) === String(r.product_id))
-              const pillTone = r.status === 'approved' ? 'delivered' : r.status === 'rejected' ? 'cancelled' : 'pending'
               return (
                 <div className="mini-row" key={r.id}>
                   <div>
-                    <div className="mini-name">
-                      {product ? product.name : r.product_id}{' '}
-                      <span className={`pill ${pillTone} mono`}>{r.status}</span>
-                    </div>
+                    <div className="mini-name">{product ? product.name : r.product_id}</div>
                     <div className="mini-id mono" style={{ marginTop: '3px' }}>
                       {r.customer_name}{r.comment ? ` — ${r.comment}` : ''}
                     </div>
                   </div>
-                  <div className="mini-right">
-                    <div className="mono dim">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {r.status !== 'approved' && (
-                        <button
-                          className="courier-btn ghost mono"
-                          disabled={reviewBusy === r.id}
-                          onClick={() => handleReviewAction(r.id, 'approved')}
-                        >
-                          {reviewBusy === r.id ? 'Saving…' : 'Approve'}
-                        </button>
-                      )}
-                      {r.status !== 'rejected' && (
-                        <button
-                          className="courier-btn ghost mono"
-                          disabled={reviewBusy === r.id}
-                          onClick={() => handleReviewAction(r.id, 'rejected')}
-                        >
-                          {reviewBusy === r.id ? 'Saving…' : 'Reject'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <div className="mono dim">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
                 </div>
               )
             })}
