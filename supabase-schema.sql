@@ -221,6 +221,70 @@ $$;
 revoke all on function public.check_rate_limit(text, int, int) from public;
 grant execute on function public.check_rate_limit(text, int, int) to anon, authenticated;
 
+-- check_rate_limit above is safe for place_order (a single explicit plpgsql
+-- call, always exactly once) but NOT safe to put directly in an RLS
+-- `with check` clause: Postgres doesn't guarantee a policy predicate is
+-- evaluated exactly once per row, so a volatile function that both reads
+-- and writes could double- or triple-count a single real insert as several
+-- hits. wishlist and product_reviews use this split pair instead — a
+-- STABLE, read-only check in the policy, and a BEFORE INSERT trigger
+-- (which Postgres does guarantee fires exactly once per row) to record it.
+
+create or replace function public.rate_limit_ok(action text, max_count int, window_seconds int)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  ip   text := public.client_ip();
+  hits int;
+begin
+  if ip is null then
+    return true;
+  end if;
+
+  select count(*) into hits
+    from rate_limit_hits
+   where bucket = action || ':' || ip
+     and created_at > now() - (window_seconds || ' seconds')::interval;
+
+  return hits < max_count;
+end;
+$$;
+
+revoke all on function public.rate_limit_ok(text, int, int) from public;
+grant execute on function public.rate_limit_ok(text, int, int) to anon, authenticated;
+
+-- One trigger function shared by both tables — TG_ARGV[0] is the bucket
+-- name, TG_ARGV[1] the window in seconds.
+create or replace function public.record_rate_limit_hit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  ip             text := public.client_ip();
+  action         text := TG_ARGV[0];
+  window_seconds int  := TG_ARGV[1]::int;
+  bucket_key     text;
+begin
+  if ip is not null then
+    bucket_key := action || ':' || ip;
+
+    delete from rate_limit_hits
+     where bucket = bucket_key
+       and created_at < now() - (window_seconds || ' seconds')::interval;
+
+    insert into rate_limit_hits (bucket) values (bucket_key);
+  end if;
+
+  return new;
+end;
+$$;
+
 -- Who a blocked place_order attempt claimed to be — the rate limiter itself
 -- only ever knew an IP and a bucket name, not the phone/email/name a fake
 -- order was made up with. place_order (security definer) is the only
@@ -547,13 +611,19 @@ alter table wishlist enable row level security;
 -- one person can't harvest anyone else's address — the product page remembers
 -- locally that they signed up.
 
--- Capped at 5 joins per IP per hour (check_rate_limit, defined above) —
--- plenty for a real person signing up for a few sizes, not for a script.
+-- Capped at 5 joins per IP per hour — plenty for a real person signing up
+-- for a few sizes, not for a script. rate_limit_ok/record_rate_limit_hit,
+-- defined above, split the check from the count for it to work correctly.
 drop policy if exists "Anyone can join the wishlist" on wishlist;
 create policy "Anyone can join the wishlist"
   on wishlist for insert
   to anon, authenticated
-  with check (public.check_rate_limit('wishlist_join', 5, 3600));
+  with check (public.rate_limit_ok('wishlist_join', 5, 3600));
+
+drop trigger if exists wishlist_rate_limit_hit on wishlist;
+create trigger wishlist_rate_limit_hit
+  before insert on wishlist
+  for each row execute function public.record_rate_limit_hit('wishlist_join', '3600');
 
 drop policy if exists "Signed-in admins manage the wishlist" on wishlist;
 create policy "Signed-in admins manage the wishlist"
@@ -776,12 +846,18 @@ create policy "Anyone can read approved reviews"
   to anon, authenticated
   using (status = 'approved');
 
--- Capped at 3 reviews per IP per day (check_rate_limit, defined above).
+-- Capped at 3 reviews per IP per day. rate_limit_ok/record_rate_limit_hit,
+-- defined above, split the check from the count for it to work correctly.
 drop policy if exists "Anyone can leave a review" on product_reviews;
 create policy "Anyone can leave a review"
   on product_reviews for insert
   to anon, authenticated
-  with check (public.check_rate_limit('product_review', 3, 86400));
+  with check (public.rate_limit_ok('product_review', 3, 86400));
+
+drop trigger if exists product_reviews_rate_limit_hit on product_reviews;
+create trigger product_reviews_rate_limit_hit
+  before insert on product_reviews
+  for each row execute function public.record_rate_limit_hit('product_review', '86400');
 
 drop policy if exists "Signed-in admins manage reviews" on product_reviews;
 create policy "Signed-in admins manage reviews"
