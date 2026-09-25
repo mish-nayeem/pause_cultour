@@ -203,6 +203,10 @@ export function orderErrorMessage(error) {
 
   if (raw.includes('EMPTY_CART')) return 'Add at least one item.'
 
+  if (raw.includes('RATE_LIMITED')) {
+    return 'Too many orders placed in a short time — wait a few minutes and try again.'
+  }
+
   return 'Could not place the order — check the details and try again.'
 }
 

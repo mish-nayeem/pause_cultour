@@ -131,6 +131,98 @@ alter table products add column if not exists stock jsonb;
 
 
 -- ---------------------------------------------------------------------------
+-- Rate limiting — a per-IP, per-action cap inside Postgres itself
+-- ---------------------------------------------------------------------------
+-- wishlist joins, reviews and place_order all accept anonymous callers with
+-- no limit otherwise — a script could flood reviews, junk up the wishlist's
+-- demand numbers, or worst of all place fake orders to drain a real size's
+-- stock to 0 and make it wrongly read "sold out". This doesn't go through
+-- Cloudflare — the browser calls Supabase directly — so it reads the
+-- caller's IP the way PostgREST/Supabase's gateway exposes it to RLS
+-- policies instead. Raises the bar against a script hitting these from one
+-- machine; it's not proof against someone rotating many IPs, which is an
+-- acceptable trade-off for a small store over adding a paid service.
+
+create table if not exists rate_limit_hits (
+  id         bigint generated always as identity primary key,
+  bucket     text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists rate_limit_hits_bucket_idx on rate_limit_hits (bucket, created_at);
+
+alter table rate_limit_hits enable row level security;
+-- No policies granted — the only way in is check_rate_limit() below.
+
+-- Supabase's gateway appends the real connecting IP as the LAST entry in
+-- x-forwarded-for; earlier entries can be whatever the caller's own request
+-- claimed. Returns null (not 'unknown') when the header is missing, so
+-- check_rate_limit can fail open instead of lumping every such request into
+-- one shared bucket.
+create or replace function public.client_ip()
+returns text
+language plpgsql
+stable
+as $$
+declare
+  raw   text;
+  parts text[];
+begin
+  raw := current_setting('request.headers', true)::json ->> 'x-forwarded-for';
+  if raw is null or trim(raw) = '' then
+    return null;
+  end if;
+
+  parts := string_to_array(raw, ',');
+  return trim(parts[array_length(parts, 1)]);
+end;
+$$;
+
+-- true = allowed (and this call counts as one hit). false = over the limit.
+-- Fails open when the IP can't be determined — a missing header should
+-- never be the reason a real customer's checkout is blocked. Old hits for
+-- the bucket are deleted on every call rather than by a separate cron job.
+create or replace function public.check_rate_limit(
+  action text,
+  max_count int,
+  window_seconds int
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  ip         text := public.client_ip();
+  bucket_key text;
+  hits       int;
+begin
+  if ip is null then
+    return true;
+  end if;
+
+  bucket_key := action || ':' || ip;
+
+  delete from rate_limit_hits
+   where bucket = bucket_key
+     and created_at < now() - (window_seconds || ' seconds')::interval;
+
+  select count(*) into hits from rate_limit_hits where bucket = bucket_key;
+
+  if hits >= max_count then
+    return false;
+  end if;
+
+  insert into rate_limit_hits (bucket) values (bucket_key);
+  return true;
+end;
+$$;
+
+revoke all on function public.check_rate_limit(text, int, int) from public;
+grant execute on function public.check_rate_limit(text, int, int) to anon, authenticated;
+
+
+-- ---------------------------------------------------------------------------
 -- place_order — the only way an order gets written
 -- ---------------------------------------------------------------------------
 -- The checkout used to insert the order, then the items, as two separate
@@ -170,6 +262,15 @@ declare
   want       int;
   size_key   text;
 begin
+  -- Admin's own manual-order entry (ManualOrderForm.jsx) calls this same
+  -- function from a signed-in session while working through a batch of DM
+  -- sales — is_admin() skips the limit entirely rather than risking a
+  -- lockout mid-batch. A real shopper places one order per cart, not eight
+  -- in an hour, so this only ever bites a script.
+  if not public.is_admin() and not public.check_rate_limit('place_order', 8, 3600) then
+    raise exception 'RATE_LIMITED';
+  end if;
+
   if jsonb_typeof(payload -> 'items') <> 'array'
      or jsonb_array_length(payload -> 'items') = 0 then
     raise exception 'EMPTY_CART';
@@ -332,11 +433,13 @@ alter table wishlist enable row level security;
 -- one person can't harvest anyone else's address — the product page remembers
 -- locally that they signed up.
 
+-- Capped at 5 joins per IP per hour (check_rate_limit, defined above) —
+-- plenty for a real person signing up for a few sizes, not for a script.
 drop policy if exists "Anyone can join the wishlist" on wishlist;
 create policy "Anyone can join the wishlist"
   on wishlist for insert
-  to anon
-  with check (true);
+  to anon, authenticated
+  with check (public.check_rate_limit('wishlist_join', 5, 3600));
 
 drop policy if exists "Signed-in admins manage the wishlist" on wishlist;
 create policy "Signed-in admins manage the wishlist"
@@ -550,11 +653,12 @@ create policy "Anyone can read reviews"
   to anon
   using (true);
 
+-- Capped at 3 reviews per IP per day (check_rate_limit, defined above).
 drop policy if exists "Anyone can leave a review" on product_reviews;
 create policy "Anyone can leave a review"
   on product_reviews for insert
-  to anon
-  with check (true);
+  to anon, authenticated
+  with check (public.check_rate_limit('product_review', 3, 86400));
 
 drop policy if exists "Signed-in admins manage reviews" on product_reviews;
 create policy "Signed-in admins manage reviews"

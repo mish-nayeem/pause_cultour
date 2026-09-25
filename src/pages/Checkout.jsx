@@ -36,6 +36,10 @@ function orderMessage(error) {
     return 'That transaction ID has already been used on another order.'
   }
 
+  if (raw.includes('RATE_LIMITED')) {
+    return "You've placed a few orders in a short time — please wait a few minutes and try again."
+  }
+
   return 'Could not place your order — please check your connection and try again.'
 }
 
