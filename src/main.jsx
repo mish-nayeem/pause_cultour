@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { CartProvider } from './context/CartContext.jsx'
@@ -8,7 +8,6 @@ import Product from './pages/Product.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import OrderConfirmed from './pages/OrderConfirmed.jsx'
-import Admin from './pages/Admin.jsx'
 import Login from './pages/Login.jsx'
 import Account from './pages/Account.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
@@ -21,6 +20,14 @@ import SmoothScroll from './components/SmoothScroll.jsx'
 import { captureAttribution } from './lib/attribution.js'
 import { startSessionPolicy } from './lib/sessionPolicy.js'
 import './styles/global.css'
+
+// Lazy: Admin.jsx pulls in every product/order/marketing manager component
+// and is by far the largest chunk of the app (1900+ lines), but only the
+// signed-in admin ever opens it. Loading it eagerly meant every shopper's
+// first page load — on a phone, often on 3G/4G — paid for code they'd never
+// run. Split into its own chunk, it's only fetched the moment someone
+// actually navigates to /admin.
+const Admin = lazy(() => import('./pages/Admin.jsx'))
 
 captureAttribution()
 startSessionPolicy()
@@ -39,7 +46,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order-confirmed" element={<OrderConfirmed />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route
+            path="/admin"
+            element={
+              <Suspense fallback={<div className="admin-chunk-loading mono">Loading admin…</div>}>
+                <Admin />
+              </Suspense>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/account" element={<Account />} />
           <Route path="/reset-password" element={<ResetPassword />} />

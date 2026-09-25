@@ -30,6 +30,18 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* Shown for the instant it takes to fetch the admin chunk (see main.jsx) —
+   the admin panel loads on its own bundle now, split out of everyone else's. */
+.admin-chunk-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--steel);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
 .display {
   font-family: 'Anton', sans-serif;
   text-transform: uppercase;
