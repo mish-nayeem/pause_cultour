@@ -31,6 +31,17 @@ function orderMessage(error) {
     return `${gone[1]} is no longer available — please remove it from your cart.`
   }
 
+  // place_order checks every price against the products table — a cart saved
+  // before a price change is the honest way to land here.
+  const priceChanged = raw.match(/PRICE_CHANGED:(.*)/)
+  if (priceChanged) {
+    return `The price of ${priceChanged[1]} has changed — please remove it from your cart and add it again.`
+  }
+
+  if (raw.includes('PRICE_MISMATCH') || raw.includes('INVALID_QTY')) {
+    return 'Your cart total is out of date — please refresh the page and try again.'
+  }
+
   // The unique index on the transaction id: this bKash receipt is already on
   // another order.
   if (error.code === '23505' || raw.includes('orders_advance_trx_id_idx')) {

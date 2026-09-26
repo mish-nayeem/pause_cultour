@@ -352,6 +352,17 @@ declare
   left_count int;
   want       int;
   size_key   text;
+  -- Money is worked out here from the products table, not taken from the
+  -- caller. The cart's prices, subtotal and total all come from the browser,
+  -- where devtools can set a 3200 taka piece to 1 — so every one of them is
+  -- recomputed below and the order refused if what was sent doesn't match.
+  db_price      numeric;
+  calc_subtotal numeric := 0;
+  zone_key      text;
+  zone_fee      numeric;
+  zone_advance  numeric;
+  calc_total    numeric;
+  calc_advance  numeric;
 begin
   -- Admin's own manual-order entry (ManualOrderForm.jsx) calls this same
   -- function from a signed-in session while working through a batch of DM
@@ -381,10 +392,16 @@ begin
     size_key := item ->> 'size';
     want := (item ->> 'qty')::int;
 
+    -- A zero or negative qty would put stock back on the shelf and knock
+    -- money off the subtotal.
+    if want is null or want < 1 then
+      raise exception 'INVALID_QTY:%', item ->> 'product_name';
+    end if;
+
     -- FOR UPDATE holds the row until this transaction ends, so a second
     -- checkout for the same product waits here instead of reading the same
     -- count and selling the same piece twice.
-    select p.stock, true into cur_stock, has_row
+    select p.stock, p.price, true into cur_stock, db_price, has_row
       from products p
      where p.id::text = item ->> 'product_id'
        for update;
@@ -392,6 +409,15 @@ begin
     if not coalesce(has_row, false) then
       raise exception 'UNAVAILABLE:%', item ->> 'product_name';
     end if;
+
+    -- The line's price has to be the shelf price. A mismatch is either a
+    -- tampered request or a cart saved before the price was changed — either
+    -- way, not an order to take at the price the browser says.
+    if (item ->> 'price')::numeric is distinct from db_price then
+      raise exception 'PRICE_CHANGED:%', item ->> 'product_name';
+    end if;
+
+    calc_subtotal := calc_subtotal + db_price * want;
 
     -- A product with no stock map is untracked: it sells as it always did.
     if cur_stock is not null then
@@ -406,6 +432,26 @@ begin
        where id::text = item ->> 'product_id';
     end if;
   end loop;
+
+  -- The same delivery rule as src/lib/delivery.js (quote / zoneForDistrict):
+  -- Dhaka district is COD at 80, everywhere else is 120 with a 200 bKash
+  -- advance, never more than the order itself. Change both together.
+  if (o ->> 'customer_area') = 'Dhaka' then
+    zone_key := 'inside';  zone_fee := 80;  zone_advance := 0;
+  else
+    zone_key := 'outside'; zone_fee := 120; zone_advance := 200;
+  end if;
+
+  calc_total   := calc_subtotal + zone_fee;
+  calc_advance := least(zone_advance, calc_total);
+
+  if (o ->> 'subtotal')::numeric       is distinct from calc_subtotal
+     or (o ->> 'delivery_zone')        is distinct from zone_key
+     or (o ->> 'delivery_fee')::numeric   is distinct from zone_fee
+     or (o ->> 'total')::numeric          is distinct from calc_total
+     or (o ->> 'advance_amount')::numeric is distinct from calc_advance then
+    raise exception 'PRICE_MISMATCH';
+  end if;
 
   -- Id generated here, retried only on the (extremely unlikely) collision —
   -- the stock already taken above is never double-counted since only this
@@ -427,11 +473,11 @@ begin
         o ->> 'customer_address',
         o ->> 'customer_area',
         o ->> 'customer_note',
-        (o ->> 'subtotal')::numeric,
-        o ->> 'delivery_zone',
-        (o ->> 'delivery_fee')::numeric,
-        (o ->> 'total')::numeric,
-        (o ->> 'advance_amount')::numeric,
+        calc_subtotal,
+        zone_key,
+        zone_fee,
+        calc_total,
+        calc_advance,
         o ->> 'advance_method',
         o ->> 'advance_trx_id',
         o ->> 'utm_source',
@@ -458,6 +504,8 @@ begin
     e.value ->> 'product_id',
     e.value ->> 'product_name',
     e.value ->> 'size',
+    -- Checked equal to products.price in the loop above, so the stored line
+    -- price is the shelf price.
     (e.value ->> 'price')::numeric,
     (e.value ->> 'qty')::int
   from jsonb_array_elements(payload -> 'items') as e;
@@ -614,11 +662,23 @@ alter table wishlist enable row level security;
 -- Capped at 5 joins per IP per hour — plenty for a real person signing up
 -- for a few sizes, not for a script. rate_limit_ok/record_rate_limit_hit,
 -- defined above, split the check from the count for it to work correctly.
+--
+-- A signed-in customer can only join with the email on their account: the
+-- "read/remove their own wishlist" policies match on that email, so without
+-- this they could file rows under someone else's address. A visitor who
+-- isn't signed in has no email in the JWT and types whatever they like, as
+-- before. The admin's own "manage" policy below covers the admin.
 drop policy if exists "Anyone can join the wishlist" on wishlist;
 create policy "Anyone can join the wishlist"
   on wishlist for insert
   to anon, authenticated
-  with check (public.rate_limit_ok('wishlist_join', 5, 3600));
+  with check (
+    public.rate_limit_ok('wishlist_join', 5, 3600)
+    and (
+      auth.jwt() ->> 'email' is null
+      or lower(email) = lower(auth.jwt() ->> 'email')
+    )
+  );
 
 -- AFTER, not BEFORE: a BEFORE trigger's own insert into rate_limit_hits
 -- would already be visible to the WITH CHECK evaluated right after it,

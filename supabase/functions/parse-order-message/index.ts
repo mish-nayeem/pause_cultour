@@ -12,7 +12,10 @@
 // panel's "New order" form to pre-fill; a person checks and corrects it
 // before it goes anywhere near place_order.
 //
-// Secrets needed (Edge Functions → Secrets): GEMINI_API_KEY
+// Admin only — same check as send-status-update and courier. Without it,
+// anyone holding the public anon key could spend the Gemini quota.
+//
+// Secrets needed (Edge Functions → Secrets): GEMINI_API_KEY, ADMIN_EMAIL
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import * as Sentry from 'npm:@sentry/deno@^8'
@@ -59,6 +62,33 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ---- Verify the caller is the admin ----
+    const authHeader = req.headers.get('Authorization')
+
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    const { data: userData } = await authClient.auth.getUser()
+    const callerEmail = userData?.user?.email?.trim().toLowerCase()
+    const adminEmail = Deno.env.get('ADMIN_EMAIL')?.trim().toLowerCase()
+
+    if (!callerEmail || !adminEmail || callerEmail !== adminEmail) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const { text, image, mimeType } = await req.json()
 
     if (!text && !image) {

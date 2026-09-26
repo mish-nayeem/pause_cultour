@@ -68,13 +68,17 @@ export default function Product() {
   const [capped, setCapped] = useState(false)
   const [wishEmail, setWishEmail] = useState(savedEmail)
   const [wishState, setWishState] = useState('idle') // idle | saving | error
+  const [accountEmail, setAccountEmail] = useState('') // signed-in customer only
 
   // A signed-in customer's list is the rows under their account email, so the
   // restock form starts with that address rather than whatever was typed last.
   // Not for the admin — their login isn't a shopper's address.
   useEffect(() => {
     currentUser().then((u) => {
-      if (u?.email && !isAdminEmail(u.email)) setWishEmail(u.email)
+      if (u?.email && !isAdminEmail(u.email)) {
+        setWishEmail(u.email)
+        setAccountEmail(u.email)
+      }
     })
   }, [])
   const [wishDone, setWishDone] = useState(null) // the size just signed up for
@@ -447,6 +451,9 @@ export default function Product() {
                       type="email"
                       value={wishEmail}
                       onChange={(e) => setWishEmail(e.target.value)}
+                      // Signed in, the wishlist only accepts the account's
+                      // own email (see supabase-migration-security-audit.sql).
+                      readOnly={!!accountEmail}
                       placeholder="you@example.com"
                       aria-label="Your email address"
                     />

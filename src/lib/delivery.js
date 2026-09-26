@@ -7,7 +7,9 @@
 //
 // Checkout, the confirmation page and the admin panel all read these numbers
 // from here, so what the customer is told and what the rider collects can't
-// drift apart.
+// drift apart. place_order (supabase-schema.sql) re-does the same sums
+// server-side and refuses an order that doesn't match — change the fees,
+// the advance or the Dhaka rule there too.
 
 export const BKASH_NUMBER = '01881958831'
 
