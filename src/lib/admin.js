@@ -226,6 +226,13 @@ export function orderErrorMessage(error) {
 
   if (raw.includes('EMPTY_CART')) return 'Add at least one item.'
 
+  const priceChanged = raw.match(/PRICE_CHANGED:(.*)/)
+  if (priceChanged) return `${priceChanged[1]}'s price changed — remove it and add it again.`
+
+  if (raw.includes('PRICE_MISMATCH') || raw.includes('INVALID_QTY')) {
+    return 'The totals are out of date — reload the page and try again.'
+  }
+
   if (raw.includes('RATE_LIMITED')) {
     return 'Too many orders placed in a short time — wait a few minutes and try again.'
   }
