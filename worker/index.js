@@ -12,6 +12,8 @@
 // photo. A real visitor's request never matches BOT_PATTERN and falls
 // through to env.ASSETS.fetch(request) — the normal built app, untouched.
 
+import { withSecurityHeaders } from './security-headers.js'
+
 const CLOUDINARY_MARKER = '/image/upload/'
 
 // Facebook's own recommended share-image size (1.91:1). WhatsApp in
@@ -43,33 +45,40 @@ function escapeHtml(str) {
 }
 
 export default {
+  // Every response, the crawler page and the passed-through app alike, leaves
+  // with the same security headers the static files get from _headers.
   async fetch(request, env) {
-    const userAgent = request.headers.get('user-agent') || ''
-    if (!BOT_PATTERN.test(userAgent)) return env.ASSETS.fetch(request)
+    return withSecurityHeaders(await handle(request, env))
+  },
+}
 
-    const url = new URL(request.url)
-    const id = decodeURIComponent(url.pathname.split('/').pop())
+async function handle(request, env) {
+  const userAgent = request.headers.get('user-agent') || ''
+  if (!BOT_PATTERN.test(userAgent)) return env.ASSETS.fetch(request)
 
-    // Set in wrangler.jsonc's "vars" — this Worker's own runtime env, read
-    // again here since it's a separate script the Vite build never bundles.
-    const supabaseUrl = env.VITE_SUPABASE_URL
-    const supabaseKey = env.VITE_SUPABASE_ANON_KEY
-    if (!supabaseUrl || !supabaseKey) return env.ASSETS.fetch(request)
+  const url = new URL(request.url)
+  const id = decodeURIComponent(url.pathname.split('/').pop())
 
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=name,variant,description,price,images`,
-      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
-    )
-    if (!res.ok) return env.ASSETS.fetch(request)
+  // Set in wrangler.jsonc's "vars" — this Worker's own runtime env, read
+  // again here since it's a separate script the Vite build never bundles.
+  const supabaseUrl = env.VITE_SUPABASE_URL
+  const supabaseKey = env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseKey) return env.ASSETS.fetch(request)
 
-    const [product] = await res.json()
-    if (!product) return env.ASSETS.fetch(request)
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=name,variant,description,price,images`,
+    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+  )
+  if (!res.ok) return env.ASSETS.fetch(request)
 
-    const title = `${product.name} — PAUSE`
-    const description = `${product.name} — ${product.variant}, ৳${Number(product.price).toLocaleString()}. ${product.description || ''}`.trim()
-    const image = product.images?.[0] ? ogImage(product.images[0]) : `${url.origin}/og-image.jpg`
+  const [product] = await res.json()
+  if (!product) return env.ASSETS.fetch(request)
 
-    const html = `<!DOCTYPE html>
+  const title = `${product.name} — PAUSE`
+  const description = `${product.name} — ${product.variant}, ৳${Number(product.price).toLocaleString()}. ${product.description || ''}`.trim()
+  const image = product.images?.[0] ? ogImage(product.images[0]) : `${url.origin}/og-image.jpg`
+
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -92,8 +101,7 @@ export default {
 <body></body>
 </html>`
 
-    return new Response(html, {
-      headers: { 'content-type': 'text/html; charset=utf-8' },
-    })
-  },
+  return new Response(html, {
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+  })
 }
