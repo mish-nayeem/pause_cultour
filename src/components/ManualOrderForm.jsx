@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { createManualOrder, extractOrderFromMessage, orderErrorMessage } from '../lib/admin.js'
 import { sendOrderConfirmation } from '../lib/email.js'
-import { DISTRICTS, quote, isTrxId } from '../lib/delivery.js'
+import { DISTRICTS, quote, isTrxId, cleanTrxId } from '../lib/delivery.js'
 import { availableSizes } from '../lib/stock.js'
 import './manual-order-form.css'
 
@@ -254,7 +254,7 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
 
     setSubmitting(true)
 
-    const cleanTrxId = needsAdvance && trxId.trim() ? trxId.trim().toUpperCase() : null
+    const finalTrxId = needsAdvance && trxId.trim() ? cleanTrxId(trxId) : null
 
     const { id: orderId, error: submitError } = await createManualOrder({
       order: {
@@ -271,7 +271,7 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
         total: bill.total,
         advance_amount: bill.advance,
         advance_method: needsAdvance ? 'bkash' : null,
-        advance_trx_id: cleanTrxId,
+        advance_trx_id: finalTrxId,
         utm_source: source,
         utm_medium: 'dm',
       },

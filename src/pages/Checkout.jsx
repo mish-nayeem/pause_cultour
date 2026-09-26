@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient.js'
 import { sendOrderConfirmation } from '../lib/email.js'
 import { getAttribution } from '../lib/attribution.js'
 import { saveAbandonedCart, markCartConverted } from '../lib/abandonedCart.js'
-import { BKASH_NUMBER, DISTRICTS, quote, isTrxId } from '../lib/delivery.js'
+import { BKASH_NUMBER, DISTRICTS, quote, isTrxId, cleanTrxId } from '../lib/delivery.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import { Sentry } from '../lib/sentry.js'
 import './checkout.css'
@@ -36,6 +36,10 @@ function orderMessage(error) {
   const priceChanged = raw.match(/PRICE_CHANGED:(.*)/)
   if (priceChanged) {
     return `The price of ${priceChanged[1]} has changed — please remove it from your cart and add it again.`
+  }
+
+  if (raw.includes('TRX_REQUIRED')) {
+    return 'Please enter the bKash Transaction ID for your advance payment.'
   }
 
   if (raw.includes('PRICE_MISMATCH') || raw.includes('INVALID_QTY')) {
@@ -165,7 +169,7 @@ export default function Checkout() {
     setSubmitting(true)
     setSubmitError('')
 
-    const trxId = needsAdvance ? form.trxId.trim().toUpperCase() : null
+    const trxId = needsAdvance ? cleanTrxId(form.trxId) : null
     const attribution = getAttribution()
 
     // One call, one transaction: the order, its lines and the stock coming off
@@ -347,11 +351,19 @@ export default function Checkout() {
                     name="trxId"
                     value={form.trxId}
                     onChange={handleChange}
-                    placeholder="TRXID (e.g. K8H7G6F5D4)"
+                    placeholder="Type or paste your TrxID (e.g. K8H7G6F5D4)"
                     autoComplete="off"
+                    autoCapitalize="characters"
                     spellCheck="false"
+                    aria-required="true"
                   />
-                  {errors.trxId && <em className="err mono">{errors.trxId}</em>}
+                  {errors.trxId ? (
+                    <em className="err mono">{errors.trxId}</em>
+                  ) : (
+                    <span className="trx-hint mono">
+                      Required — copy it from the bKash SMS and paste it here. The order can't be placed without it.
+                    </span>
+                  )}
                 </label>
               </div>
             )}

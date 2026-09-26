@@ -453,6 +453,16 @@ begin
     raise exception 'PRICE_MISMATCH';
   end if;
 
+  -- Outside Dhaka the bKash advance is the order, and the checkout page
+  -- won't submit without its transaction id — but that check lived only in
+  -- the browser. A storefront order skipping it is refused here too. The
+  -- admin's manual form is exempt: a DM sale can be entered before the
+  -- advance arrives, with the id filled in later.
+  if calc_advance > 0 and not public.is_admin()
+     and coalesce(o ->> 'advance_trx_id', '') !~ '^[A-Z0-9]{8,16}$' then
+    raise exception 'TRX_REQUIRED';
+  end if;
+
   -- Id generated here, retried only on the (extremely unlikely) collision —
   -- the stock already taken above is never double-counted since only this
   -- insert, not the loop above it, runs again.
