@@ -62,6 +62,10 @@ alter table orders add column if not exists advance_amount numeric default 0;
 alter table orders add column if not exists advance_method text;
 alter table orders add column if not exists advance_trx_id text;
 
+-- confirmation_sent_at — when send-order-confirmation mailed this order, so
+-- it can't be made to send again (see supabase-migration-confirmation-once.sql)
+alter table orders add column if not exists confirmation_sent_at timestamptz;
+
 -- One bKash receipt, one order. Without this the same transaction id could be
 -- pasted onto order after order, since the checkout can't verify it with bKash
 -- itself. Case-insensitive, because the id gets typed by hand.

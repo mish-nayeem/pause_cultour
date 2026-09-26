@@ -12,6 +12,13 @@
 // endpoint is callable by anonymous customers; if it accepted a recipient and
 // body from the caller, it would be an open mail relay.
 //
+// It also sends at most once per order. Being callable by anyone, it used to
+// resend both mails every time it was called with a known order id — a
+// script could fill the customer's and the admin's inboxes and burn the
+// Brevo daily quota. orders.confirmation_sent_at is claimed before anything
+// goes out (see supabase-migration-confirmation-once.sql), and released
+// again only if neither mail could be sent, so a real failure can be retried.
+//
 // Secrets needed (Edge Functions → Secrets):
 //   BREVO_API_KEY, BREVO_FROM_EMAIL, BREVO_FROM_NAME, ADMIN_NOTIFY_EMAIL
 
@@ -202,6 +209,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // Claim the send in the same statement that checks it hasn't happened —
+    // two calls racing each other can't both get through.
+    const { data: claimed, error: claimError } = await supabase
+      .from('orders')
+      .update({ confirmation_sent_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .is('confirmation_sent_at', null)
+      .select('id')
+
+    if (claimError) throw claimError
+
+    // Already sent, or no such order — the same answer for both, so this
+    // can't be used to find out which order ids exist.
+    if (!claimed || claimed.length === 0) {
+      return new Response(JSON.stringify({ sent: { customer: false, admin: false }, skipped: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const { data: order, error } = await supabase
       .from('orders')
       .select('*, order_items(*)')
@@ -305,6 +331,12 @@ Deno.serve(async (req) => {
       } catch (err) {
         console.error('[Brevo] admin alert failed:', err.message)
       }
+    }
+
+    // Nothing went out at all (Brevo down, say) — give the claim back so the
+    // next call can try again instead of the order never being confirmed.
+    if (!sent.customer && !sent.admin) {
+      await supabase.from('orders').update({ confirmation_sent_at: null }).eq('id', order.id)
     }
 
     // 200 even when a send fails — the order is already saved, and a mail
