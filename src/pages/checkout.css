@@ -56,6 +56,13 @@
   font-style: normal;
 }
 
+.field .trx-hint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--steel);
+  margin-top: 6px;
+}
+
 .field .err {
   font-size: 11px;
   color: var(--signal);

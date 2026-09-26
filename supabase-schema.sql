@@ -453,6 +453,16 @@ begin
     raise exception 'PRICE_MISMATCH';
   end if;
 
+  -- Outside Dhaka the bKash advance is the order, and the checkout page
+  -- won't submit without its transaction id — but that check lived only in
+  -- the browser. A storefront order skipping it is refused here too. The
+  -- admin's manual form is exempt: a DM sale can be entered before the
+  -- advance arrives, with the id filled in later.
+  if calc_advance > 0 and not public.is_admin()
+     and coalesce(o ->> 'advance_trx_id', '') !~ '^[A-Z0-9]{8,16}$' then
+    raise exception 'TRX_REQUIRED';
+  end if;
+
   -- Id generated here, retried only on the (extremely unlikely) collision —
   -- the stock already taken above is never double-counted since only this
   -- insert, not the loop above it, runs again.
@@ -847,18 +857,92 @@ create index if not exists abandoned_carts_active_idx on abandoned_carts (last_a
 
 alter table abandoned_carts enable row level security;
 
-drop policy if exists "Anyone can save their own abandoned cart" on abandoned_carts;
-create policy "Anyone can save their own abandoned cart"
-  on abandoned_carts for insert
-  to anon
-  with check (true);
+-- The browser used to write abandoned_carts directly: an anon INSERT policy
+-- plus an UPDATE policy of `using (true)`. The client saves with upsert, and
+-- Postgres runs ON CONFLICT DO UPDATE only for a role that can also SELECT
+-- the row — anon can't (and mustn't: the table holds names and phone
+-- numbers), so every save failed with an RLS error that supabase-js returns
+-- rather than throws, and nothing ever reached the admin panel. The UPDATE
+-- policy also let anyone rewrite any row they could name.
+--
+-- These two functions replace both policies. They run as the owner, touch
+-- only the one row for the session id passed in, and cap what gets stored.
 
+drop policy if exists "Anyone can save their own abandoned cart" on abandoned_carts;
 drop policy if exists "Anyone can update their own abandoned cart" on abandoned_carts;
-create policy "Anyone can update their own abandoned cart"
-  on abandoned_carts for update
-  to anon
-  using (true)
-  with check (true);
+
+create or replace function save_abandoned_cart(
+  p_session_id text,
+  p_name       text,
+  p_phone      text,
+  p_items      jsonb,
+  p_cart_value numeric
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- crypto.randomUUID() in src/lib/abandonedCart.js — anything else is not
+  -- from the checkout page.
+  if p_session_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    raise exception 'BAD_SESSION';
+  end if;
+
+  if jsonb_typeof(p_items) <> 'array'
+     or jsonb_array_length(p_items) = 0
+     or jsonb_array_length(p_items) > 50 then
+    raise exception 'BAD_ITEMS';
+  end if;
+
+  -- Only a brand-new session counts against the limit: one real checkout
+  -- saves the same row over and over as the customer types, which is fine.
+  -- 20 new carts per IP per hour is far past any real shopper.
+  if not exists (select 1 from abandoned_carts where session_id = p_session_id)
+     and not public.check_rate_limit('abandoned_cart', 20, 3600) then
+    raise exception 'RATE_LIMITED';
+  end if;
+
+  insert into abandoned_carts (session_id, customer_name, customer_phone, items, cart_value, last_active)
+  values (
+    p_session_id,
+    nullif(left(trim(p_name), 100), ''),
+    nullif(left(trim(p_phone), 30), ''),
+    p_items,
+    greatest(coalesce(p_cart_value, 0), 0),
+    now()
+  )
+  on conflict (session_id) do update
+     set customer_name  = excluded.customer_name,
+         customer_phone = excluded.customer_phone,
+         items          = excluded.items,
+         cart_value     = excluded.cart_value,
+         last_active    = now()
+   -- A session that already ordered stays counted as converted.
+   where abandoned_carts.converted_order_id is null;
+end;
+$$;
+
+create or replace function mark_cart_converted(p_session_id text, p_order_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update abandoned_carts
+     set converted_order_id = p_order_id
+   where session_id = p_session_id
+     and converted_order_id is null
+     and exists (select 1 from orders where id = p_order_id);
+end;
+$$;
+
+revoke all on function save_abandoned_cart(text, text, text, jsonb, numeric) from public;
+grant execute on function save_abandoned_cart(text, text, text, jsonb, numeric) to anon, authenticated;
+revoke all on function mark_cart_converted(text, text) from public;
+grant execute on function mark_cart_converted(text, text) to anon, authenticated;
 
 drop policy if exists "Signed-in admins manage abandoned carts" on abandoned_carts;
 create policy "Signed-in admins manage abandoned carts"

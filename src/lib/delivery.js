@@ -131,9 +131,24 @@ export function quote(subtotal, district) {
   return { zone, fee: zone.fee, advance, total, due: total - advance }
 }
 
+// People paste this straight out of the bKash SMS — just the id, the id
+// with its label ("TrxID BHK3XYZ12A."), or the whole message. Whatever comes
+// in, only the id itself is kept, upper-cased, so a paste works as well as
+// typing it out.
+export function cleanTrxId(value) {
+  const text = String(value ?? '').toUpperCase()
+
+  const labelled = text.match(/TRX\s*ID\s*[:.#-]?\s*([A-Z0-9]+)/)
+  if (labelled) return labelled[1]
+
+  const firstWord = text.trim().split(/\s+/)[0] || ''
+  return firstWord.replace(/[^A-Z0-9]/g, '')
+}
+
 // bKash sends a 10-character transaction id, but the exact length has changed
 // before, so the check stays loose enough to survive that and tight enough to
-// reject someone typing their name into the box.
+// reject someone typing their name into the box. place_order applies the
+// same pattern server-side.
 export function isTrxId(value) {
-  return /^[A-Z0-9]{8,16}$/.test(String(value).trim().toUpperCase())
+  return /^[A-Z0-9]{8,16}$/.test(cleanTrxId(value))
 }
