@@ -314,32 +314,35 @@
 @media (max-width: 860px) {
   .nav-wrap { padding: 12px 12px 0; }
 
-  /* The pill spans the screen here, so the button sits inside its left end
-     as a bare arrow, and the pill makes room for it. */
-  .has-back .site-header { padding-left: 46px; }
-
+  /* The back button is its own small dark circle at the left edge, level
+     with the pill, so the pill itself can stay compact and centred. */
   .back-btn {
     top: 12px;
-    left: 12px;
-    height: 46px;
-    padding: 0 0 0 20px;
-    background: none;
+    left: 10px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    justify-content: center;
+    background: var(--ink);
     color: var(--paper);
-    box-shadow: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(22, 22, 15, 0.22);
   }
 
   .back-btn:hover { transform: none; }
   .back-text { display: none; }
 
+  /* Sized to what it holds — logo, cart, menu — and centred, rather than
+     stretched across the whole screen. */
   .site-header {
-    gap: 14px;
-    padding: 11px 18px;
-    width: 100%;
-    justify-content: space-between;
+    gap: 18px;
+    padding: 8px 16px;
+    min-height: 38px;
+    width: auto;
     border-radius: 999px;
   }
 
-  .logo-3d img { height: 24px; }
+  .logo-3d img { height: 22px; }
 
   /* Swap: inline links out, hamburger in. */
   .desk-nav { display: none; }
@@ -348,12 +351,18 @@
   .mob-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
   }
 
   .mob-right .cart {
-    font-size: 11px;
+    font-size: 10.5px;
     letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .burger {
+    width: 22px;
+    height: 20px;
   }
 
   .mob-panel { display: block; }
