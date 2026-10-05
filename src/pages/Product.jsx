@@ -6,7 +6,7 @@ import YouMayLike from '../components/YouMayLike.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import { IconShare, IconChat } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
-import { cld } from '../lib/cloudinary.js'
+import { imgUrl } from '../lib/images.js'
 import { useCart } from '../context/CartContext.jsx'
 import { availableSizes, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
 import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
@@ -356,7 +356,7 @@ export default function Product() {
             {product.images.map((img, i) => (
               <div className="shot" key={img}>
                 <ShimmerImage
-                  src={cld(img, { w: 1000 })}
+                  src={imgUrl(img, { w: 1000 })}
                   alt={`${product.name} — view ${i + 1}`}
                   loading={i > 1 ? 'lazy' : undefined}
                 />
@@ -524,7 +524,7 @@ export default function Product() {
                     className={`colour-chip ${c.id === product.id ? 'on' : ''}`}
                     title={c.variant}
                   >
-                    {c.images?.[0] && <ShimmerImage src={cld(c.images[0], { w: 160 })} alt={c.variant} />}
+                    {c.images?.[0] && <ShimmerImage src={imgUrl(c.images[0], { w: 160 })} alt={c.variant} />}
                   </Link>
                 ))}
               </div>

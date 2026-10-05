@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
-import { cld, uploadImage } from '../lib/cloudinary.js'
+import { imgUrl, uploadImage } from '../lib/images.js'
 import {
   fetchAllAboutBlocks,
   createAboutBlock,
@@ -47,7 +47,7 @@ export default function AboutManager() {
     setError('')
 
     try {
-      const url = await uploadImage(file, supabase)
+      const url = await uploadImage(file, supabase, 'about')
       const { error: createError } = await createAboutBlock({
         imageUrl: url,
         description: newText.trim(),
@@ -151,7 +151,7 @@ export default function AboutManager() {
         {blocks.map((b, i) => (
           <div className={`am-row ${b.active ? '' : 'off'}`} key={b.id}>
             <div className="am-thumb">
-              <img src={cld(b.image_url, { w: 320 })} alt="" />
+              <img src={imgUrl(b.image_url, { w: 320 })} alt="" />
             </div>
 
             <textarea

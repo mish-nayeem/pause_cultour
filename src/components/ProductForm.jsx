@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
-import { cld, uploadImage } from '../lib/cloudinary.js'
+import { imgUrl, uploadImage } from '../lib/images.js'
 import { saveProduct, deleteProduct } from '../lib/admin.js'
 import { IconX } from './Icons.jsx'
 import { stockForSizes, stockMap } from '../lib/stock.js'
@@ -137,11 +137,10 @@ export default function ProductForm({ existing, categories = [], detailLabels = 
     setError('')
 
     try {
-      // Sequential rather than parallel: each upload needs its own signature,
-      // and a burst of them is more likely to trip Cloudinary's rate limit.
+      // One at a time, so the photos land in the order they were picked.
       const urls = []
       for (const file of files) {
-        urls.push(await uploadImage(file, supabase))
+        urls.push(await uploadImage(file, supabase, 'products'))
       }
       setP((prev) => ({ ...prev, images: [...prev.images, ...urls] }))
     } catch (err) {
@@ -303,13 +302,13 @@ export default function ProductForm({ existing, categories = [], detailLabels = 
       {/* ---- Images ---- */}
       <div className="pf-label mono">IMAGES</div>
       <div className="pf-note mono">
-        First image is the one shown on the shop grid. Upload goes to Cloudinary.
+        First image is the one shown on the shop grid. Upload goes to Supabase Storage.
       </div>
 
       <div className="pf-images">
         {p.images.map((url, i) => (
           <div className="pf-img" key={url}>
-            <img src={cld(url, { w: 200 })} alt="" />
+            <img src={imgUrl(url, { w: 200 })} alt="" />
             <button className="pf-img-x" onClick={() => removeImage(url)} title="Remove">
               <IconX width="13" height="13" />
             </button>

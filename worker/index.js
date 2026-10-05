@@ -14,24 +14,7 @@
 
 import { withSecurityHeaders } from './security-headers.js'
 
-const CLOUDINARY_MARKER = '/image/upload/'
-
-// Facebook's own recommended share-image size (1.91:1). WhatsApp in
-// particular renders more reliably when og:image:width/height are declared
-// and actually match the file, which a plain resize can't promise — c_fill
-// crops to the exact box instead, so the numbers below are always true.
-const OG_IMAGE_WIDTH = 1200
-const OG_IMAGE_HEIGHT = 630
-
-function ogImage(url) {
-  if (typeof url !== 'string' || !url.includes(CLOUDINARY_MARKER)) return url
-
-  const [base, rest] = url.split(CLOUDINARY_MARKER)
-  const alreadyTransformed = /^[a-z]{1,3}_[^/]+\//.test(rest)
-  if (alreadyTransformed) return url
-
-  return `${base}${CLOUDINARY_MARKER}f_auto,q_auto,c_fill,g_auto,w_${OG_IMAGE_WIDTH},h_${OG_IMAGE_HEIGHT}/${rest}`
-}
+import { ogImage, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from './og-image.js'
 
 const BOT_PATTERN =
   /facebookexternalhit|Facebot|facebookcatalog|meta-externalagent|Messenger|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Pinterest/i

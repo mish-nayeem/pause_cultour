@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchAboutBlocks } from '../lib/about.js'
-import { cld } from '../lib/cloudinary.js'
+import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './about.css'
 
@@ -42,7 +42,7 @@ export default function About() {
         {blocks.map((b) => (
           <section className="about-block" key={b.id}>
             <div className="about-shot">
-              <img src={cld(b.image_url, { w: 1400 })} alt="" loading="lazy" />
+              <img src={imgUrl(b.image_url, { w: 1400 })} alt="" loading="lazy" />
             </div>
             {b.description && <p className="about-text">{b.description}</p>}
           </section>

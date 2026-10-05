@@ -4,8 +4,8 @@
 // push to this repo is what puts a new drop live in the first place, so the
 // two always land together.
 //
-// Also warms the Cloudinary crop that middleware.js uses for a product's
-// share-preview image. Cloudinary generates a transform on its first request
+// Also warms the crop worker/og-image.js builds for a product's
+// share-preview image. The image service generates a transform on its first request
 // rather than ahead of time, and these source photos run several MB — the
 // first fetch can take a few seconds, which is longer than WhatsApp's crawler
 // waits before giving up and showing the link with no picture at all. Hitting
@@ -17,6 +17,7 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
+import { ogImage } from '../worker/og-image.js'
 
 function loadEnvFile() {
   if (!existsSync('.env')) return
@@ -47,18 +48,6 @@ const STATIC_PAGES = [
   { path: '/refunds', priority: '0.3' },
 ]
 
-// Same crop middleware.js builds for the share image — kept in sync by hand
-// since this runs as a plain Node script, not through Vite, and can't import
-// src/lib/cloudinary.js (its upload half reads a Vite-only env global at
-// module load time and throws outside a Vite build).
-const CLOUDINARY_MARKER = '/image/upload/'
-
-function ogImageUrl(url) {
-  if (typeof url !== 'string' || !url.includes(CLOUDINARY_MARKER)) return null
-  const [base, rest] = url.split(CLOUDINARY_MARKER)
-  return `${base}${CLOUDINARY_MARKER}f_auto,q_auto,c_fill,g_auto,w_1200,h_630/${rest}`
-}
-
 async function fetchProducts() {
   const url = process.env.VITE_SUPABASE_URL
   const key = process.env.VITE_SUPABASE_ANON_KEY
@@ -80,9 +69,18 @@ async function fetchProducts() {
 }
 
 async function warmShareImages(products) {
-  const urls = products.map((p) => p.images?.[0]).filter(Boolean).map(ogImageUrl).filter(Boolean)
+  const urls = products.map((p) => p.images?.[0]).filter(Boolean).map(ogImage)
 
-  const results = await Promise.allSettled(urls.map((u) => fetch(u)))
+  // Each body is read to the end: an unread response keeps its connection
+  // open, and Node then sat for minutes waiting on those before the build
+  // could move on to vite.
+  const results = await Promise.allSettled(
+    urls.map(async (u) => {
+      const res = await fetch(u)
+      await res.arrayBuffer()
+      return res
+    })
+  )
   const warmed = results.filter((r) => r.status === 'fulfilled' && r.value.ok).length
 
   console.log(`[sitemap] Warmed ${warmed}/${urls.length} product share images.`)

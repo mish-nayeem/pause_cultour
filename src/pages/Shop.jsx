@@ -4,7 +4,7 @@ import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchProducts } from '../lib/products.js'
 import { fetchMenuCategories } from '../lib/navCategories.js'
-import { cld } from '../lib/cloudinary.js'
+import { imgUrl } from '../lib/images.js'
 import { isAllSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import Pager from '../components/Pager.jsx'
@@ -143,7 +143,7 @@ export default function Shop() {
           {pageItems.map((p) => (
             <Link to={`/product/${p.id}`} className="scard" key={p.id}>
               <div className="sthumb">
-                <ShimmerImage src={cld(p.images[0], { w: 500 })} alt={p.name} />
+                <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} />
                 {p.isNew && <span className="snew mono"><i className="rec" />NEW</span>}
               </div>
               <div className="sinfo">

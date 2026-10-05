@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
-import { cld, uploadImage } from '../lib/cloudinary.js'
+import { imgUrl, uploadImage } from '../lib/images.js'
 import {
   fetchAllHeroSlides,
   createHeroSlide,
@@ -43,7 +43,7 @@ export default function HeroManager() {
     setError('')
 
     try {
-      const url = await uploadImage(file, supabase)
+      const url = await uploadImage(file, supabase, 'hero')
       const { error: createError } = await createHeroSlide({
         label: newLabel.trim().toUpperCase(),
         imageUrl: url,
@@ -155,7 +155,7 @@ export default function HeroManager() {
         {slides.map((s, i) => (
           <div className={`hm-row ${s.active ? '' : 'off'}`} key={s.id}>
             <div className="hm-thumb">
-              <img src={cld(s.image_url, { w: 240 })} alt="" />
+              <img src={imgUrl(s.image_url, { w: 240 })} alt="" />
             </div>
 
             <input

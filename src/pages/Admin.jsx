@@ -35,7 +35,8 @@ import {
   salesByDistrict,
 } from '../lib/admin.js'
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
-import { cld } from '../lib/cloudinary.js'
+import { imgUrl } from '../lib/images.js'
+import ImageMigration from '../components/ImageMigration.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -1491,12 +1492,14 @@ export default function Admin() {
           <section className="panel">
             <div className="orders-head">
               <div className="panel-note mono">
-                Click a product to edit it. Images upload straight to Cloudinary.
+                Click a product to edit it. Images upload straight to Supabase Storage.
               </div>
               <button className="add-product mono" onClick={() => setEditing('new')}>
                 + Add product
               </button>
             </div>
+
+            <ImageMigration onDone={reload} />
 
             {products.length === 0 && <div className="empty mono">No products in the catalog.</div>}
 
@@ -1508,7 +1511,7 @@ export default function Admin() {
                   onClick={() => setEditing(p)}
                 >
                   <div className="pthumb">
-                    {Array.isArray(p.images) && p.images[0] && <img src={cld(p.images[0], { w: 120 })} alt="" />}
+                    {Array.isArray(p.images) && p.images[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" />}
                   </div>
                   <div className="tc name">
                     {p.name}
