@@ -128,29 +128,6 @@
 
 /* Black bold handle with the script tail — the script runs larger than the
    bold face, so it's lifted out of the line height to keep the row even. */
-.foot-brand {
-  font-family: 'Inter', sans-serif;
-  font-weight: 800;
-  font-size: clamp(26px, 3.2vw, 42px);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  color: var(--ink);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.foot-brand em {
-  font-family: 'Yellowtail', cursive;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 1.5em;
-  letter-spacing: 0;
-  line-height: 0;
-  margin-left: 0.04em;
-}
-
-.foot-brand:hover { color: var(--cobalt); }
-
 .socials { display: flex; gap: 12px; }
 
 /* Solid ink circles with paper-coloured glyphs — the old thin grey outlines
@@ -185,5 +162,4 @@
   .sub-form { max-width: none; }
   .foot-cols { grid-template-columns: 1fr 1fr; justify-content: stretch; gap: 30px 20px; }
   .foot-base { flex-direction: column; align-items: flex-start; gap: 18px; }
-  .foot-brand { order: -1; font-size: 32px; }
 }

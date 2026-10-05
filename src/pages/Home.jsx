@@ -9,7 +9,8 @@ import './home.css'
 
 const SLIDE_MS = 5000
 
-// [plain, accent] pairs — the accent word is picked out in the signal colour.
+// [plain, accent] pairs. Both halves are the same white now; the split is
+// kept so an accent colour can come back with a one-line CSS change.
 // Lines come from the brand's own copy (see the footer): everything on hold,
 // made in Dhaka, small drops.
 const TICKER = [

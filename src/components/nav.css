@@ -27,19 +27,22 @@
   align-items: center;
   gap: 8px;
   padding: 11px 16px;
+  /* Same white card and grey type as the product sheet's CLOSE button, so
+     the two "get me out of here" controls read as one family. */
   background: #fff;
-  color: var(--ink);
+  color: #8b8a82;
   border: none;
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(22, 22, 15, 0.18);
-  font-family: 'Anton', sans-serif;
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
-.back-btn:hover { transform: translateX(-2px); }
+.back-btn:hover { transform: translateX(-2px); background: var(--ink); color: #fff; }
 
 .back-arrow {
   width: 0;
@@ -314,7 +317,7 @@
 @media (max-width: 860px) {
   .nav-wrap { padding: 12px 12px 0; }
 
-  /* The back button is its own small dark circle at the left edge, level
+  /* The back button is its own small white circle at the left edge, level
      with the pill, so the pill itself can stay compact and centred. */
   .back-btn {
     top: 12px;
@@ -323,10 +326,8 @@
     height: 38px;
     padding: 0;
     justify-content: center;
-    background: var(--ink);
-    color: var(--paper);
     border-radius: 50%;
-    box-shadow: 0 4px 14px rgba(22, 22, 15, 0.22);
+    box-shadow: 0 4px 14px rgba(22, 22, 15, 0.18);
   }
 
   .back-btn:hover { transform: none; }
