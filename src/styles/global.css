@@ -55,3 +55,53 @@ a {
 button {
   font-family: inherit;
 }
+
+/* ---------- Loading shimmer ---------- */
+
+/* A soft band of light that sweeps across a box while what belongs in it is
+   still on its way — product photos (ShimmerImage.jsx) and the skeleton
+   cards shown before the catalog arrives. Same paper tones as the page, so
+   it reads as "coming", not as a grey hole. */
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+.shimmer,
+.simg:not(.is-loaded) {
+  background-color: var(--paper-dim);
+  background-image: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* The photo itself eases in once it lands instead of popping. */
+.simg.is-loaded {
+  animation: simg-in 0.45s ease both;
+}
+
+@keyframes simg-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Skeleton text lines — a name and a price-shaped bar under a card. */
+.skel-line {
+  display: block;
+  height: 12px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer,
+  .simg:not(.is-loaded),
+  .simg.is-loaded {
+    animation: none;
+  }
+}

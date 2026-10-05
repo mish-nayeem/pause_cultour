@@ -8,6 +8,7 @@ import { cld } from '../lib/cloudinary.js'
 import { isAllSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import Pager from '../components/Pager.jsx'
+import ShimmerImage from '../components/ShimmerImage.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import './shop.css'
 
@@ -111,7 +112,21 @@ export default function Shop() {
         ))}
       </div>
 
-      {loading && <p className="shop-msg mono">Loading catalog…</p>}
+      {/* Card-shaped placeholders in the real grid, so the page already has
+          its shape while the catalog loads and nothing jumps when it lands. */}
+      {loading && (
+        <div className="shop-grid" role="status" aria-label="Loading catalog">
+          {Array.from({ length: 8 }, (_, i) => (
+            <div className="scard skel" key={i} aria-hidden="true">
+              <div className="sthumb shimmer" />
+              <div className="sinfo">
+                <span className="skel-line shimmer" style={{ width: '62%', marginBottom: '10px' }} />
+                <span className="skel-line shimmer" style={{ width: '38%' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && loadError && (
         <p className="shop-msg mono">
@@ -128,7 +143,7 @@ export default function Shop() {
           {pageItems.map((p) => (
             <Link to={`/product/${p.id}`} className="scard" key={p.id}>
               <div className="sthumb">
-                <img src={cld(p.images[0], { w: 500 })} alt={p.name} />
+                <ShimmerImage src={cld(p.images[0], { w: 500 })} alt={p.name} />
                 {p.isNew && <span className="snew mono"><i className="rec" />NEW</span>}
               </div>
               <div className="sinfo">
