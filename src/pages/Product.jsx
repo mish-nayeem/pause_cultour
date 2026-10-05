@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import YouMayLike from '../components/YouMayLike.jsx'
+import ShimmerImage from '../components/ShimmerImage.jsx'
 import { IconShare, IconChat } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
 import { cld } from '../lib/cloudinary.js'
@@ -276,7 +277,24 @@ export default function Product() {
     return (
       <>
         <Nav />
-        <p className="mono" style={{ padding: '40px' }}>Loading product…</p>
+        {/* The page's own layout, empty — two photo frames and the detail
+            column — so it doesn't jump from a line of text to the full page. */}
+        <div className="crumb" aria-hidden="true">
+          <span className="skel-line shimmer" style={{ width: '180px' }} />
+        </div>
+        <div className="pdp pdp-skel" role="status" aria-label="Loading product">
+          <div className="gallery" aria-hidden="true">
+            <div className="shot shimmer" />
+            <div className="shot shimmer" />
+          </div>
+          <div className="info" aria-hidden="true">
+            <span className="skel-line shimmer" style={{ width: '30%', marginBottom: '22px' }} />
+            <span className="skel-line shimmer" style={{ width: '80%', height: '34px', marginBottom: '16px' }} />
+            <span className="skel-line shimmer" style={{ width: '25%', height: '18px', marginBottom: '32px' }} />
+            <span className="skel-line shimmer" style={{ width: '100%', height: '44px', marginBottom: '12px' }} />
+            <span className="skel-line shimmer" style={{ width: '100%', height: '48px' }} />
+          </div>
+        </div>
       </>
     )
   }
@@ -337,7 +355,7 @@ export default function Product() {
           <div className="gallery" ref={galleryRef} onScroll={handleGalleryScroll}>
             {product.images.map((img, i) => (
               <div className="shot" key={img}>
-                <img
+                <ShimmerImage
                   src={cld(img, { w: 1000 })}
                   alt={`${product.name} — view ${i + 1}`}
                   loading={i > 1 ? 'lazy' : undefined}
@@ -506,7 +524,7 @@ export default function Product() {
                     className={`colour-chip ${c.id === product.id ? 'on' : ''}`}
                     title={c.variant}
                   >
-                    {c.images?.[0] && <img src={cld(c.images[0], { w: 160 })} alt={c.variant} />}
+                    {c.images?.[0] && <ShimmerImage src={cld(c.images[0], { w: 160 })} alt={c.variant} />}
                   </Link>
                 ))}
               </div>

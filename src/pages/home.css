@@ -116,7 +116,7 @@
   padding: 0 42px;
 }
 
-.ticker-item em { font-style: normal; color: var(--signal); }
+.ticker-item em { font-style: normal; color: inherit; }
 
 @keyframes ticker-slide {
   from { transform: translateX(0); }

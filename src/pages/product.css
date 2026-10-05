@@ -191,6 +191,17 @@
   display: block;
 }
 
+/* Until a photo arrives it has no height of its own, so the shimmer gets a
+   product-shot shape to fill; the real photo's own shape takes over once it
+   loads. The loading skeleton's empty frames use the same shape. */
+.shot .simg:not(.is-loaded),
+.pdp-skel .shot {
+  aspect-ratio: 4 / 5;
+}
+
+/* Shown before the product loads — no pinning, nothing to scroll past yet. */
+.pdp-skel .info { position: static; }
+
 /* Handles for the phone rail — the desktop grid has nothing to page through. */
 .rail-nav { display: none; }
 
