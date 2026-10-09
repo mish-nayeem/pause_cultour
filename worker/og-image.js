@@ -17,10 +17,13 @@ const CLOUDINARY_MARKER = '/image/upload/'
 export function ogImage(url) {
   if (typeof url !== 'string') return url
 
+  // format=origin: Supabase otherwise answers with WebP whenever the
+  // crawler's Accept header allows it, and not every app's link preview
+  // shows WebP — the photo's own JPEG/PNG works in all of them.
   if (url.includes(SUPABASE_OBJECT) && !url.includes('?')) {
     return (
       url.replace(SUPABASE_OBJECT, SUPABASE_RENDER) +
-      `?width=${OG_IMAGE_WIDTH}&height=${OG_IMAGE_HEIGHT}&resize=cover&quality=80`
+      `?width=${OG_IMAGE_WIDTH}&height=${OG_IMAGE_HEIGHT}&resize=cover&quality=80&format=origin`
     )
   }
 
