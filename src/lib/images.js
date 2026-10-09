@@ -32,8 +32,13 @@ export function imgUrl(url, { w, h } = {}) {
     if (w) params.set('width', String(w))
     if (h) params.set('height', String(h))
     // With both sides set, fill the box and crop the overflow — the same
-    // thing object-fit: cover would do in the browser.
-    if (w && h) params.set('resize', 'cover')
+    // thing object-fit: cover would do in the browser. With one side only,
+    // `contain`: Supabase's default is `cover`, which with a width alone
+    // keeps the photo's full height and cuts a narrow strip out of the
+    // middle — the grid then blew that strip up, so every tile looked
+    // zoomed in. `contain` just scales the whole photo down, the way
+    // Cloudinary's c_limit did.
+    params.set('resize', w && h ? 'cover' : 'contain')
 
     return url.replace(SUPABASE_OBJECT, SUPABASE_RENDER) + '?' + params
   }
