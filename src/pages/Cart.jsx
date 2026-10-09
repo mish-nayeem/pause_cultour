@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
-import { cld } from '../lib/cloudinary.js'
+import { imgUrl } from '../lib/images.js'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import usePageMeta from '../lib/usePageMeta.js'
 import './cart.css'
@@ -35,7 +35,7 @@ export default function Cart() {
               {items.map((item) => (
                 <div className="cart-line" key={`${item.id}-${item.size}`}>
                   <Link to={`/product/${item.id}`} className="line-thumb">
-                    <ShimmerImage src={cld(item.image, { w: 200 })} alt={item.name} />
+                    <ShimmerImage src={imgUrl(item.image, { w: 200 })} alt={item.name} />
                   </Link>
 
                   <div className="line-info">

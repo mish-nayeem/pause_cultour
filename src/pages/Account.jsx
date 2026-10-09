@@ -6,7 +6,7 @@ import { currentUser, signOutUser } from '../lib/auth.js'
 import { isAdminEmail } from '../lib/admin.js'
 import { fetchMyWishlist, removeFromWishlist } from '../lib/wishlist.js'
 import { fetchProducts } from '../lib/products.js'
-import { cld } from '../lib/cloudinary.js'
+import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './account.css'
 
@@ -80,7 +80,7 @@ export default function Account() {
     return (
       <li key={r.id} className="acct-item">
         <Link to={`/product/${r.product_id}`} className="acct-thumb">
-          {image ? <img src={cld(image, { w: 200 })} alt="" /> : <span className="acct-noimg" />}
+          {image ? <img src={imgUrl(image, { w: 200 })} alt="" /> : <span className="acct-noimg" />}
         </Link>
 
         <div className="acct-info">

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { cld } from './cloudinary.js'
+import { imgUrl } from './images.js'
 import { isAllSoldOut } from './stock.js'
 
 const SUFFIX = 'PAUSE'
@@ -40,7 +40,7 @@ export function useProductSchema(product) {
       name: product.name,
       description: product.description,
       sku: product.sku,
-      image: (product.images || []).map((img) => cld(img, { w: 1200 })),
+      image: (product.images || []).map((img) => imgUrl(img, { w: 1200 })),
       brand: { '@type': 'Brand', name: 'PAUSE' },
       offers: {
         '@type': 'Offer',

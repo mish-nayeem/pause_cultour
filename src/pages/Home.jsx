@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchHeroSlides } from '../lib/hero.js'
-import { cld } from '../lib/cloudinary.js'
+import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './home.css'
 
@@ -61,7 +61,7 @@ export default function Home() {
         {slides.map((item, i) => (
           <img
             key={item.id}
-            src={cld(item.image_url, { w: 1800 })}
+            src={imgUrl(item.image_url, { w: 1800 })}
             alt=""
             className={`hero-img ${i === active ? 'on' : ''}`}
             style={{ objectPosition: item.focus || 'center' }}

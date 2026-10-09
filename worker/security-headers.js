@@ -7,7 +7,7 @@
 //
 // The CSP allows exactly what the app loads from outside its own origin:
 //   Supabase      — data, auth and edge functions (https + wss for realtime)
-//   Cloudinary    — admin image uploads (api.) and product photos (res.)
+//   (photos are Supabase Storage too — same origin as above)
 //   Google Fonts  — the stylesheet and the font files
 //   Sentry        — error reports
 // Images are left open to any https host so an old placeholder URL on a
@@ -22,7 +22,7 @@ export const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
-  `connect-src 'self' https://${SUPABASE} wss://${SUPABASE} https://api.cloudinary.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io`,
+  `connect-src 'self' https://${SUPABASE} wss://${SUPABASE} https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io`,
   "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",
