@@ -137,7 +137,7 @@
 
 .foot-brand img {
   display: block;
-  height: clamp(30px, 3.4vw, 46px);
+  height: clamp(44px, 5vw, 66px);
   width: auto;
 }
 
@@ -178,5 +178,5 @@
   .foot-cols { grid-template-columns: 1fr 1fr; justify-content: stretch; gap: 30px 20px; }
   .foot-base { flex-direction: column; align-items: flex-start; gap: 18px; }
   .foot-brand { order: -1; }
-  .foot-brand img { height: 36px; }
+  .foot-brand img { height: 52px; max-width: 100%; object-fit: contain; }
 }

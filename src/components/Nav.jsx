@@ -162,10 +162,9 @@ export default function Nav({ overlay = false }) {
           </ul>
         </nav>
 
-        {/* Mobile: cart stays visible, everything else moves into the panel so
-            the pill doesn't cram five items onto a 360px screen. */}
+        {/* Mobile: just the menu button — the cart floats at the bottom of
+            the screen instead (below), within thumb reach. */}
         <div className="mob-right">
-          <Link to="/cart" className="cart mono">CART ({count})</Link>
           <button
             className={`burger ${menuOpen ? 'on' : ''}`}
             onClick={() => setMenuOpen((v) => !v)}
@@ -187,6 +186,14 @@ export default function Nav({ overlay = false }) {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Mobile only: the cart as a floating button, bottom right, beside the
+          shop's FILTER pill. Not on the cart and checkout pages themselves. */}
+      {!menuOpen && !['/cart', '/checkout'].includes(location.pathname) && (
+        <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
+          CART ({count})
+        </Link>
       )}
 
       {/* Mobile panel */}
