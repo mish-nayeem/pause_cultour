@@ -46,9 +46,10 @@ export async function fetchColourOptions(colourGroup) {
 
 // Both fetchers hand back products at today's price: a running sale is
 // already taken off `price`, with the shelf price kept as `originalPrice`.
+// Newest first, so a product just uploaded leads the shop.
 export async function fetchProducts() {
   const [{ data, error }, sales] = await Promise.all([
-    supabase.from('products').select('*').order('created_at', { ascending: true }),
+    supabase.from('products').select('*').order('created_at', { ascending: false }),
     fetchLiveSales(),
   ])
 

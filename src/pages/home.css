@@ -103,7 +103,11 @@
 .ticker-track {
   display: flex;
   width: max-content;
+}
+
+.ticker-track.run {
   animation: ticker-slide 40s linear infinite;
+  will-change: transform;
 }
 
 .ticker-half { display: flex; flex-shrink: 0; }
@@ -123,8 +127,10 @@
   to { transform: translateX(-50%); }
 }
 
+/* Slower for anyone who has asked their phone for less motion (many phones
+   switch this on with battery saver), but still visibly moving. */
 @media (prefers-reduced-motion: reduce) {
-  .ticker-track { animation-duration: 120s; }
+  .ticker-track.run { animation-duration: 70s; }
 }
 
 @media (max-width: 860px) {
