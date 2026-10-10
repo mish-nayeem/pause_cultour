@@ -220,8 +220,8 @@ export default function Nav({ overlay = false }) {
 
       {/* Mobile only: the cart as a floating button at the bottom — centred,
           or beside the shop's FILTER pill. Only where people pick things to
-          buy: the shop, a product and a lookbook. */}
-      {!menuOpen && /^\/(shop|product\/|lookbook\/)/.test(location.pathname) && (
+          buy: the shop and a product page (not the lookbook). */}
+      {!menuOpen && /^\/(shop|product\/)/.test(location.pathname) && (
         <InDock>
           <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
             {count > 0 ? `CART (${count})` : 'CART'}
