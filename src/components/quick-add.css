@@ -2,10 +2,12 @@
    the row of sizes it opens along the bottom of the photo. Same white-card
    look as the shop's FILTER button. */
 
+/* No z-index on purpose: that would make this its own layer, and the +'s
+   difference blend below would then blend with nothing instead of the photo.
+   Coming after the <img> in the markup already paints it on top. */
 .qa {
   position: absolute;
   inset: auto 0 0 0;
-  z-index: 2;
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
@@ -24,15 +26,18 @@
   place-items: center;
   border: none;
   border-radius: 4px;
-  background: #fff;
-  color: var(--ink);
-  box-shadow: 0 4px 14px rgba(22, 22, 15, 0.16);
+  /* No card behind it — just the + on the photo. White with a difference
+     blend comes out as the photo's opposite: dark on a light shot, light on
+     a dark one, so it's readable on any picture. */
+  background: transparent;
+  color: #fff;
+  mix-blend-mode: difference;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition: transform 0.15s ease;
 }
 
-.qa-plus:hover,
-.qa-plus.on { background: var(--ink); color: #fff; }
+.qa-plus svg { width: 20px; height: 20px; }
+.qa-plus:hover { transform: scale(1.12); }
 
 /* Turns into an × while the sizes are showing. */
 .qa-plus.on svg { transform: rotate(45deg); }
@@ -87,11 +92,6 @@
   color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-@media (hover: none) {
-  .qa-plus:hover { background: #fff; color: var(--ink); }
-  .qa-plus.on { background: var(--ink); color: #fff; }
 }
 
 @media (prefers-reduced-motion: reduce) {

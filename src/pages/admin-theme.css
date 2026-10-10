@@ -37,6 +37,8 @@
   --card-shadow: 0 1px 2px rgba(21, 60, 35, 0.05), 0 10px 28px rgba(21, 60, 35, 0.06);
   --glass-bg: linear-gradient(140deg, rgba(20, 166, 86, 0.16) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(20, 166, 86, 0.07) 100%);
   --glass-border: rgba(20, 166, 86, 0.22);
+  --detail-bg: linear-gradient(140deg, rgba(20, 166, 86, 0.13) 0%, rgba(255, 255, 255, 0.6) 55%, rgba(20, 166, 86, 0.08) 100%);
+  --detail-border: rgba(20, 166, 86, 0.2);
   --pill-pending: #a8690b;
   --pill-shipped: #1a63b0;
   --pill-delivered: #0b7a3b;
@@ -57,6 +59,8 @@
   --card-shadow: 0 1px 2px rgba(20, 45, 90, 0.05), 0 10px 28px rgba(20, 45, 90, 0.07);
   --glass-bg: linear-gradient(140deg, rgba(28, 99, 184, 0.15) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(28, 99, 184, 0.07) 100%);
   --glass-border: rgba(28, 99, 184, 0.22);
+  --detail-bg: linear-gradient(140deg, rgba(28, 99, 184, 0.13) 0%, rgba(255, 255, 255, 0.6) 55%, rgba(28, 99, 184, 0.08) 100%);
+  --detail-border: rgba(28, 99, 184, 0.2);
   --pill-pending: #a8690b;
   --pill-shipped: #1a63b0;
   --pill-delivered: #0b7a3b;
@@ -77,6 +81,8 @@
   --card-shadow: none;
   --glass-bg: var(--paper);
   --glass-border: transparent;
+  --detail-bg: linear-gradient(140deg, rgba(255, 255, 255, 0.07) 0%, rgba(0, 0, 0, 0.32) 60%, rgba(255, 255, 255, 0.04) 100%);
+  --detail-border: rgba(255, 255, 255, 0.09);
   --pill-pending: #ffc14d;
   --pill-shipped: #3fc1ff;
   --pill-delivered: #3ddc97;
@@ -311,8 +317,24 @@
 .admin .trow { padding-left: 0; padding-right: 0; }
 .admin .trow:last-child,
 .admin .tdetail:last-child { border-bottom: none; }
+/* Each order sits in its own .trow-wrap (row + optional details), so the
+   :last-child rule above caught every one of them and the list lost its
+   lines. Wrapped rows keep a hairline; only the last order drops it. */
+.admin .trow-wrap > .trow { border-bottom: 1px solid var(--steel-line); }
+.admin .trow-wrap:last-child > .trow:last-child { border-bottom: none; }
 .admin .trow:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
-.admin .tdetail { background: color-mix(in srgb, var(--ink) 3%, transparent); border-radius: 12px; padding-left: 16px; padding-right: 16px; }
+/* An opened order: a frosted wash of the theme's own colour — light blue,
+   light green, or smoked glass on the dark theme. */
+.admin .tdetail {
+  background: var(--detail-bg);
+  border: 1px solid var(--detail-border);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border-radius: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+  margin: 6px 0 10px;
+}
 
 .admin .stat-click { border-radius: var(--r-card); }
 .admin .stat-click:hover { transform: translateY(-2px); }
