@@ -24,8 +24,8 @@ export default function Nav({ overlay = false }) {
   const [openMenu, setOpenMenu] = useState(null)  // null | 'shop' | 'drops'
   // SHOP's "Shop by collection" second row (the drops, as shop filters).
   const [byCollection, setByCollection] = useState(false)
-  // Mobile panel: false, 'shop' (opened by tapping the logo — the shop's
-  // categories and collections) or 'menu' (MENU — everything else).
+  // Mobile panel: false, 'shop' (SHOP — the shop's categories and
+  // collections) or 'menu' (MENU — everything else).
   const [menuOpen, setMenuOpen] = useState(false)
   const [categories, setCategories] = useState([])
   const [drops, setDrops] = useState([])
@@ -126,19 +126,7 @@ export default function Nav({ overlay = false }) {
       )}
 
       <header className="site-header">
-        {/* On a phone the logo is the way into the shop: a tap opens the
-            shop's categories instead of going home (HOME is in MENU). */}
-        <Link
-          to="/"
-          className="logo"
-          aria-label="PAUSE — home"
-          aria-expanded={menuOpen === 'shop' || undefined}
-          onClick={(e) => {
-            if (!window.matchMedia('(max-width: 860px)').matches) return
-            e.preventDefault()
-            setMenuOpen((v) => (v === 'shop' ? false : 'shop'))
-          }}
-        >
+        <Link to="/" className="logo" aria-label="PAUSE — home">
           <span className="logo-3d">
             {Array.from({ length: LOGO_LAYERS }, (_, i) => {
               const z = LOGO_HALF_DEPTH - i * LOGO_STEP
@@ -190,14 +178,24 @@ export default function Nav({ overlay = false }) {
 
         {/* Mobile: just a MENU word — the cart floats at the bottom of the
             screen instead (below), within thumb reach. */}
+        {/* Phones: SHOP opens the shop's categories and collections; MENU
+            has the rest. Whichever is open reads CLOSE. */}
         <div className="mob-right">
           <button
             type="button"
             className="menu-btn"
-            onClick={() => setMenuOpen((v) => (v ? false : 'menu'))}
-            aria-expanded={Boolean(menuOpen)}
+            onClick={() => setMenuOpen((v) => (v === 'shop' ? false : 'shop'))}
+            aria-expanded={menuOpen === 'shop'}
           >
-            {menuOpen ? 'CLOSE' : 'MENU'}
+            {menuOpen === 'shop' ? 'CLOSE' : 'SHOP'}
+          </button>
+          <button
+            type="button"
+            className="menu-btn"
+            onClick={() => setMenuOpen((v) => (v === 'menu' ? false : 'menu'))}
+            aria-expanded={menuOpen === 'menu'}
+          >
+            {menuOpen === 'menu' ? 'CLOSE' : 'MENU'}
           </button>
         </div>
       </header>
@@ -282,7 +280,6 @@ export default function Nav({ overlay = false }) {
           )}
 
           <div className="mob-links mono">
-            <Link to="/">HOME</Link>
             <Link to="/about">ABOUT US</Link>
             <Link to="/cart">CART ({count})</Link>
             <Link to={accountLink} className="mob-admin">

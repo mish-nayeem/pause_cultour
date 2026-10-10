@@ -357,7 +357,8 @@
 
   /* The narrowest phones: a tighter pill so it clears the back button. */
   @media (max-width: 360px) {
-    .site-header { gap: 28px; padding: 0 24px; }
+    .site-header { gap: 22px; padding: 0 20px; }
+    .mob-right { gap: 16px; }
   }
 
   /* Swap: inline links out, hamburger in. */
@@ -367,7 +368,7 @@
   .mob-right {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 22px;
   }
 
 
