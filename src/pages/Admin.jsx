@@ -43,6 +43,7 @@ import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import TickerManager from '../components/TickerManager.jsx'
+import LookbookManager from '../components/LookbookManager.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
@@ -82,6 +83,7 @@ const TAB_LABELS = {
   marketing: 'Marketing',
   analytics: 'Analytics',
   hero: 'Homepage hero',
+  lookbook: 'Lookbook',
   menu: 'Nav menus',
   about: 'About us page',
 }
@@ -97,6 +99,7 @@ const SECTION_COLORS = {
   marketing: '#7C6CFF',
   analytics: '#3FC1FF',
   hero: '#3DDC97',
+  lookbook: '#7C6CFF',
   menu: '#FFC14D',
   about: '#FF5E7E',
 }
@@ -709,6 +712,7 @@ export default function Admin() {
     { key: 'marketing', label: 'Marketing', badge: null },
     { key: 'analytics', label: 'Analytics', badge: null },
     { key: 'hero', label: 'Homepage', badge: null },
+    { key: 'lookbook', label: 'Lookbook', badge: null },
     { key: 'menu', label: 'Nav menus', badge: null },
     { key: 'about', label: 'About us', badge: null },
   ]
@@ -1992,6 +1996,7 @@ export default function Admin() {
           )}
           </>
         )}
+        {!loading && tab === 'lookbook' && <LookbookManager products={products} />}
         {tab === 'about' && <AboutManager />}
       </div>
       </main>

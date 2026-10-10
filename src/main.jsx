@@ -13,6 +13,7 @@ import Account from './pages/Account.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import Info from './pages/Info.jsx'
 import About from './pages/About.jsx'
+import Lookbook from './pages/Lookbook.jsx'
 import Track from './pages/Track.jsx'
 import PageViewTracker from './components/PageViewTracker.jsx'
 import RecoveryRedirect from './components/RecoveryRedirect.jsx'
@@ -50,6 +51,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/lookbook/:drop" element={<Lookbook />} />
             <Route path="/product/:id" element={<Product />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />

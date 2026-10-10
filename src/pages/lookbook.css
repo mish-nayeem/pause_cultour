@@ -1,0 +1,134 @@
+/* A drop's lookbook — big photos, two to a row on every screen. */
+
+.lb-page { padding: 40px 0 80px; }
+
+.lb-head {
+  padding: 0 40px 30px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 24px;
+}
+
+.lb-head .label {
+  width: 100%;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+}
+
+.lb-head h1 {
+  font-size: clamp(34px, 6vw, 72px);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.lb-shop {
+  margin-left: auto;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 2px;
+}
+
+.lb-msg {
+  padding: 40px;
+  font-size: 12.5px;
+  color: var(--steel);
+}
+
+.lb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.lb-look {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--paper-dim);
+  cursor: pointer;
+}
+
+.lb-look img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s ease;
+}
+
+.lb-ghost { cursor: default; }
+
+/* The names of the pieces in the photo, over its lower edge. Shown on a tap
+   (phones) or on hover (mouse). */
+.lb-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 48px 20px 18px;
+  background: linear-gradient(to top, rgba(22, 22, 15, 0.82), rgba(22, 22, 15, 0));
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.lb-look.open .lb-info {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+@media (hover: hover) {
+  .lb-look:hover .lb-info {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .lb-look:hover img { transform: scale(1.02); }
+}
+
+.lb-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.lb-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  color: #fff;
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1.15;
+}
+
+.lb-item:hover { text-decoration: underline; }
+.lb-arrow { flex-shrink: 0; }
+
+@media (max-width: 860px) {
+  .lb-page { padding-top: 26px; }
+  .lb-head { padding: 0 20px 22px; }
+  .lb-shop { margin-left: 0; }
+  .lb-grid { gap: 2px; }
+  .lb-info { padding: 36px 10px 10px; gap: 4px; }
+  .lb-item { font-size: 13.5px; }
+  .lb-title { font-size: 9px; }
+}
