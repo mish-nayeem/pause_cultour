@@ -9,6 +9,7 @@ import {
   deleteLook,
   reorderLooks,
   lookbookPath,
+  dropKey,
 } from '../lib/lookbook.js'
 import { IconX } from './Icons.jsx'
 import './about-manager.css'
@@ -39,15 +40,18 @@ export default function LookbookManager({ products }) {
     fetchMenuDrops().then(setMenuDrops)
   }, [])
 
-  // Every drop name the shop knows about: the DROPS menu, the products' own
-  // drops, and any lookbook already made.
+  // Every drop the shop knows about: the DROPS menu, the products' own drops,
+  // and any lookbook already made — one chip per drop however it's spelt
+  // (dropKey), named as the DROPS menu writes it.
   const drops = useMemo(() => {
     const names = [
       ...menuDrops,
       ...products.map((p) => p.drop_name),
       ...looks.map((l) => l.drop_name),
-    ].filter(Boolean)
-    return [...new Set(names)]
+    ].filter((n) => n && n.trim())
+    const seen = new Map()
+    for (const n of names) if (!seen.has(dropKey(n))) seen.set(dropKey(n), n.trim())
+    return [...seen.values()]
   }, [menuDrops, products, looks])
 
   useEffect(() => {
@@ -55,9 +59,10 @@ export default function LookbookManager({ products }) {
   }, [drops, drop])
 
   const byId = useMemo(() => Object.fromEntries(products.map((p) => [String(p.id), p])), [products])
-  const inDrop = products.filter((p) => p.drop_name === drop)
-  const others = products.filter((p) => p.drop_name !== drop)
-  const shown = looks.filter((l) => l.drop_name === drop)
+  const same = (name) => dropKey(name) === dropKey(drop)
+  const inDrop = products.filter((p) => same(p.drop_name))
+  const others = products.filter((p) => !same(p.drop_name))
+  const shown = looks.filter((l) => same(l.drop_name))
 
   function label(p) {
     return `${p.name}${p.variant ? ` — ${p.variant}` : ''}`
@@ -134,7 +139,7 @@ export default function LookbookManager({ products }) {
     const next = [...shown]
     ;[next[index], next[target]] = [next[target], next[index]]
     const ordered = next.map((l, i) => ({ ...l, sort_order: i }))
-    setLooks((prev) => [...prev.filter((l) => l.drop_name !== drop), ...ordered])
+    setLooks((prev) => [...prev.filter((l) => !same(l.drop_name)), ...ordered])
     setBusy(true)
     await reorderLooks(next)
     setBusy(false)
@@ -154,7 +159,8 @@ export default function LookbookManager({ products }) {
         Each drop has its own lookbook page — the DROPS menu opens it. Upload the
         drop's photos here, then tag the products in each photo: on the site,
         tapping a photo shows those product names and each one opens its page.
-        A drop with no photos here shows its products' own pictures instead.
+        Only the photos uploaded here show in the lookbook — product photos stay
+        in the shop.
       </div>
 
       {error && <div className="err-banner mono">{error}</div>}
@@ -174,7 +180,7 @@ export default function LookbookManager({ products }) {
                 onClick={() => { setDrop(d); setConfirmId(null) }}
               >
                 {d}
-                <span className="lk-count">{looks.filter((l) => l.drop_name === d).length}</span>
+                <span className="lk-count">{looks.filter((l) => dropKey(l.drop_name) === dropKey(d)).length}</span>
               </button>
             ))}
           </div>
@@ -211,8 +217,8 @@ export default function LookbookManager({ products }) {
 
           {!loading && shown.length === 0 && (
             <div className="empty mono">
-              No photos in the {drop} lookbook yet — until you add some, it shows the
-              drop's product pictures.
+              No photos in the {drop} lookbook yet — the page says it's coming soon
+              until you add some.
             </div>
           )}
 
