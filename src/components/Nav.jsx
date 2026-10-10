@@ -162,16 +162,16 @@ export default function Nav({ overlay = false }) {
           </ul>
         </nav>
 
-        {/* Mobile: just the menu button — the cart floats at the bottom of
-            the screen instead (below), within thumb reach. */}
+        {/* Mobile: just a MENU word — the cart floats at the bottom of the
+            screen instead (below), within thumb reach. */}
         <div className="mob-right">
           <button
-            className={`burger ${menuOpen ? 'on' : ''}`}
+            type="button"
+            className="menu-btn"
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
           >
-            <span /><span /><span />
+            {menuOpen ? 'CLOSE' : 'MENU'}
           </button>
         </div>
       </header>
@@ -188,11 +188,12 @@ export default function Nav({ overlay = false }) {
         </div>
       )}
 
-      {/* Mobile only: the cart as a floating button, bottom right, beside the
-          shop's FILTER pill. Not on the cart and checkout pages themselves. */}
+      {/* Mobile only: the cart as a floating button at the bottom — centred,
+          or beside the shop's FILTER pill. Not on the cart and checkout
+          pages themselves. */}
       {!menuOpen && !['/cart', '/checkout'].includes(location.pathname) && (
         <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
-          CART ({count})
+          {count > 0 ? `CART (${count})` : 'CART'}
         </Link>
       )}
 
