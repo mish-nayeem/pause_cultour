@@ -53,15 +53,16 @@ function fromRow(row) {
   }
 }
 
-// The next id in the shop's own sequence (pc231, pc232, …): one past the
-// highest pc-number already used, zero-padded to three digits. Ids that
-// don't follow the pattern (older hand-typed ones) are simply skipped.
+// The next id in the shop's own sequence: "pc" and seven digits
+// (pc0000240, pc0000241, …), one past the highest pc-number already used —
+// older short ones like pc239 count too, so the sequence carries on from
+// them. Ids that don't follow the pattern (hand-typed names) are skipped.
 export function nextProductId(ids) {
   const highest = ids.reduce((max, id) => {
     const m = /^pc(\d+)$/i.exec(String(id).trim())
     return m ? Math.max(max, Number(m[1])) : max
   }, 0)
-  return 'pc' + String(highest + 1).padStart(3, '0')
+  return 'pc' + String(highest + 1).padStart(7, '0')
 }
 
 function blankChart(sizes) {
