@@ -1,0 +1,52 @@
+/* Admin → Marketing → Sales. Table and status pills come from coupon-manager.css. */
+
+.sm-row {
+  grid-template-columns: 60px 1fr 1.4fr 1.6fr 92px 120px;
+  min-width: 820px;
+}
+
+.sm-wide { grid-column: 1 / -1; gap: 8px; }
+
+.sm-targets { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.sm-target {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  padding: 8px 12px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+/* Same look as the subtabs: the picked one in the theme's accent. */
+.admin .main .sm-target { border-radius: 999px; background: transparent; color: var(--ink); }
+.admin .main .sm-target.active { background: var(--cobalt); color: #fff; border-color: transparent; }
+.admin[data-theme='dark'] .main .sm-target.active { color: #15171a; }
+
+.sm-picks {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--steel-line);
+}
+
+.sm-pick {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--steel-line);
+  cursor: pointer;
+}
+
+.sm-pick:last-child { border-bottom: none; }
+.sm-pick.on { background: color-mix(in srgb, var(--cobalt) 8%, transparent); }
+
+.pf-field .sm-pick input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  margin: 0;
+}

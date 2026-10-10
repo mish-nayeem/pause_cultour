@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchProducts } from '../lib/products.js'
+import { CardPrice, SaleBadge } from '../components/SalePrice.jsx'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { imgUrl } from '../lib/images.js'
 import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
@@ -205,6 +206,7 @@ export default function Shop() {
               <div className="sthumb">
                 <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} />
                 {p.isNew && <span className="snew mono"><i className="rec" />NEW</span>}
+                <SaleBadge product={p} />
                 <QuickAdd product={p} />
               </div>
               <div className="sinfo">
@@ -215,7 +217,7 @@ export default function Shop() {
                 <div className="sname">{p.name}</div>
                 <div className="smeta mono">
                   <span>{p.variant}</span>
-                  <span>৳ {p.price.toLocaleString()}</span>
+                  <CardPrice product={p} />
                 </div>
                 {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
               </div>
