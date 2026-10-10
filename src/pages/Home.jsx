@@ -85,7 +85,11 @@ export default function Home() {
       {/* Two identical halves; the track slides left by exactly one half, so
           the loop restarts on an identical frame with no visible jump. */}
       <div className="ticker" aria-hidden="true">
-        <div className="ticker-track">
+        {/* Keyed on the lines and only set moving once they've loaded: some
+            phones work out the slide distance (-50% of the track) once, when
+            the animation starts, so starting it on the empty placeholder
+            left the strip standing still. */}
+        <div className={`ticker-track ${ticker ? 'run' : ''}`} key={ticker ? ticker.join('|') : 'empty'}>
           {[0, 1].map((half) => (
             <div className="ticker-half" key={half}>
               {/* Repeated so even one short line fills a wide screen. */}
