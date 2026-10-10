@@ -6,6 +6,7 @@ import YouMayLike from '../components/YouMayLike.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import { IconShare, IconChat, IconPen } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
+import { ProductPrice } from '../components/SalePrice.jsx'
 import { imgUrl } from '../lib/images.js'
 import { useCart } from '../context/CartContext.jsx'
 import { availableSizes, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
@@ -407,7 +408,7 @@ export default function Product() {
             </button>
           </div>
           <h1 className="display">{product.name}</h1>
-          <div className="price mono">৳ {product.price.toLocaleString()}</div>
+          <ProductPrice product={product} />
           <p className="desc">{product.description}</p>
 
           <div className="field-label mono">SIZE</div>

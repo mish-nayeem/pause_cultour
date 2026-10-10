@@ -36,7 +36,7 @@ function orderMessage(error) {
   // before a price change is the honest way to land here.
   const priceChanged = raw.match(/PRICE_CHANGED:(.*)/)
   if (priceChanged) {
-    return `The price of ${priceChanged[1]} has changed — please remove it from your cart and add it again.`
+    return `The price of ${priceChanged[1]} has changed — your cart now shows the current price. Please check the total and place the order again.`
   }
 
   const coupon = couponMessage(error)
@@ -64,7 +64,7 @@ function orderMessage(error) {
 }
 
 export default function Checkout() {
-  const { items, subtotal, clearCart } = useCart()
+  const { items, subtotal, clearCart, refreshPrices } = useCart()
   const navigate = useNavigate()
   usePageMeta('Checkout')
   const [form, setForm] = useState({
@@ -86,6 +86,19 @@ export default function Checkout() {
   const [coupon, setCoupon] = useState(null) // { code, discount }
   const [couponError, setCouponError] = useState('')
   const [couponBusy, setCouponBusy] = useState(false)
+
+  useEffect(() => {
+    refreshPrices()
+  }, [refreshPrices])
+
+  // A coupon's discount was worked out on the cart as it was — if a price
+  // refresh changes the total, the code has to be applied again.
+  useEffect(() => {
+    if (coupon && coupon.subtotal !== subtotal) {
+      setCoupon(null)
+      setCouponError('Your cart total changed — please apply the code again.')
+    }
+  }, [coupon, subtotal])
 
   // Debounced so this doesn't fire on every keystroke — the admin panel's
   // Abandoned Cart list is for spotting a checkout that stalled, not a
@@ -130,7 +143,7 @@ export default function Checkout() {
       setCouponError(error)
       return
     }
-    setCoupon(found)
+    setCoupon({ ...found, subtotal })
     setCouponInput('')
   }
 
@@ -246,6 +259,8 @@ export default function Checkout() {
       // A coupon that stopped working (used up, already used on this phone)
       // comes off, so the next try goes through at full price.
       if (couponMessage(orderError)) setCoupon(null)
+      // Usually a sale that started or ended while the cart sat open.
+      if ((orderError.message || '').includes('PRICE_CHANGED')) refreshPrices()
       console.error('[Supabase] place_order failed:', orderError.message)
       // A failed checkout is caught and handled gracefully right here, so it
       // would never otherwise reach Sentry's automatic unhandled-error

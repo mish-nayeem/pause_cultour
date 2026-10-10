@@ -38,6 +38,7 @@ import { imgUrl } from '../lib/images.js'
 import ImageMigration from '../components/ImageMigration.jsx'
 import BkashCheck from '../components/BkashCheck.jsx'
 import CouponManager from '../components/CouponManager.jsx'
+import SaleManager from '../components/SaleManager.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -132,6 +133,7 @@ const MARKETING_SUBS = [
   { key: 'adspend', label: 'Ad spend / ROAS' },
   { key: 'email', label: 'Email campaigns' },
   { key: 'social', label: 'Social tracking' },
+  { key: 'sales', label: 'Sales' },
   { key: 'coupons', label: 'Coupons' },
   { key: 'links', label: 'Tracked links' },
 ]
@@ -1918,6 +1920,8 @@ export default function Admin() {
               </section>
             </>
           )}
+
+          {marketingSub === 'sales' && <SaleManager products={products} />}
 
           {marketingSub === 'coupons' && <CouponManager orders={orders} />}
 

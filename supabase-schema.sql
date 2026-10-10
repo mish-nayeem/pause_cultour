@@ -371,6 +371,7 @@ declare
   -- where devtools can set a 3200 taka piece to 1 — so every one of them is
   -- recomputed below and the order refused if what was sent doesn't match.
   db_price      numeric;
+  db_drop       text;
   calc_subtotal numeric := 0;
   zone_key      text;
   zone_fee      numeric;
@@ -418,7 +419,7 @@ begin
     -- FOR UPDATE holds the row until this transaction ends, so a second
     -- checkout for the same product waits here instead of reading the same
     -- count and selling the same piece twice.
-    select p.stock, p.price, true into cur_stock, db_price, has_row
+    select p.stock, p.price, p.drop_name, true into cur_stock, db_price, db_drop, has_row
       from products p
      where p.id::text = item ->> 'product_id'
        for update;
@@ -426,6 +427,10 @@ begin
     if not coalesce(has_row, false) then
       raise exception 'UNAVAILABLE:%', item ->> 'product_name';
     end if;
+
+    -- A running sale (Admin → Marketing → Sales) lowers the shelf price for
+    -- as long as it lasts; the storefront shows the same number.
+    db_price := public.sale_price(db_price, item ->> 'product_id', db_drop);
 
     -- The line's price has to be the shelf price. A mismatch is either a
     -- tampered request or a cart saved before the price was changed — either
@@ -1383,3 +1388,83 @@ $$;
 
 revoke all on function public.check_coupon(text, numeric, text) from public;
 grant execute on function public.check_coupon(text, numeric, text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Sales
+-- ---------------------------------------------------------------------------
+-- A percentage off for a set time, made in Admin → Marketing → Sales. Unlike
+-- a coupon nobody types anything: the lower price shows on the shop, the
+-- product page and in the cart, and place_order charges it.
+--
+-- percent     — 20 → 20% off, rounded to the taka
+-- drop_name   — every product in this drop
+-- product_ids — or just these products
+--               (neither set → the whole store)
+-- starts_at   — when it begins (default: now)
+-- ends_at     — when it stops; required, a sale always ends
+--
+-- When two sales cover the same product the bigger percent wins; they don't
+-- stack. Visitors can read sales that haven't ended, so the shop can show the
+-- price and the countdown.
+
+create table if not exists sales (
+  id bigint generated always as identity primary key,
+  name text not null default '',
+  percent int not null check (percent between 1 and 90),
+  drop_name text,
+  product_ids text[],
+  starts_at timestamptz not null default now(),
+  ends_at timestamptz not null,
+  active boolean not null default true,
+  created_at timestamptz default now(),
+  constraint sales_window check (ends_at > starts_at)
+);
+
+alter table sales enable row level security;
+
+drop policy if exists "Anyone reads live sales" on sales;
+create policy "Anyone reads live sales"
+  on sales for select
+  to anon, authenticated
+  using (active and ends_at > now());
+
+drop policy if exists "Signed-in admins manage sales" on sales;
+create policy "Signed-in admins manage sales"
+  on sales for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- The price a product sells at right now: its own price less the biggest
+-- running sale on it. src/lib/sales.js works out the same number for the
+-- storefront — keep the two in step.
+create or replace function public.sale_price(p_price numeric, p_product_id text, p_drop text)
+returns numeric
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  pct int;
+begin
+  select max(s.percent) into pct
+    from sales s
+   where s.active
+     and s.starts_at <= now()
+     and s.ends_at > now()
+     and (
+       (s.drop_name is null and coalesce(cardinality(s.product_ids), 0) = 0)
+       or (s.drop_name is not null and s.drop_name = p_drop)
+       or p_product_id = any(s.product_ids)
+     );
+
+  if pct is null then
+    return p_price;
+  end if;
+
+  return round(p_price * (100 - pct) / 100);
+end;
+$$;
+
+revoke all on function public.sale_price(numeric, text, text) from public;

@@ -4,6 +4,7 @@ import Pager from './Pager.jsx'
 import ShimmerImage from './ShimmerImage.jsx'
 import QuickAdd from './QuickAdd.jsx'
 import { fetchProducts } from '../lib/products.js'
+import { CardPrice, SaleBadge } from './SalePrice.jsx'
 import { imgUrl } from '../lib/images.js'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import { isAllSoldOut } from '../lib/stock.js'
@@ -51,6 +52,7 @@ export default function YouMayLike({ currentId }) {
             <div className="yml-thumb">
               <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} loading="lazy" />
               {p.isNew && <span className="yml-new mono">NEW</span>}
+              <SaleBadge product={p} />
               <QuickAdd product={p} />
             </div>
             <div className="yml-info">
@@ -58,7 +60,7 @@ export default function YouMayLike({ currentId }) {
               <div className="yml-name">{p.name}</div>
               <div className="yml-meta mono">
                 <span>{p.variant}</span>
-                <span>৳ {p.price.toLocaleString()}</span>
+                <CardPrice product={p} />
               </div>
               {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
             </div>

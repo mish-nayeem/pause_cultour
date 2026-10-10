@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
@@ -7,9 +8,13 @@ import usePageMeta from '../lib/usePageMeta.js'
 import './cart.css'
 
 export default function Cart() {
-  const { items, updateQty, removeItem, subtotal } = useCart()
+  const { items, updateQty, removeItem, subtotal, refreshPrices } = useCart()
   const navigate = useNavigate()
   usePageMeta('Cart')
+
+  useEffect(() => {
+    refreshPrices()
+  }, [refreshPrices])
 
   return (
     <>

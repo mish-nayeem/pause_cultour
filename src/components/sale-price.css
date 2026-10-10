@@ -1,0 +1,60 @@
+.sp-card {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.sp-was {
+  color: var(--steel);
+  text-decoration-thickness: 1px;
+}
+
+.sp-now {
+  color: var(--signal);
+}
+
+.sp-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: var(--signal);
+  padding: 4px 7px;
+}
+
+.sp-badge.sp-inline {
+  position: static;
+  align-self: center;
+}
+
+.sp-block {
+  margin-bottom: 24px;
+}
+
+.info .sp-block .price {
+  margin-bottom: 8px;
+}
+
+.sp-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sp-row .sp-was {
+  font-size: 15px;
+}
+
+.sp-ends {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--signal);
+}
+
+.sp-ends b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createManualOrder, extractOrderFromMessage, orderErrorMessage } from '../lib/admin.js'
 import { sendOrderConfirmation } from '../lib/email.js'
 import { DISTRICTS, quote, isTrxId, cleanTrxId } from '../lib/delivery.js'
 import { availableSizes } from '../lib/stock.js'
+import { fetchLiveSales, saleFor, salePrice } from '../lib/sales.js'
 import './manual-order-form.css'
 
 function taka(n) {
@@ -20,6 +21,12 @@ const DM_SOURCES = [
   { value: 'phone_call', label: 'Phone call' },
   { value: 'in_person', label: 'In person / other' },
 ]
+
+// A raw products row's price today, less any running sale.
+function priceNow(row, sales) {
+  const sale = saleFor({ id: row.id, drop: row.drop_name }, sales)
+  return sale ? salePrice(row.price, sale.percent) : Number(row.price)
+}
 
 const NO_CATEGORY = '__none'
 const EMPTY_DRAFT = { category: '', productId: '', size: '', qty: 1 }
@@ -130,6 +137,13 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
   const [extracting, setExtracting] = useState(false)
   const [extractNote, setExtractNote] = useState('')
 
+  // place_order charges a running sale's price on manual orders too, so the
+  // lines here have to carry it.
+  const [sales, setSales] = useState([])
+  useEffect(() => {
+    fetchLiveSales().then(setSales)
+  }, [])
+
   const subtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0)
   const bill = useMemo(() => quote(subtotal, form.district), [subtotal, form.district])
   const needsAdvance = bill.advance > 0
@@ -155,7 +169,7 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
           product_id: product.id,
           product_name: product.name,
           size,
-          price: Number(product.price),
+          price: priceNow(product, sales),
           qty: Number(qty),
         },
       ]

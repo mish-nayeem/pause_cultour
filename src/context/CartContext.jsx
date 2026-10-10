@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { fetchCurrentPrices } from '../lib/products.js'
 
 const CartContext = createContext(null)
 const STORAGE_KEY = 'pause_cart'
@@ -52,6 +53,21 @@ export function CartProvider({ children }) {
     )
   }
 
+  // A cart can sit in the browser while a sale starts or ends; the cart and
+  // checkout pages call this so the lines carry today's price, which is what
+  // place_order will charge.
+  const refreshPrices = useCallback(async () => {
+    const ids = [...new Set(items.map((i) => i.id))]
+    const prices = await fetchCurrentPrices(ids)
+    if (!prices) return
+    setItems((prev) => {
+      const changed = prev.some((i) => prices[i.id] != null && prices[i.id] !== i.price)
+      if (!changed) return prev
+      return prev.map((i) => (prices[i.id] != null ? { ...i, price: prices[i.id] } : i))
+    })
+    // Only re-run when the set of products changes, not on every qty tap.
+  }, [items.map((i) => i.id).join(',')])
+
   function clearCart() {
     setItems([])
   }
@@ -61,7 +77,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQty, clearCart, count, subtotal }}
+      value={{ items, addItem, removeItem, updateQty, clearCart, refreshPrices, count, subtotal }}
     >
       {children}
     </CartContext.Provider>

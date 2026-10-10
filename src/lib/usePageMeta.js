@@ -47,6 +47,7 @@ export function useProductSchema(product) {
         url: `${window.location.origin}/product/${product.id}`,
         priceCurrency: 'BDT',
         price: product.price,
+        ...(product.sale ? { priceValidUntil: product.sale.endsAt.slice(0, 10) } : {}),
         availability: isAllSoldOut(product)
           ? 'https://schema.org/OutOfStock'
           : 'https://schema.org/InStock',
