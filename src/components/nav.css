@@ -156,6 +156,9 @@
 /* Hidden on desktop; the media query below swaps which set is shown. */
 .mob-right { display: none; }
 
+/* Mobile's floating cart; hidden on desktop, where CART sits in the pill. */
+.mob-cart { display: none; }
+
 .burger {
   background: none;
   border: none;
@@ -367,4 +370,30 @@
   }
 
   .mob-panel { display: block; }
+
+  /* Same shape and type as the shop's FILTER pill, in ink, at the bottom
+     right so the two sit side by side. */
+  .mob-cart {
+    pointer-events: auto;
+    display: block;
+    position: fixed;
+    right: 16px;
+    bottom: 24px;
+    padding: 12px 16px;
+    border-radius: 4px;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 6px 20px rgba(22, 22, 15, 0.18);
+  }
+
+  .mob-cart::before {
+    content: '● ';
+    color: var(--signal);
+  }
 }

@@ -117,3 +117,10 @@
 @media (prefers-reduced-motion: reduce) {
   .sf-back { animation: none; }
 }
+
+/* On the narrowest phones the centred pill would run into the floating
+   cart button (bottom right, see nav.css), so it moves to the left edge. */
+@media (max-width: 370px) {
+  .sf-pill { left: 16px; transform: none; }
+  .sf-pill.away { transform: translateY(12px); }
+}
