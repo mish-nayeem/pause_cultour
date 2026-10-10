@@ -113,7 +113,19 @@ export default function LookbookManager({ products }) {
   }
 
   function removeProduct(look, id) {
-    patch(look, { product_ids: look.product_ids.filter((x) => x !== id) })
+    const labels = { ...(look.item_labels || {}) }
+    delete labels[id]
+    patch(look, { product_ids: look.product_ids.filter((x) => x !== id), item_labels: labels })
+  }
+
+  // The name shown on the photo for this product; empty → its own name.
+  function saveLabel(look, id, text) {
+    const labels = { ...(look.item_labels || {}) }
+    const clean = text.trim()
+    if ((labels[id] || '') === clean) return
+    if (clean) labels[id] = clean
+    else delete labels[id]
+    patch(look, { item_labels: labels })
   }
 
   async function move(index, dir) {
@@ -189,6 +201,10 @@ export default function LookbookManager({ products }) {
           <div className="am-size-note mono">
             <strong>Photos:</strong> portrait shots (4:5, e.g. 1600 × 2000 px) fill the
             two-a-row grid best. You can pick several at once.
+            <br />
+            <strong>Names:</strong> tag each product in the photo, then type the name
+            to show for it (e.g. "Jorts"). Leave it empty to use the product's own name.
+            The name opens that product's page.
           </div>
 
           {loading && <div className="empty mono">Loading…</div>}
@@ -215,13 +231,22 @@ export default function LookbookManager({ products }) {
                     onBlur={(e) => saveTitle(l, e.target.value)}
                   />
 
-                  <div className="lk-label mono">PRODUCTS IN THIS PHOTO</div>
-                  <div className="lk-chips">
+                  <div className="lk-label mono">PRODUCTS IN THIS PHOTO — NAME SHOWN ON THE PHOTO</div>
+                  <div className="lk-items">
                     {l.product_ids.map((id) => (
-                      <span className="lk-chip" key={id}>
-                        {byId[id] ? label(byId[id]) : `${id} (deleted)`}
+                      <div className="lk-item" key={id}>
+                        <input
+                          className="lk-name"
+                          defaultValue={l.item_labels?.[id] || ''}
+                          placeholder={byId[id] ? label(byId[id]) : 'Name on the photo'}
+                          maxLength={60}
+                          onBlur={(e) => saveLabel(l, id, e.target.value)}
+                        />
+                        <span className="lk-link mono">
+                          → {byId[id] ? label(byId[id]) : `${id} (deleted)`}
+                        </span>
                         <button type="button" onClick={() => removeProduct(l, id)} aria-label="Remove product">×</button>
-                      </span>
+                      </div>
                     ))}
                     {l.product_ids.length === 0 && <span className="lk-none mono">None tagged yet</span>}
                   </div>

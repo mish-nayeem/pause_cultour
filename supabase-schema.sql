@@ -1518,6 +1518,8 @@ create table if not exists lookbook_looks (
   image_url text not null,
   title text not null default '',
   product_ids text[] not null default '{}',
+  -- { "<product id>": "Name shown on the photo" }; missing → the product's own name
+  item_labels jsonb not null default '{}',
   focus text,
   sort_order int not null default 0,
   active boolean not null default true,

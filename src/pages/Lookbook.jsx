@@ -34,11 +34,14 @@ export default function Lookbook() {
             image: l.image_url,
             focus: l.focus,
             title: l.title,
-            items: (l.product_ids || []).map((id) => byId[id]).filter(Boolean),
+            // The name typed in Admin → Lookbook, else the product's own.
+            items: (l.product_ids || [])
+              .filter((id) => byId[id])
+              .map((id) => ({ product: byId[id], label: l.item_labels?.[id]?.trim() || '' })),
           }))
         : products
             .filter((p) => p.drop === drop && p.images.length > 0)
-            .map((p) => ({ id: `p${p.id}`, image: p.images[0], title: '', items: [p] }))
+            .map((p) => ({ id: `p${p.id}`, image: p.images[0], title: '', items: [{ product: p, label: '' }] }))
 
       setLooks(built)
     })
@@ -78,7 +81,7 @@ export default function Lookbook() {
                 >
                   <ShimmerImage
                     src={imgUrl(look.image, { w: 1000 })}
-                    alt={look.title || look.items.map((p) => p.name).join(', ') || drop}
+                    alt={look.title || look.items.map((it) => it.label || it.product.name).join(', ') || drop}
                     style={{ objectPosition: look.focus || 'center' }}
                     loading="lazy"
                   />
@@ -86,9 +89,9 @@ export default function Lookbook() {
                   {hasInfo && (
                     <figcaption className="lb-info" onClick={(e) => e.stopPropagation()}>
                       {look.title && <div className="lb-title">{look.title}</div>}
-                      {look.items.map((p) => (
+                      {look.items.map(({ product: p, label }) => (
                         <Link to={`/product/${p.id}`} className="lb-item" key={p.id}>
-                          <span>{p.name}{p.variant ? ` — ${p.variant}` : ''}</span>
+                          <span>{label || `${p.name}${p.variant ? ` — ${p.variant}` : ''}`}</span>
                           <span className="lb-arrow" aria-hidden="true">→</span>
                         </Link>
                       ))}
