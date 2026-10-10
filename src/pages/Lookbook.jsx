@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
@@ -17,6 +17,9 @@ export default function Lookbook() {
   const { drop } = useParams()
   const [looks, setLooks] = useState(null)
   const [openId, setOpenId] = useState(null)
+  // When a finger last went down — the click that follows a touch shouldn't
+  // undo what the touch just opened.
+  const touchedAt = useRef(0)
 
   usePageMeta(drop ? `${drop} — Lookbook` : 'Lookbook', drop ? `The ${drop} lookbook from PAUSE.` : undefined)
 
@@ -74,7 +77,17 @@ export default function Lookbook() {
                 <figure
                   key={look.id}
                   className={`lb-look ${open ? 'open' : ''}`}
-                  onClick={() => hasInfo && setOpenId(open ? null : look.id)}
+                  // A finger shows the names the moment it lands, not after
+                  // the tap completes; a mouse click still toggles them.
+                  onPointerDown={(e) => {
+                    if (e.pointerType === 'mouse' || !hasInfo) return
+                    touchedAt.current = Date.now()
+                    setOpenId(look.id)
+                  }}
+                  onClick={() => {
+                    if (!hasInfo || Date.now() - touchedAt.current < 800) return
+                    setOpenId(open ? null : look.id)
+                  }}
                 >
                   <ShimmerImage
                     src={imgUrl(look.image, { w: 1000 })}
