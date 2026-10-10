@@ -10,6 +10,7 @@ import usePageMeta from '../lib/usePageMeta.js'
 import Pager from '../components/Pager.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import ShopFilter, { sortSizes } from '../components/ShopFilter.jsx'
+import QuickAdd from '../components/QuickAdd.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import './shop.css'
 
@@ -194,10 +195,17 @@ export default function Shop() {
       {!loading && !loadError && shown.length > 0 && (
         <div className="shop-grid">
           {pageItems.map((p) => (
-            <Link to={`/product/${p.id}`} className="scard" key={p.id}>
+            // Sold out, the card opens the product with its "email me when
+            // it's back" box already open (?notify=1).
+            <Link
+              to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`}
+              className="scard"
+              key={p.id}
+            >
               <div className="sthumb">
                 <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} />
                 {p.isNew && <span className="snew mono"><i className="rec" />NEW</span>}
+                <QuickAdd product={p} />
               </div>
               <div className="sinfo">
                 {/* Said in words above the price rather than as a sheet over
@@ -209,6 +217,7 @@ export default function Shop() {
                   <span>{p.variant}</span>
                   <span>৳ {p.price.toLocaleString()}</span>
                 </div>
+                {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
               </div>
             </Link>
           ))}

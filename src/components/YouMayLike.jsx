@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Pager from './Pager.jsx'
 import ShimmerImage from './ShimmerImage.jsx'
+import QuickAdd from './QuickAdd.jsx'
 import { fetchProducts } from '../lib/products.js'
 import { imgUrl } from '../lib/images.js'
 import { scrollToTarget } from '../lib/smoothScroll.js'
@@ -46,10 +47,11 @@ export default function YouMayLike({ currentId }) {
 
       <div className="yml-grid">
         {visible.map((p) => (
-          <Link to={`/product/${p.id}`} className="yml-card" key={p.id}>
+          <Link to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`} className="yml-card" key={p.id}>
             <div className="yml-thumb">
               <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} loading="lazy" />
               {p.isNew && <span className="yml-new mono">NEW</span>}
+              <QuickAdd product={p} />
             </div>
             <div className="yml-info">
               {isAllSoldOut(p) && <div className="yml-out mono">SOLD OUT</div>}
@@ -58,6 +60,7 @@ export default function YouMayLike({ currentId }) {
                 <span>{p.variant}</span>
                 <span>৳ {p.price.toLocaleString()}</span>
               </div>
+              {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
             </div>
           </Link>
         ))}

@@ -1,0 +1,99 @@
+/* Quick add: a small white square in the photo's bottom-right corner, and
+   the row of sizes it opens along the bottom of the photo. Same white-card
+   look as the shop's FILTER button. */
+
+.qa {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 10px;
+  pointer-events: none;
+}
+
+.qa > * { pointer-events: auto; }
+
+.qa-plus {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 4px 14px rgba(22, 22, 15, 0.16);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.qa-plus:hover,
+.qa-plus.on { background: var(--ink); color: #fff; }
+
+/* Turns into an × while the sizes are showing. */
+.qa-plus.on svg { transform: rotate(45deg); }
+.qa-plus svg { transition: transform 0.15s ease; }
+
+.qa-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-right: auto;
+  animation: qa-in 0.14s ease-out;
+}
+
+.qa-sizes button {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(22, 22, 15, 0.12);
+}
+
+.qa-sizes button:hover { background: var(--ink); color: #fff; }
+
+.qa-note {
+  align-self: center;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: rgba(22, 22, 15, 0.78);
+  padding: 6px 9px;
+  border-radius: 3px;
+}
+
+@keyframes qa-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Small "NOTIFY ME" under a sold-out card's price. */
+.card-notify {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (hover: none) {
+  .qa-plus:hover { background: #fff; color: var(--ink); }
+  .qa-plus.on { background: var(--ink); color: #fff; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-sizes { animation: none; }
+}
