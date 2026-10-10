@@ -107,3 +107,16 @@ export function stockForSizes(product, sizes) {
   })
   return out
 }
+
+// How many more of a size can go in the cart: what's left on the shelf less
+// what's already sitting in the cart, which isn't off the count yet. Infinity
+// for an untracked product.
+export function roomLeft(product, size, cartItems) {
+  if (isSoldOut(product, size)) return 0
+  const remaining = left(product, size)
+  if (remaining === null) return Infinity
+  const inCart = cartItems
+    .filter((i) => i.id === product.id && i.size === size)
+    .reduce((sum, i) => sum + i.qty, 0)
+  return Math.max(0, remaining - inCart)
+}

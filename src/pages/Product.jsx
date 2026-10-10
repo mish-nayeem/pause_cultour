@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import YouMayLike from '../components/YouMayLike.jsx'
@@ -58,6 +58,10 @@ function Sheet({ eyebrow, title, onClose, children }) {
 
 export default function Product() {
   const { id } = useParams()
+  // ?notify=1 — arrived from a sold-out card's NOTIFY ME, so the restock box
+  // opens straight away.
+  const [searchParams] = useSearchParams()
+  const wantsNotify = searchParams.get('notify') === '1'
   const { addItem, items } = useCart()
 
   const [product, setProduct] = useState(null)
@@ -115,6 +119,7 @@ export default function Product() {
       } else {
         setProduct(product)
         setActiveSize(availableSizes(product)[0] || null)
+        if (wantsNotify) setNotifyOpen(true)
       }
       setLoading(false)
     })
