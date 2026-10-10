@@ -256,8 +256,13 @@
   border-radius: 22px;
   padding: 22px 22px 26px;
   animation: cat-in 0.18s ease-out;
+  /* dvh, not vh: on a phone 100vh counts the space behind the browser's
+     address bar, so the end of the list (LOG IN / ADMIN) sat off-screen. */
   max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 96px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mob-section {
