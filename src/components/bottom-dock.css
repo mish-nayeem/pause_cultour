@@ -1,16 +1,28 @@
-/* See BottomDock.jsx. Zero height, so it takes no room in the page. */
+/* See BottomDock.jsx. While it holds a pill it's a 90px band between the
+   page and the footer: at the end of the page the pills stop in that empty
+   band instead of sitting over the last products. With nothing showing in it
+   (desktop pages without FILTER), it takes no room. It never takes taps itself — the page under
+   it stays clickable while it floats over it. */
 .dock {
   position: sticky;
   bottom: 0;
   height: 0;
   z-index: 70;
+  pointer-events: none;
+}
+
+.dock:has(.sf-pill) { height: 90px; }
+
+/* CART only floats on phones (nav.css), so only there does it need the band. */
+@media (max-width: 860px) {
+  .dock:has(.mob-cart) { height: 90px; }
 }
 
 .dock-inner {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 24px;
+  bottom: 25px;
   display: flex;
   justify-content: center;
   gap: 10px;
