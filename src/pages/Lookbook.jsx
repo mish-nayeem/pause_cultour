@@ -10,8 +10,9 @@ import usePageMeta from '../lib/usePageMeta.js'
 import './lookbook.css'
 
 // A drop's lookbook: big photos, two to a row. Tapping (or hovering) a photo
-// names the pieces in it, and each name opens that product's page. Looks come
-// from Admin → Lookbook; a drop without any shows its products' own photos.
+// names the pieces in it, and each name opens that product's page. Only the
+// photos uploaded in Admin → Lookbook show here — product photos stay in the
+// shop.
 export default function Lookbook() {
   const { drop } = useParams()
   const [looks, setLooks] = useState(null)
@@ -28,20 +29,16 @@ export default function Lookbook() {
       if (cancelled) return
       const byId = Object.fromEntries(products.map((p) => [String(p.id), p]))
 
-      const built = rows.length
-        ? rows.map((l) => ({
-            id: `l${l.id}`,
-            image: l.image_url,
-            focus: l.focus,
-            title: l.title,
-            // The name typed in Admin → Lookbook, else the product's own.
-            items: (l.product_ids || [])
-              .filter((id) => byId[id])
-              .map((id) => ({ product: byId[id], label: l.item_labels?.[id]?.trim() || '' })),
-          }))
-        : products
-            .filter((p) => p.drop === drop && p.images.length > 0)
-            .map((p) => ({ id: `p${p.id}`, image: p.images[0], title: '', items: [{ product: p, label: '' }] }))
+      const built = rows.map((l) => ({
+        id: `l${l.id}`,
+        image: l.image_url,
+        focus: l.focus,
+        title: l.title,
+        // The name typed in Admin → Lookbook, else the product's own.
+        items: (l.product_ids || [])
+          .filter((id) => byId[id])
+          .map((id) => ({ product: byId[id], label: l.item_labels?.[id]?.trim() || '' })),
+      }))
 
       setLooks(built)
     })
@@ -66,7 +63,7 @@ export default function Lookbook() {
           </div>
         )}
 
-        {looks?.length === 0 && <p className="lb-msg mono">Nothing in this lookbook yet.</p>}
+        {looks?.length === 0 && <p className="lb-msg mono">The lookbook for this drop is coming soon.</p>}
 
         {looks?.length > 0 && (
           <div className="lb-grid">

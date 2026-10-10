@@ -2,12 +2,18 @@ import { supabase } from './supabaseClient.js'
 
 // Drop lookbooks: one row per photo (a "look"), made in Admin → Lookbook.
 
-// Public read — RLS only returns visible looks; in the admin's order.
+// Drop names are typed in more than one place (a product's Drop field, the
+// DROPS menu), so "Pause University" and "PAUSE UNIVERSITY " are the same drop.
+export function dropKey(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+// Public read — RLS only returns visible looks; in the admin's order. Matched
+// on dropKey rather than the exact spelling.
 export async function fetchLooks(drop) {
   const { data, error } = await supabase
     .from('lookbook_looks')
     .select('*')
-    .eq('drop_name', drop)
     .eq('active', true)
     .order('sort_order', { ascending: true })
 
@@ -15,7 +21,7 @@ export async function fetchLooks(drop) {
     console.error('[Supabase] fetchLooks failed:', error.message)
     return { looks: [], error }
   }
-  return { looks: data, error: null }
+  return { looks: data.filter((l) => dropKey(l.drop_name) === dropKey(drop)), error: null }
 }
 
 // Admin read — every drop, hidden looks included.
