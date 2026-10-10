@@ -125,9 +125,14 @@ function moneyRows(order: Record<string, unknown>, items: OrderItem[]): string {
   const fee = Number(order.delivery_fee ?? 0)
   const zone = order.delivery_zone === 'inside' ? 'Inside Dhaka' : 'Outside Dhaka'
 
+  const discount = Number(order.discount_amount ?? 0)
+
   let rows =
     itemRows(items) +
     totalRow('Subtotal', taka(subtotal)) +
+    (discount > 0
+      ? totalRow(`Discount · ${escapeHtml(order.coupon_code ?? '')}`, `− ${taka(discount)}`)
+      : '') +
     totalRow(`Delivery · ${zone}`, taka(fee)) +
     totalRow('Order total', taka(total))
 

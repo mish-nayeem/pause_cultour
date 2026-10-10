@@ -261,6 +261,71 @@
 /* ---------- Summary extras ---------- */
 
 .summary-row.steel span { color: var(--steel); }
+.summary-row.discount span { color: var(--cobalt); }
+
+/* Discount code, at the top of the order summary. */
+.coupon-form {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 6px;
+}
+
+.coupon-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--steel-line);
+  border-radius: 10px;
+  background: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.coupon-form input:focus { outline: none; border-color: var(--cobalt); }
+
+.coupon-form button {
+  padding: 0 18px;
+  border: 1px solid var(--steel-line);
+  border-radius: 10px;
+  background: var(--paper-dim);
+  color: var(--ink);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.coupon-form button:disabled { color: var(--steel); cursor: default; }
+
+.coupon-on {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 18px 0 6px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cobalt) 8%, transparent);
+  color: var(--cobalt);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.coupon-on button {
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-decoration: underline;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.coupon-err {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-style: normal;
+  color: var(--signal);
+}
 
 .summary-split {
   border-top: 1px solid var(--steel-line);

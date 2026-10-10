@@ -1,0 +1,61 @@
+/* Admin → Marketing → Coupons. Colours from the admin theme tokens. */
+
+.cp-amount { display: flex; gap: 8px; }
+.cp-amount select { width: 96px; flex-shrink: 0; }
+.cp-amount input { flex: 1; min-width: 0; }
+
+.cp-error {
+  margin: 4px 0 12px;
+  font-size: 12.5px;
+  color: var(--pill-cancelled, #c1304a);
+}
+
+.cp-table { overflow-x: auto; }
+
+.cp-row {
+  display: grid;
+  grid-template-columns: 110px 1.6fr 1.3fr 70px 90px 100px 92px 120px;
+  gap: 12px;
+  align-items: center;
+  min-width: 900px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--steel-line);
+  font-size: 13.5px;
+}
+
+.cp-row:last-child { border-bottom: none; }
+
+.cp-th {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  padding-top: 0;
+}
+
+.cp-code { font-weight: 700; letter-spacing: 0.04em; }
+
+.cp-status {
+  justify-self: start;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.cp-status.live { background: color-mix(in srgb, var(--pill-delivered, #0b7a3b) 14%, transparent); color: var(--pill-delivered, #0b7a3b); }
+.cp-status.soon { background: color-mix(in srgb, var(--pill-shipped, #1a63b0) 14%, transparent); color: var(--pill-shipped, #1a63b0); }
+.cp-status.off { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--steel); }
+
+.cp-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+.cp-actions button {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cp-actions .cp-del { padding: 5px 9px; }

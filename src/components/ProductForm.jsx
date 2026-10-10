@@ -53,6 +53,18 @@ function fromRow(row) {
   }
 }
 
+// The next id in the shop's own sequence: "pc" and seven digits
+// (pc0000240, pc0000241, …), one past the highest pc-number already used —
+// older short ones like pc239 count too, so the sequence carries on from
+// them. Ids that don't follow the pattern (hand-typed names) are skipped.
+export function nextProductId(ids) {
+  const highest = ids.reduce((max, id) => {
+    const m = /^pc(\d+)$/i.exec(String(id).trim())
+    return m ? Math.max(max, Number(m[1])) : max
+  }, 0)
+  return 'pc' + String(highest + 1).padStart(7, '0')
+}
+
 function blankChart(sizes) {
   const columns = sizes.length > 0 ? sizes : ['S', 'M', 'L', 'XL']
   return {
@@ -74,9 +86,9 @@ function initialDetailRows(existing, labels) {
     : [{ label: '', value: '' }]
 }
 
-export default function ProductForm({ existing, categories = [], detailLabels = [], onDone, onCancel }) {
+export default function ProductForm({ existing, existingIds = [], categories = [], detailLabels = [], onDone, onCancel }) {
   const isNewRecord = !existing
-  const [p, setP] = useState(existing ? fromRow(existing) : BLANK)
+  const [p, setP] = useState(() => (existing ? fromRow(existing) : { ...BLANK, id: nextProductId(existingIds) }))
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -214,10 +226,8 @@ export default function ProductForm({ existing, categories = [], detailLabels = 
   }
 
   function validate() {
-    if (!p.id.trim()) return 'Product ID is required (e.g. prd-050)'
-    if (!/^[a-z0-9-]+$/.test(p.id.trim())) return 'ID can only use lowercase letters, numbers and hyphens'
+    if (!p.id.trim()) return 'Product ID is missing — reload the page and try again'
     if (!p.name.trim()) return 'Name is required'
-    if (!p.sku.trim()) return 'SKU is required'
     if (!p.variant.trim()) return 'Variant (colour) is required'
     if (!p.price || Number(p.price) <= 0) return 'Enter a price above 0'
     if (p.images.length === 0) return 'Add at least one image'
@@ -238,8 +248,12 @@ export default function ProductForm({ existing, categories = [], detailLabels = 
 
     rememberLabels(detailRows.map((row) => row.label))
 
+    // SKU isn't typed any more: a new product takes its id in capitals
+    // (PC240), which is what the product page and cart print as its code.
+    // An older product keeps whatever SKU it already had.
+    const id = p.id.trim()
     const { error: saveError } = await saveProduct(
-      { ...p, id: p.id.trim(), price: Number(p.price) },
+      { ...p, id, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) },
       isNewRecord
     )
 
@@ -247,7 +261,7 @@ export default function ProductForm({ existing, categories = [], detailLabels = 
       setSaving(false)
       setError(
         saveError.message?.includes('duplicate')
-          ? 'That product ID already exists — pick another.'
+          ? 'Another product just took this ID — close the form and add it again.'
           : "Couldn't save. Check your connection and try again."
       )
       return
@@ -337,18 +351,12 @@ export default function ProductForm({ existing, categories = [], detailLabels = 
       <div className="pf-grid">
         <label className="pf-field">
           <span className="mono">PRODUCT ID</span>
-          <input
-            value={p.id}
-            onChange={(e) => set('id', e.target.value)}
-            placeholder="prd-050"
-            disabled={!isNewRecord}
-          />
-          {!isNewRecord && <em className="pf-hint mono">ID can't be changed after creation.</em>}
-        </label>
-
-        <label className="pf-field">
-          <span className="mono">SKU</span>
-          <input value={p.sku} onChange={(e) => set('sku', e.target.value)} placeholder="PRD-050 · TEE" />
+          <input value={p.id} disabled readOnly />
+          <em className="pf-hint mono">
+            {isNewRecord
+              ? 'Given automatically — the next number after your last product. Also used as its code (SKU).'
+              : "ID can't be changed after creation."}
+          </em>
         </label>
 
         <label className="pf-field">

@@ -377,6 +377,9 @@ declare
   zone_advance  numeric;
   calc_total    numeric;
   calc_advance  numeric;
+  -- Coupon: the code as typed, and the money off it gives (0 without one).
+  coupon        text := nullif(upper(trim(coalesce(o ->> 'coupon_code', ''))), '');
+  calc_discount numeric := 0;
 begin
   -- Admin's own manual-order entry (ManualOrderForm.jsx) calls this same
   -- function from a signed-in session while working through a batch of DM
@@ -447,6 +450,14 @@ begin
     end if;
   end loop;
 
+  -- A coupon is re-checked here and its discount worked out from the real
+  -- subtotal. The row is locked first, so two orders racing for a coupon's
+  -- last use can't both get it.
+  if coupon is not null then
+    perform 1 from coupons where code = coupon for update;
+    calc_discount := public.coupon_discount(coupon, calc_subtotal, o ->> 'customer_phone');
+  end if;
+
   -- The same delivery rule as src/lib/delivery.js (quote / zoneForDistrict):
   -- Dhaka district is COD at 80, everywhere else is 120 with a 200 bKash
   -- advance, never more than the order itself. Change both together.
@@ -456,12 +467,13 @@ begin
     zone_key := 'outside'; zone_fee := 120; zone_advance := 200;
   end if;
 
-  calc_total   := calc_subtotal + zone_fee;
+  calc_total   := calc_subtotal - calc_discount + zone_fee;
   calc_advance := least(zone_advance, calc_total);
 
   if (o ->> 'subtotal')::numeric       is distinct from calc_subtotal
      or (o ->> 'delivery_zone')        is distinct from zone_key
      or (o ->> 'delivery_fee')::numeric   is distinct from zone_fee
+     or coalesce((o ->> 'discount_amount')::numeric, 0) is distinct from calc_discount
      or (o ->> 'total')::numeric          is distinct from calc_total
      or (o ->> 'advance_amount')::numeric is distinct from calc_advance then
     raise exception 'PRICE_MISMATCH';
@@ -489,7 +501,7 @@ begin
         customer_area, customer_note, subtotal, delivery_zone, delivery_fee,
         total, advance_amount, advance_method, advance_trx_id,
         utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-        advance_verified_at
+        advance_verified_at, coupon_code, discount_amount
       ) values (
         new_id,
         o ->> 'customer_name',
@@ -512,7 +524,9 @@ begin
         o ->> 'utm_term',
         -- A DM sale the admin typed in is already checked against bKash;
         -- a storefront one waits in Orders → bKash check.
-        case when calc_advance > 0 and public.is_admin() then now() end
+        case when calc_advance > 0 and public.is_admin() then now() end,
+        coupon,
+        calc_discount
       );
       exit;
     exception when unique_violation then
@@ -1227,3 +1241,145 @@ $$;
 
 revoke all on function verify_advance(text) from public;
 grant execute on function verify_advance(text) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
+-- Coupons
+-- ---------------------------------------------------------------------------
+-- A code the customer types at checkout for money off the items (never the
+-- delivery charge). Made and switched on/off in Admin → Marketing → Coupons.
+--
+-- kind               — 'percent' (value = 10 → 10% off) or 'fixed' (value = 200 → ৳200 off)
+-- min_subtotal       — the items have to come to at least this
+-- max_discount       — cap on a percent coupon (10% off, at most ৳500); null = no cap
+-- usage_limit        — total orders that can use it; null = unlimited
+-- per_customer_limit — orders per phone number; null = unlimited
+-- starts_at/ends_at  — when it works; null = no limit that side
+--
+-- Visitors can't read this table — codes stay secret until someone types
+-- one. check_coupon answers for a single code; place_order re-checks it and
+-- works the discount out itself, so the browser's number is never trusted.
+-- A cancelled order doesn't count as a use.
+
+create table if not exists coupons (
+  code text primary key check (code ~ '^[A-Z0-9_-]{3,24}$'),
+  kind text not null check (kind in ('percent', 'fixed')),
+  value numeric not null check (value > 0),
+  min_subtotal numeric not null default 0,
+  max_discount numeric,
+  usage_limit int,
+  per_customer_limit int default 1,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  active boolean not null default true,
+  created_at timestamptz default now(),
+  constraint coupons_percent_range check (kind <> 'percent' or value <= 100)
+);
+
+alter table coupons enable row level security;
+
+drop policy if exists "Signed-in admins manage coupons" on coupons;
+create policy "Signed-in admins manage coupons"
+  on coupons for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+alter table orders add column if not exists coupon_code text;
+alter table orders add column if not exists discount_amount numeric not null default 0;
+
+create index if not exists orders_coupon_code_idx on orders (coupon_code) where coupon_code is not null;
+
+-- The discount a coupon gives on these items, or a tagged error saying why
+-- it can't be used:
+--   COUPON_INVALID        — no such code, or switched off
+--   COUPON_NOT_STARTED    — before starts_at
+--   COUPON_EXPIRED        — after ends_at
+--   COUPON_MIN:<amount>   — items under min_subtotal
+--   COUPON_USED_UP        — usage_limit reached
+--   COUPON_ALREADY_USED   — this phone number has used it up
+-- Phone numbers are compared on their last nine digits, so 017…, +88017…
+-- and 88017… are the same customer.
+create or replace function public.coupon_discount(p_code text, p_subtotal numeric, p_phone text)
+returns numeric
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  c     coupons%rowtype;
+  used  int;
+  phone text := right(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g'), 9);
+  d     numeric;
+begin
+  select * into c from coupons where code = upper(trim(p_code));
+
+  if not found or not c.active then
+    raise exception 'COUPON_INVALID';
+  end if;
+  if c.starts_at is not null and now() < c.starts_at then
+    raise exception 'COUPON_NOT_STARTED';
+  end if;
+  if c.ends_at is not null and now() > c.ends_at then
+    raise exception 'COUPON_EXPIRED';
+  end if;
+  if p_subtotal < c.min_subtotal then
+    raise exception 'COUPON_MIN:%', c.min_subtotal;
+  end if;
+
+  if c.usage_limit is not null then
+    select count(*) into used from orders
+     where coupon_code = c.code and status is distinct from 'cancelled';
+    if used >= c.usage_limit then
+      raise exception 'COUPON_USED_UP';
+    end if;
+  end if;
+
+  if c.per_customer_limit is not null and phone <> '' then
+    select count(*) into used from orders
+     where coupon_code = c.code
+       and status is distinct from 'cancelled'
+       and right(regexp_replace(customer_phone, '\D', '', 'g'), 9) = phone;
+    if used >= c.per_customer_limit then
+      raise exception 'COUPON_ALREADY_USED';
+    end if;
+  end if;
+
+  if c.kind = 'percent' then
+    d := round(p_subtotal * c.value / 100);
+    if c.max_discount is not null then
+      d := least(d, c.max_discount);
+    end if;
+  else
+    d := c.value;
+  end if;
+
+  return least(d, p_subtotal);
+end;
+$$;
+
+revoke all on function public.coupon_discount(text, numeric, text) from public;
+
+-- The checkout's "Apply" button. Rate-limited (20 tries per IP per hour) so
+-- nobody can sit guessing codes; returns the code and what it takes off.
+create or replace function public.check_coupon(p_code text, p_subtotal numeric, p_phone text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  d numeric;
+begin
+  if not public.check_rate_limit('coupon_check', 20, 3600) then
+    raise exception 'RATE_LIMITED';
+  end if;
+
+  d := public.coupon_discount(p_code, p_subtotal, p_phone);
+  return jsonb_build_object('code', upper(trim(p_code)), 'discount', d);
+end;
+$$;
+
+revoke all on function public.check_coupon(text, numeric, text) from public;
+grant execute on function public.check_coupon(text, numeric, text) to anon, authenticated;

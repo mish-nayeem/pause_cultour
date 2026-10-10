@@ -247,6 +247,9 @@
 .info h1 {
   font-size: clamp(28px, 3vw, 40px);
   line-height: 1.02;
+  /* Anton is set tight; a little air between the letters keeps a
+     product name readable at this size. */
+  letter-spacing: 0.045em;
   margin-bottom: 14px;
 }
 

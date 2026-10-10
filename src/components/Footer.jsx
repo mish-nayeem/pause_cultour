@@ -93,7 +93,6 @@ export default function Footer() {
             <div className="foot-label mono">SUPPORT</div>
             <Link to="/track">Track order</Link>
             <Link to="/contact">Contact us</Link>
-            <Link to="/size-guide">Size guide</Link>
             <Link to="/delivery">Delivery info</Link>
           </div>
 

@@ -33,11 +33,6 @@ export const INFO_PAGES = {
         body:
           'Have your order number ready — it starts with PC and is in the confirmation email we sent when you placed the order. With it we can check your delivery status straight away.',
       },
-      {
-        type: 'text',
-        heading: 'Hours',
-        body: 'Saturday to Thursday, 10am – 8pm. Closed Fridays and public holidays.',
-      },
     ],
   },
 

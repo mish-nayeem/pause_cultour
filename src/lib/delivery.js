@@ -117,18 +117,21 @@ export function zoneForDistrict(district) {
 
 // The whole money picture for a cart going to a given district. `due` is what
 // the rider collects — by then the advance, if there was one, is already paid.
-export function quote(subtotal, district) {
+// `discount` is a coupon's money off the items (never the delivery charge);
+// place_order does the same sum and refuses an order whose numbers differ.
+export function quote(subtotal, district, discount = 0) {
   const zone = getZone(zoneForDistrict(district))
+  const items = subtotal - discount
 
   if (!zone) {
-    return { zone: null, fee: 0, advance: 0, total: subtotal, due: subtotal }
+    return { zone: null, fee: 0, advance: 0, discount, total: items, due: items }
   }
 
-  const total = subtotal + zone.fee
+  const total = items + zone.fee
   // Never ask for more up front than the order is even worth.
   const advance = Math.min(zone.advance, total)
 
-  return { zone, fee: zone.fee, advance, total, due: total - advance }
+  return { zone, fee: zone.fee, advance, discount, total, due: total - advance }
 }
 
 // People paste this straight out of the bKash SMS — just the id, the id
