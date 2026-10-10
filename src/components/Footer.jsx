@@ -127,7 +127,7 @@ export default function Footer() {
           </a>
         </div>
         <a href={INSTAGRAM} target="_blank" rel="noreferrer" className="foot-brand" aria-label="PAUSE on Instagram">
-          @pause.<em>cultour</em>
+          <img src="/footer-handle.png" alt="@pause.cultour" width="668" height="128" loading="lazy" />
         </a>
         <div className="foot-fine mono">© {new Date().getFullYear()} PAUSE · DHAKA, BD</div>
       </div>
