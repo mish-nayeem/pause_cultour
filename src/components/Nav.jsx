@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
 import { IconUser } from './Icons.jsx'
 import { lookbookPath } from '../lib/lookbook.js'
+import { useFooterLift } from '../lib/footerLift.js'
 import { watchUser } from '../lib/auth.js'
 import { isAdminEmail } from '../lib/admin.js'
 import './nav.css'
@@ -17,6 +18,7 @@ const LOGO_HALF_DEPTH = ((LOGO_LAYERS - 1) * LOGO_STEP) / 2
 
 export default function Nav({ overlay = false }) {
   const { count } = useCart()
+  useFooterLift()
   const navigate = useNavigate()
   const location = useLocation()
 

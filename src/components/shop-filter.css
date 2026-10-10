@@ -15,7 +15,8 @@
 .sf-pill {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  /* Parks just above the footer once it scrolls into view (footerLift.js). */
+  bottom: calc(24px + var(--footer-lift, 0px));
   transform: translateX(-50%);
   z-index: 70;
   background: #fff;
@@ -29,13 +30,6 @@
 
 .sf-pill:hover { background: var(--ink); color: #fff; }
 
-.sf-pill { transition: background 0.15s ease, color 0.15s ease, opacity 0.2s ease, transform 0.2s ease; }
-
-.sf-pill.away {
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, 12px);
-}
 
 /* Clear, not dimmed — the grid stays visible behind the panel; a tap
    anywhere outside it closes. */
@@ -122,5 +116,4 @@
    sits beside it, the pair centred together. */
 @media (max-width: 860px) {
   .sf-pill { left: calc(50% - 5px); transform: translateX(-100%); }
-  .sf-pill.away { transform: translate(-100%, 12px); }
 }

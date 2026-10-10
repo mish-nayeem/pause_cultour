@@ -111,10 +111,11 @@
   align-items: baseline;
   gap: 12px;
   color: #fff;
-  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
-  font-weight: 700;
-  font-size: 19px;
-  letter-spacing: 0.02em;
+  /* The nav's type, so the tags read as part of the site's links. */
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   text-decoration: none;
   line-height: 1.15;
@@ -129,6 +130,6 @@
   .lb-shop { margin-left: 0; }
   .lb-grid { gap: 2px; }
   .lb-info { padding: 36px 10px 10px; gap: 4px; }
-  .lb-item { font-size: 13.5px; }
+  .lb-item { font-size: 11px; }
   .lb-title { font-size: 9px; }
 }
