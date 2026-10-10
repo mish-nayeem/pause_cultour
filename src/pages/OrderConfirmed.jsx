@@ -67,7 +67,7 @@ export default function OrderConfirmed() {
 
         <p className="confirm-note mono">
           {order.delivery?.advance > 0
-            ? "We'll check your bKash advance and call to confirm. Pay the rest in cash when the parcel arrives."
+            ? "We'll match your bKash advance and email you as soon as your order is confirmed. Pay the rest in cash when the parcel arrives."
             : "Pay in cash when your order arrives. We'll call to confirm before delivery."}
         </p>
 

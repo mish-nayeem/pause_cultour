@@ -66,6 +66,16 @@ alter table orders add column if not exists advance_trx_id text;
 -- it can't be made to send again (see supabase-migration-confirmation-once.sql)
 alter table orders add column if not exists confirmation_sent_at timestamptz;
 
+-- advance_verified_at   — when the admin matched this order's bKash TrxID
+--                         against the bKash app (Orders → bKash check). An
+--                         outside-Dhaka customer gets no confirmation until then.
+-- customer_mail_sent_at — when the customer's confirmation went out; separate
+--                         from confirmation_sent_at (the admin alert), since
+--                         for an advance order the two happen at different times.
+-- (see supabase-migration-bkash-verify.sql)
+alter table orders add column if not exists advance_verified_at timestamptz;
+alter table orders add column if not exists customer_mail_sent_at timestamptz;
+
 -- One bKash receipt, one order. Without this the same transaction id could be
 -- pasted onto order after order, since the checkout can't verify it with bKash
 -- itself. Case-insensitive, because the id gets typed by hand.
@@ -478,7 +488,8 @@ begin
         id, customer_name, customer_phone, customer_email, customer_address,
         customer_area, customer_note, subtotal, delivery_zone, delivery_fee,
         total, advance_amount, advance_method, advance_trx_id,
-        utm_source, utm_medium, utm_campaign, utm_content, utm_term
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+        advance_verified_at
       ) values (
         new_id,
         o ->> 'customer_name',
@@ -498,7 +509,10 @@ begin
         o ->> 'utm_medium',
         o ->> 'utm_campaign',
         o ->> 'utm_content',
-        o ->> 'utm_term'
+        o ->> 'utm_term',
+        -- A DM sale the admin typed in is already checked against bKash;
+        -- a storefront one waits in Orders → bKash check.
+        case when calc_advance > 0 and public.is_admin() then now() end
       );
       exit;
     exception when unique_violation then
@@ -1157,3 +1171,59 @@ create policy "Admin deletes images"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'images' and public.is_admin());
+-- ---------------------------------------------------------------------------
+-- verify_advance — the admin's bKash check
+-- ---------------------------------------------------------------------------
+-- The admin copies a TrxID out of the bKash app and pastes it into
+-- Orders → bKash check. This finds the one order carrying it (the unique
+-- index on advance_trx_id guarantees there's at most one), marks its advance
+-- verified and returns the order id; the panel then asks
+-- send-order-confirmation to mail the customer, which it only does for a
+-- verified advance. Tagged errors for the cases worth explaining:
+--   TRX_NOT_FOUND         — no order has that TrxID
+--   ALREADY_VERIFIED:<id> — matched, but done before
+--   ORDER_CANCELLED:<id>  — matched a cancelled order
+
+create or replace function verify_advance(p_trx text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  -- Same cleaning as the panel's cleanTrxId: drop a pasted "TrxID" label,
+  -- then anything that isn't a letter or digit.
+  clean text := upper(regexp_replace(
+    regexp_replace(coalesce(p_trx, ''), '^\s*trx\s*id\s*[:.#-]?\s*', '', 'i'),
+    '[^A-Za-z0-9]', '', 'g'));
+  o     orders%rowtype;
+begin
+  if not public.is_admin() then
+    raise exception 'NOT_ALLOWED';
+  end if;
+
+  select * into o
+    from orders
+   where upper(advance_trx_id) = clean
+     and coalesce(advance_amount, 0) > 0
+   for update;
+
+  if not found or clean = '' then
+    raise exception 'TRX_NOT_FOUND';
+  end if;
+
+  if o.advance_verified_at is not null then
+    raise exception 'ALREADY_VERIFIED:%', o.id;
+  end if;
+
+  if o.status = 'cancelled' then
+    raise exception 'ORDER_CANCELLED:%', o.id;
+  end if;
+
+  update orders set advance_verified_at = now() where id = o.id;
+  return o.id;
+end;
+$$;
+
+revoke all on function verify_advance(text) from public;
+grant execute on function verify_advance(text) to authenticated;

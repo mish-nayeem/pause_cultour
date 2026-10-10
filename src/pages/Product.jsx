@@ -4,7 +4,7 @@ import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import YouMayLike from '../components/YouMayLike.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
-import { IconShare, IconChat } from '../components/Icons.jsx'
+import { IconShare, IconChat, IconPen } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
 import { imgUrl } from '../lib/images.js'
 import { useCart } from '../context/CartContext.jsx'
@@ -93,6 +93,7 @@ export default function Product() {
   const [shared, setShared] = useState(false)
   const [reviews, setReviews] = useState([])
   const [showReviews, setShowReviews] = useState(false)
+  const [writing, setWriting] = useState(false) // the leave-a-review form
   const wishRef = useRef(null)
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' })
   const [reviewState, setReviewState] = useState('idle') // idle | saving | error | done
@@ -148,6 +149,7 @@ export default function Product() {
     setReviewForm({ name: '', rating: 5, comment: '' })
     setReviewState('idle')
     setShowReviews(false)
+    setWriting(false)
     setNotifyOpen(false)
 
     fetchReviews(id).then(({ reviews }) => {
@@ -554,6 +556,18 @@ export default function Product() {
             <IconChat width="17" height="17" />
             <span className="reviews-count">{reviews.length}</span>
           </button>
+          {/* The form stays out of the way until someone wants to write one. */}
+          <button
+            type="button"
+            className={`reviews-toggle mono ${writing ? 'on' : ''}`}
+            onClick={() => setWriting((v) => !v)}
+            aria-expanded={writing}
+            aria-label={writing ? 'Close the review form' : 'Write a review'}
+            title="Write a review"
+          >
+            <IconPen width="16" height="16" />
+            <span className="reviews-count">WRITE</span>
+          </button>
           {ratings.length > 0 && (
             <div className="reviews-avg mono">
               {'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}
@@ -581,6 +595,7 @@ export default function Product() {
           </ul>
         )}
 
+        {writing && (
         <form className="review-form" onSubmit={handleReviewSubmit}>
           <div className="field-label mono">LEAVE A REVIEW</div>
           <div className="review-form-row">
@@ -615,6 +630,7 @@ export default function Product() {
             </button>
           )}
         </form>
+        )}
       </div>
 
       <YouMayLike currentId={product.id} />
