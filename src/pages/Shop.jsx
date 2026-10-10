@@ -5,10 +5,11 @@ import Footer from '../components/Footer.jsx'
 import { fetchProducts } from '../lib/products.js'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { imgUrl } from '../lib/images.js'
-import { isAllSoldOut } from '../lib/stock.js'
+import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import Pager from '../components/Pager.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
+import ShopFilter, { sortSizes } from '../components/ShopFilter.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import './shop.css'
 
@@ -18,6 +19,10 @@ export default function Shop() {
   const [params, setParams] = useSearchParams()
   const activeDrop = params.get('d') || ''
   const active = params.get('c') || 'ALL'
+  // The FILTER panel's two choices live in the address too (?so=hide&s=M),
+  // so Back and a shared link keep them.
+  const hideSoldOut = params.get('so') === 'hide'
+  const sizeFilter = params.get('s') || ''
   usePageMeta(activeDrop || (active === 'ALL' ? 'Shop' : active))
 
   const [products, setProducts] = useState([])
@@ -49,12 +54,34 @@ export default function Shop() {
   // A drop is its own view of the catalog, so it replaces the category filter
   // rather than narrowing it — arriving from the DROPS menu shows that drop
   // whole, not the part of it that happens to match the last category picked.
-  const shown = useMemo(() => {
+  const inView = useMemo(() => {
     if (activeDrop) return products.filter((p) => p.drop === activeDrop)
     if (active === 'ALL') return products
     if (active === 'NEW') return products.filter((p) => p.isNew)
     return products.filter((p) => p.category === active)
   }, [products, active, activeDrop])
+
+  // Every size anything in this view comes in — the panel never offers one
+  // that would empty the grid by definition.
+  const sizeOptions = useMemo(
+    () => sortSizes([...new Set(inView.flatMap((p) => p.sizes || []))]),
+    [inView]
+  )
+
+  // A size picked: products cut in that size. With sold-out hidden as well,
+  // only the ones that still have that size to buy.
+  const shown = useMemo(
+    () =>
+      inView.filter((p) => {
+        if (sizeFilter) {
+          if (!(p.sizes || []).includes(sizeFilter)) return false
+          if (hideSoldOut && isSoldOut(p, sizeFilter)) return false
+          return true
+        }
+        return !(hideSoldOut && isAllSoldOut(p))
+      }),
+    [inView, sizeFilter, hideSoldOut]
+  )
 
   // The page lives in the address (?p=2) so Back returns to it and a page can
   // be shared. Picking a different category or drop drops it, starting over at 1.
@@ -62,9 +89,24 @@ export default function Shop() {
   const page = Math.min(Math.max(1, Number(params.get('p')) || 1), totalPages)
   const pageItems = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
+  // Category buttons start a fresh view but keep whatever the FILTER panel
+  // is set to — switching from hoodies to tees shouldn't forget "size M".
   function pick(c) {
-    if (c === 'ALL') setParams({})
-    else setParams({ c })
+    const next = new URLSearchParams()
+    if (c !== 'ALL') next.set('c', c)
+    if (hideSoldOut) next.set('so', 'hide')
+    if (sizeFilter) next.set('s', sizeFilter)
+    setParams(next)
+  }
+
+  function applyFilter({ hideSoldOut: hide, size }) {
+    const next = new URLSearchParams(params)
+    next.delete('p')
+    if (hide) next.set('so', 'hide')
+    else next.delete('so')
+    if (size) next.set('s', size)
+    else next.delete('s')
+    setParams(next, { replace: true })
   }
 
   function goToPage(n) {
@@ -135,7 +177,18 @@ export default function Shop() {
       )}
 
       {!loading && !loadError && shown.length === 0 && (
-        <p className="shop-msg mono">Nothing in this category yet.</p>
+        <p className="shop-msg mono">
+          {inView.length > 0 ? (
+            <>
+              Nothing matches this filter.{' '}
+              <button className="shop-clear mono" onClick={() => applyFilter({ hideSoldOut: false, size: '' })}>
+                Clear filter
+              </button>
+            </>
+          ) : (
+            'Nothing in this category yet.'
+          )}
+        </p>
       )}
 
       {!loading && !loadError && shown.length > 0 && (
@@ -163,6 +216,10 @@ export default function Shop() {
       )}
 
       {!loading && !loadError && <Pager page={page} totalPages={totalPages} onChange={goToPage} />}
+
+      {!loading && !loadError && inView.length > 0 && (
+        <ShopFilter sizes={sizeOptions} hideSoldOut={hideSoldOut} size={sizeFilter} onChange={applyFilter} />
+      )}
 
       <Footer />
     </>
