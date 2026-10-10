@@ -1475,6 +1475,7 @@ export default function Admin() {
         {!loading && tab === 'products' && editing && (
           <ProductForm
             existing={editing === 'new' ? null : editing}
+            existingIds={products.map((p) => p.id)}
             categories={productCategories}
             detailLabels={collectLabels(products)}
             onCancel={() => setEditing(null)}
