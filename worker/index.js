@@ -6,8 +6,9 @@
 //    HTML once and use whatever <meta> tags are already there. For a
 //    client-rendered product page that's always the same generic tags from
 //    index.html, so every product would look identical when shared. Those
-//    crawlers get a bare page carrying the product's own title, price and
-//    photo instead. A real visitor never matches BOT_PATTERN.
+//    crawlers get a bare page carrying the product's own title, description
+//    and photo instead (no price — the preview leaves that to the page).
+//    A real visitor never matches BOT_PATTERN.
 //
 // 2. The site's own address. index.html, robots.txt and sitemap.xml are
 //    written with SITE_PLACEHOLDER; every response swaps it for whatever
@@ -75,7 +76,7 @@ async function productCard(url, env) {
   if (!supabaseUrl || !supabaseKey) return null
 
   const res = await fetch(
-    `${supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=name,variant,description,price,images`,
+    `${supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=name,variant,description,images`,
     { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
   )
   if (!res.ok) return null
@@ -86,7 +87,8 @@ async function productCard(url, env) {
   const title = `${product.name} — PAUSE`
   // Previews show two lines or so; a long description just gets cut off
   // mid-word by the app instead.
-  const fullDescription = `${product.name} — ${product.variant}, ৳${Number(product.price).toLocaleString()}. ${product.description || ''}`.trim()
+  // No price here: a shared link is an invitation to look, not a price tag.
+  const fullDescription = `${product.name} — ${product.variant}. ${product.description || ''}`.trim()
   const description = fullDescription.length > 200 ? fullDescription.slice(0, 197).trimEnd() + '…' : fullDescription
   const image = product.images?.[0] ? ogImage(product.images[0]) : `${url.origin}/og-image.jpg`
   // Without the ?utm_source=share the link was sent with, so every share of
@@ -110,8 +112,6 @@ async function productCard(url, env) {
 <meta property="og:image:height" content="${OG_IMAGE_HEIGHT}" />
 <meta property="og:image:alt" content="${escapeHtml(title)}" />
 <meta property="og:url" content="${escapeHtml(pageUrl)}" />
-<meta property="product:price:amount" content="${escapeHtml(product.price)}" />
-<meta property="product:price:currency" content="BDT" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${escapeHtml(title)}" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
