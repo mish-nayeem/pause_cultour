@@ -233,6 +233,16 @@
 
 .cat-inner button:hover { color: var(--cobalt); }
 
+.cat-inner .cat-sub-toggle.on { color: var(--cobalt); }
+
+/* SHOP → Shop by collection: the drops, on their own row under a rule. */
+.cat-sub {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(237, 234, 225, 0.16);
+  animation: cat-in 0.14s ease-out;
+}
+
 /* ---------- Mobile panel ---------- */
 
 .mob-panel {
@@ -255,6 +265,8 @@
   color: var(--steel);
   margin-bottom: 14px;
 }
+
+.mob-cats + .mob-section { margin-top: 20px; }
 
 .mob-cats {
   display: flex;

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
 import { IconUser } from './Icons.jsx'
+import { lookbookPath } from '../lib/lookbook.js'
 import { watchUser } from '../lib/auth.js'
 import { isAdminEmail } from '../lib/admin.js'
 import './nav.css'
@@ -20,6 +21,8 @@ export default function Nav({ overlay = false }) {
   const location = useLocation()
 
   const [openMenu, setOpenMenu] = useState(null)  // null | 'shop' | 'drops'
+  // SHOP's "Shop by collection" second row (the drops, as shop filters).
+  const [byCollection, setByCollection] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false) // mobile panel
   const [categories, setCategories] = useState([])
   const [drops, setDrops] = useState([])
@@ -33,6 +36,7 @@ export default function Nav({ overlay = false }) {
   // and without this grace period the menu shuts halfway there.
   function showMenu(name) {
     clearTimeout(closeTimer.current)
+    if (name !== openMenu) setByCollection(false)
     setOpenMenu(name)
   }
 
@@ -69,6 +73,7 @@ export default function Nav({ overlay = false }) {
   useEffect(() => {
     setMenuOpen(false)
     setOpenMenu(null)
+    setByCollection(false)
   }, [location.pathname, location.search])
 
   // The mobile panel covers the screen, so the page behind it shouldn't scroll.
@@ -91,13 +96,19 @@ export default function Nav({ overlay = false }) {
     navigate(category === 'ALL' ? '/shop' : `/shop?c=${encodeURIComponent(category)}`)
   }
 
+  // DROPS opens a drop's lookbook; SHOP → Shop by collection opens the same
+  // drop as a normal shop grid with prices.
+  function goLookbook(drop) {
+    navigate(lookbookPath(drop))
+  }
+
   function goDrop(drop) {
     navigate(`/shop?d=${encodeURIComponent(drop)}`)
   }
 
   const catList = ['ALL', 'NEW', ...categories]
   const openList = openMenu === 'drops' ? drops : catList
-  const openGo = openMenu === 'drops' ? goDrop : goCategory
+  const openGo = openMenu === 'drops' ? goLookbook : goCategory
 
   return (
     <div
@@ -182,9 +193,27 @@ export default function Nav({ overlay = false }) {
         <div className="cat-menu" onMouseEnter={() => showMenu(openMenu)}>
           <div className="cat-inner mono">
             {openList.map((c) => (
-              <button key={c} onClick={() => openGo(c)}>{c}</button>
+              <button key={c} onClick={() => openGo(c)} onMouseEnter={() => setByCollection(false)}>{c}</button>
             ))}
+            {openMenu === 'shop' && drops.length > 0 && (
+              <button
+                className={`cat-sub-toggle ${byCollection ? 'on' : ''}`}
+                onMouseEnter={() => setByCollection(true)}
+                onClick={() => setByCollection((v) => !v)}
+                aria-expanded={byCollection}
+              >
+                SHOP BY COLLECTION ›
+              </button>
+            )}
           </div>
+
+          {openMenu === 'shop' && byCollection && (
+            <div className="cat-inner cat-sub mono">
+              {drops.map((d) => (
+                <button key={d} onClick={() => goDrop(d)}>{d}</button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -209,10 +238,17 @@ export default function Nav({ overlay = false }) {
 
           {drops.length > 0 && (
             <>
-              <div className="mob-section mono">DROPS</div>
+              <div className="mob-section mono">SHOP BY COLLECTION</div>
               <div className="mob-cats mono">
                 {drops.map((d) => (
                   <button key={d} onClick={() => goDrop(d)}>{d}</button>
+                ))}
+              </div>
+
+              <div className="mob-section mono">DROPS · LOOKBOOK</div>
+              <div className="mob-cats mono">
+                {drops.map((d) => (
+                  <button key={d} onClick={() => goLookbook(d)}>{d}</button>
                 ))}
               </div>
             </>
