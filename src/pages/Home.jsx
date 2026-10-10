@@ -3,26 +3,19 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchHeroSlides } from '../lib/hero.js'
+import { fetchTicker } from '../lib/siteSettings.js'
 import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './home.css'
 
 const SLIDE_MS = 5000
 
-// [plain, accent] pairs. Both halves are the same white now; the split is
-// kept so an accent colour can come back with a one-line CSS change.
-// Lines come from the brand's own copy (see the footer): everything on hold,
-// made in Dhaka, small drops.
-const TICKER = [
-  ['EVERYTHING', 'ON HOLD'],
-  ['CUT & SEWN IN', 'DHAKA'],
-  ['RELEASED IN', 'SMALL DROPS'],
-  ["WHEN IT'S GONE,", "IT'S GONE"],
-]
-
 export default function Home() {
   const [slides, setSlides] = useState([])
   const [active, setActive] = useState(0)
+  // Admin → Homepage → Ticker. Empty until loaded, so the old lines never
+  // flash up before a sale announcement.
+  const [ticker, setTicker] = useState(null)
 
   usePageMeta()
 
@@ -34,6 +27,9 @@ export default function Home() {
       if (cancelled) return
       setSlides(slides)
       setActive(0)
+    })
+    fetchTicker().then((lines) => {
+      if (!cancelled) setTicker(lines)
     })
     return () => { cancelled = true }
   }, [])
@@ -92,9 +88,11 @@ export default function Home() {
         <div className="ticker-track">
           {[0, 1].map((half) => (
             <div className="ticker-half" key={half}>
-              {[...TICKER, ...TICKER].map(([plain, accent], i) => (
+              {/* Repeated so even one short line fills a wide screen. */}
+              {!ticker && <span className="ticker-item">{'\u00a0'}</span>}
+              {ticker && Array.from({ length: Math.max(2, Math.ceil(8 / ticker.length)) }, () => ticker).flat().map((line, i) => (
                 <span className="ticker-item" key={i}>
-                  {plain} <em>{accent}</em>
+                  {line}
                 </span>
               ))}
             </div>

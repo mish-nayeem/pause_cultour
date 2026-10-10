@@ -42,6 +42,7 @@ import SaleManager from '../components/SaleManager.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
+import TickerManager from '../components/TickerManager.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
@@ -1758,7 +1759,12 @@ export default function Admin() {
           )}
           </>
         )}
-        {tab === 'hero' && <HeroManager />}
+        {tab === 'hero' && (
+          <>
+            <HeroManager />
+            <TickerManager />
+          </>
+        )}
         {!loading && tab === 'menu' && (
           <>
             <CategoryManager menu="shop" products={products} />

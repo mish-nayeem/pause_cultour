@@ -1,0 +1,67 @@
+/* Admin → Homepage → Ticker. Colours from the admin theme tokens. */
+
+.tk-panel { margin-top: 18px; }
+
+.tk-help { font-size: 13px; color: var(--steel); margin: 8px 0 14px; line-height: 1.6; }
+
+.tk-list { display: flex; flex-direction: column; gap: 8px; }
+
+.tk-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.tk-num { font-size: 11px; color: var(--steel); text-align: right; }
+
+.tk-row input {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  color: var(--ink);
+  text-transform: uppercase;
+  min-width: 0;
+}
+
+.tk-row input:focus { outline: none; border-color: var(--cobalt); }
+
+.tk-row button,
+.tk-add,
+.tk-reset {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.tk-row button:disabled,
+.tk-add:disabled { opacity: 0.35; cursor: default; }
+
+.tk-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+
+.tk-actions .tk-save { margin: 0 0 0 auto; }
+
+.tk-preview {
+  margin-top: 16px;
+  display: flex;
+  gap: 28px;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 12px 16px;
+  background: #16160f;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  border-radius: 10px;
+}
+
+.tk-note { margin-top: 10px; font-size: 12.5px; color: var(--cobalt); }
+
+@media (max-width: 600px) {
+  .tk-actions .tk-save { margin: 0; width: 100%; }
+}
