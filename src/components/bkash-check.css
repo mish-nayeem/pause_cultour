@@ -1,0 +1,107 @@
+/* Orders → bKash check. Colours come from the admin theme tokens, so it
+   follows the green / blue / dark theme like the rest of the panel. */
+
+.bk-form {
+  display: flex;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.bk-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--steel-line);
+  border-radius: var(--r-ctl, 10px);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.bk-form input:focus { outline: none; border-color: var(--cobalt); }
+
+.bk-form button {
+  padding: 0 22px;
+  border: none;
+  border-radius: var(--r-ctl, 10px);
+  background: var(--cobalt);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bk-form button:disabled { opacity: 0.45; cursor: default; }
+
+.bk-result {
+  margin-top: 12px;
+  padding: 11px 14px;
+  border-radius: var(--r-ctl, 10px);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.bk-result.ok {
+  background: color-mix(in srgb, var(--pill-delivered, #0b7a3b) 12%, transparent);
+  color: var(--pill-delivered, #0b7a3b);
+}
+
+.bk-result.bad {
+  background: color-mix(in srgb, var(--pill-cancelled, #c1304a) 12%, transparent);
+  color: var(--pill-cancelled, #c1304a);
+}
+
+.bk-head {
+  margin: 28px 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bk-count {
+  background: var(--cobalt);
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+}
+
+.bk-table { overflow-x: auto; }
+
+.bk-row {
+  display: grid;
+  grid-template-columns: 120px 1.1fr 112px 1.3fr 120px 80px 112px;
+  gap: 12px;
+  align-items: center;
+  min-width: 840px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--steel-line);
+  font-size: 13.5px;
+}
+
+.bk-row:last-child { border-bottom: none; }
+
+.bk-th {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  padding-top: 0;
+}
+
+.bk-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-trx { font-weight: 700; letter-spacing: 0.04em; }
+.bk-done { opacity: 0.72; }
+
+.bk-resend {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}

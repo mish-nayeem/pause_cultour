@@ -37,6 +37,7 @@ import {
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { imgUrl } from '../lib/images.js'
 import ImageMigration from '../components/ImageMigration.jsx'
+import BkashCheck from '../components/BkashCheck.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -107,6 +108,7 @@ const OVERVIEW_SUBS = [
 
 const ORDERS_SUBS = [
   { key: 'list', label: 'Order list' },
+  { key: 'bkash', label: 'bKash check' },
   { key: 'returns', label: 'Refunds & returns' },
   { key: 'abandoned', label: 'Abandoned cart' },
   { key: 'security', label: 'Security' },
@@ -1424,6 +1426,15 @@ export default function Admin() {
                 </div>
               ))}
             </section>
+          )}
+
+          {ordersSub === 'bkash' && (
+            <BkashCheck
+              orders={orders}
+              onChange={(id, patch) =>
+                setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)))
+              }
+            />
           )}
 
           {ordersSub === 'security' && (

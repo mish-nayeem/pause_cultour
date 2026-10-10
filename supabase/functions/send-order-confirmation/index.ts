@@ -12,12 +12,20 @@
 // endpoint is callable by anonymous customers; if it accepted a recipient and
 // body from the caller, it would be an open mail relay.
 //
-// It also sends at most once per order. Being callable by anyone, it used to
-// resend both mails every time it was called with a known order id — a
-// script could fill the customer's and the admin's inboxes and burn the
-// Brevo daily quota. orders.confirmation_sent_at is claimed before anything
-// goes out (see supabase-migration-confirmation-once.sql), and released
-// again only if neither mail could be sent, so a real failure can be retried.
+// Each of its two mails goes out at most once per order. Being callable by
+// anyone, it used to resend both every time it was called with a known order
+// id — a script could fill inboxes and burn the Brevo daily quota. Each mail
+// has its own column, claimed before it's sent and given back only if that
+// send fails, so a real failure can be retried:
+//   confirmation_sent_at  — the admin's "new order" alert, sent at checkout
+//   customer_mail_sent_at — the customer's confirmation
+//
+// An outside-Dhaka order pays a bKash advance, and the customer is only told
+// it's confirmed once the admin has matched the TrxID in Orders → bKash check
+// (orders.advance_verified_at, set by verify_advance). Until then a call sends
+// the admin alert only; the panel calls this again right after verifying,
+// and that call sends the customer's mail.
+// (see supabase-migration-confirmation-once.sql, supabase-migration-bkash-verify.sql)
 //
 // Secrets needed (Edge Functions → Secrets):
 //   BREVO_API_KEY, BREVO_FROM_EMAIL, BREVO_FROM_NAME, ADMIN_NOTIFY_EMAIL
@@ -209,37 +217,48 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Claim the send in the same statement that checks it hasn't happened —
-    // two calls racing each other can't both get through.
-    const { data: claimed, error: claimError } = await supabase
-      .from('orders')
-      .update({ confirmation_sent_at: new Date().toISOString() })
-      .eq('id', orderId)
-      .is('confirmation_sent_at', null)
-      .select('id')
-
-    if (claimError) throw claimError
-
-    // Already sent, or no such order — the same answer for both, so this
-    // can't be used to find out which order ids exist.
-    if (!claimed || claimed.length === 0) {
-      return new Response(JSON.stringify({ sent: { customer: false, admin: false }, skipped: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
     const { data: order, error } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .eq('id', orderId)
-      .single()
+      .maybeSingle()
 
-    if (error || !order) {
-      return new Response(JSON.stringify({ error: 'Order not found' }), {
-        status: 404,
+    if (error) throw error
+
+    // Nothing to send — the same answer whether the order doesn't exist or
+    // its mails have already gone, so this can't be used to find out which
+    // order ids exist.
+    const skipped = () =>
+      new Response(JSON.stringify({ sent: { customer: false, admin: false }, skipped: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+
+    if (!order) return skipped()
+
+    // Claimed in the same statement that checks it hasn't happened — two
+    // calls racing each other can't both get through.
+    async function claim(column: string): Promise<boolean> {
+      const { data, error: claimError } = await supabase
+        .from('orders')
+        .update({ [column]: new Date().toISOString() })
+        .eq('id', orderId)
+        .is(column, null)
+        .select('id')
+      if (claimError) throw claimError
+      return Boolean(data && data.length > 0)
     }
+
+    async function release(column: string) {
+      await supabase.from('orders').update({ [column]: null }).eq('id', orderId)
+    }
+
+    const advanceDue = Number(order.advance_amount ?? 0) > 0
+    const customerMayHear = Boolean(order.customer_email) && (!advanceDue || Boolean(order.advance_verified_at))
+
+    const sendAdmin = await claim('confirmation_sent_at')
+    const sendCustomer = customerMayHear ? await claim('customer_mail_sent_at') : false
+
+    if (!sendAdmin && !sendCustomer) return skipped()
 
     const items: OrderItem[] = order.order_items ?? []
     const advance = Number(order.advance_amount ?? 0)
@@ -249,8 +268,9 @@ Deno.serve(async (req) => {
     const due = total - advance
     const sent = { customer: false, admin: false }
 
-    // ---- Customer confirmation (only if they left an email) ----
-    if (order.customer_email) {
+    // ---- Customer confirmation (only if they left an email, and for an
+    //      advance order only once the bKash payment has been matched) ----
+    if (sendCustomer) {
       const body = `
         <div style="margin:28px 0 6px;font-size:22px;color:#16160F;">
           Thanks, ${escapeHtml(order.customer_name)}.
@@ -258,7 +278,7 @@ Deno.serve(async (req) => {
         <div style="font-size:14px;line-height:1.6;color:#3a3a30;">
           ${
             advance > 0
-              ? "We've got your order and your bKash advance. We'll check the transaction and call to confirm — the rest is paid in cash when the parcel arrives."
+              ? "We've received your bKash advance and your order is confirmed. We're getting it ready — the rest is paid in cash when the parcel arrives."
               : "We've got your order and we're getting it ready. You'll pay in cash when it arrives — nothing to do until then."
           }
         </div>
@@ -289,13 +309,16 @@ Deno.serve(async (req) => {
         sent.customer = true
       } catch (err) {
         console.error('[Brevo] customer confirmation failed:', err.message)
+        await release('customer_mail_sent_at')
       }
     }
 
-    // ---- Admin alert (always, so no order goes unnoticed) ----
+    // ---- Admin alert (once per order, so no order goes unnoticed) ----
     const adminEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL')
 
-    if (adminEmail) {
+    if (sendAdmin && !adminEmail) await release('confirmation_sent_at')
+
+    if (sendAdmin && adminEmail) {
       const adminBody = `
         <div style="margin:24px 0 10px;font-size:18px;color:#16160F;">
           New order ${escapeHtml(order.id)}
@@ -313,7 +336,12 @@ Deno.serve(async (req) => {
           advance > 0
             ? `<div style="margin-top:16px;padding:12px 14px;border:1px solid #16160F;font-size:13px;color:#16160F;line-height:1.6;">
                  <strong>Check the bKash advance</strong><br>
-                 ${taka(advance)} · TRXID ${escapeHtml(order.advance_trx_id ?? '—')}
+                 ${taka(advance)} · TRXID ${escapeHtml(order.advance_trx_id ?? '—')}<br>
+                 ${
+                   order.advance_verified_at
+                     ? 'Already verified.'
+                     : "The customer hasn't been told the order is confirmed yet — once this TrxID is in the bKash app, paste it in Orders → bKash check."
+                 }
                </div>`
             : ''
         }
@@ -330,13 +358,8 @@ Deno.serve(async (req) => {
         sent.admin = true
       } catch (err) {
         console.error('[Brevo] admin alert failed:', err.message)
+        await release('confirmation_sent_at')
       }
-    }
-
-    // Nothing went out at all (Brevo down, say) — give the claim back so the
-    // next call can try again instead of the order never being confirmed.
-    if (!sent.customer && !sent.admin) {
-      await supabase.from('orders').update({ confirmation_sent_at: null }).eq('id', order.id)
     }
 
     // 200 even when a send fails — the order is already saved, and a mail
