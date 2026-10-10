@@ -282,6 +282,8 @@
   border-bottom: 1px solid rgba(237, 234, 225, 0.16);
 }
 
+.mob-cats:last-child { padding-bottom: 0; border-bottom: none; }
+
 /* Tap targets are full chips rather than text links — a 12px word is hard to
    hit accurately on a phone. */
 .mob-cats button {

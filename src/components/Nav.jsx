@@ -24,7 +24,9 @@ export default function Nav({ overlay = false }) {
   const [openMenu, setOpenMenu] = useState(null)  // null | 'shop' | 'drops'
   // SHOP's "Shop by collection" second row (the drops, as shop filters).
   const [byCollection, setByCollection] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false) // mobile panel
+  // Mobile panel: false, 'shop' (opened by tapping the logo — the shop's
+  // categories and collections) or 'menu' (MENU — everything else).
+  const [menuOpen, setMenuOpen] = useState(false)
   const [categories, setCategories] = useState([])
   const [drops, setDrops] = useState([])
 
@@ -124,7 +126,19 @@ export default function Nav({ overlay = false }) {
       )}
 
       <header className="site-header">
-        <Link to="/" className="logo" aria-label="PAUSE — home">
+        {/* On a phone the logo is the way into the shop: a tap opens the
+            shop's categories instead of going home (HOME is in MENU). */}
+        <Link
+          to="/"
+          className="logo"
+          aria-label="PAUSE — home"
+          aria-expanded={menuOpen === 'shop' || undefined}
+          onClick={(e) => {
+            if (!window.matchMedia('(max-width: 860px)').matches) return
+            e.preventDefault()
+            setMenuOpen((v) => (v === 'shop' ? false : 'shop'))
+          }}
+        >
           <span className="logo-3d">
             {Array.from({ length: LOGO_LAYERS }, (_, i) => {
               const z = LOGO_HALF_DEPTH - i * LOGO_STEP
@@ -180,8 +194,8 @@ export default function Nav({ overlay = false }) {
           <button
             type="button"
             className="menu-btn"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => (v ? false : 'menu'))}
+            aria-expanded={Boolean(menuOpen)}
           >
             {menuOpen ? 'CLOSE' : 'MENU'}
           </button>
@@ -232,22 +246,32 @@ export default function Nav({ overlay = false }) {
       {/* Mobile panel */}
       {menuOpen && (
         <div className="mob-panel" data-lenis-prevent>
-          <div className="mob-section mono">SHOP</div>
-          <div className="mob-cats mono">
-            {catList.map((c) => (
-              <button key={c} onClick={() => goCategory(c)}>{c}</button>
-            ))}
-          </div>
-
-          {drops.length > 0 && (
+          {menuOpen === 'shop' && (
             <>
-              <div className="mob-section mono">SHOP BY COLLECTION</div>
+              <div className="mob-section mono">SHOP</div>
               <div className="mob-cats mono">
-                {drops.map((d) => (
-                  <button key={d} onClick={() => goDrop(d)}>{d}</button>
+                {catList.map((c) => (
+                  <button key={c} onClick={() => goCategory(c)}>{c}</button>
                 ))}
               </div>
 
+              {drops.length > 0 && (
+                <>
+                  <div className="mob-section mono">SHOP BY COLLECTION</div>
+                  <div className="mob-cats mono">
+                    {drops.map((d) => (
+                      <button key={d} onClick={() => goDrop(d)}>{d}</button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {menuOpen === 'menu' && (
+          <>
+          {drops.length > 0 && (
+            <>
               <div className="mob-section mono">DROPS · LOOKBOOK</div>
               <div className="mob-cats mono">
                 {drops.map((d) => (
@@ -258,12 +282,15 @@ export default function Nav({ overlay = false }) {
           )}
 
           <div className="mob-links mono">
+            <Link to="/">HOME</Link>
             <Link to="/about">ABOUT US</Link>
             <Link to="/cart">CART ({count})</Link>
             <Link to={accountLink} className="mob-admin">
               <IconUser width="13" height="13" /> {user ? accountLabel.toUpperCase() : 'LOG IN / SIGN UP'}
             </Link>
           </div>
+          </>
+          )}
         </div>
       )}
     </div>
