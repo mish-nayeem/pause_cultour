@@ -28,7 +28,6 @@ import {
   adSpendApi,
   emailCampaignsApi,
   socialStatsApi,
-  couponStatsApi,
   fetchPageViews,
   trafficByPage,
   conversionRate,
@@ -38,6 +37,7 @@ import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { imgUrl } from '../lib/images.js'
 import ImageMigration from '../components/ImageMigration.jsx'
 import BkashCheck from '../components/BkashCheck.jsx'
+import CouponManager from '../components/CouponManager.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -328,6 +328,12 @@ function PackingSlip({ order }) {
         <table className="slip-money mono">
           <tbody>
             <tr><td>Items</td><td className="right">{taka(order.subtotal)}</td></tr>
+            {Number(order.discount_amount) > 0 && (
+              <tr>
+                <td>Discount · {order.coupon_code}</td>
+                <td className="right">− {taka(order.discount_amount)}</td>
+              </tr>
+            )}
             {order.delivery_zone && (
               <tr>
                 <td>Delivery · {order.delivery_zone === 'inside' ? 'Inside' : 'Outside'} Dhaka</td>
@@ -391,7 +397,6 @@ export default function Admin() {
   const [adSpendDraft, setAdSpendDraft] = useState({ channel: '', spend: '', revenue: '' })
   const [emailDraft, setEmailDraft] = useState({ campaign: '', open_rate: '', click_rate: '' })
   const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
-  const [couponDraft, setCouponDraft] = useState({ code: '', uses: '', revenue: '' })
   const [marketingBusy, setMarketingBusy] = useState(null)
   const [analyticsSub, setAnalyticsSub] = useState('traffic')
   const [pageViews, setPageViews] = useState([])
@@ -402,7 +407,6 @@ export default function Admin() {
   const [adSpend, setAdSpend] = useState([])
   const [emailCampaigns, setEmailCampaigns] = useState([])
   const [socialStats, setSocialStats] = useState([])
-  const [couponStats, setCouponStats] = useState([])
 
   useEffect(() => {
     getSession().then((s) => {
@@ -417,7 +421,7 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p, c, w, r, ac, rv, as, ec, ss, cs, pv, ba] = await Promise.all([
+    const [o, p, c, w, r, ac, rv, as, ec, ss, pv, ba] = await Promise.all([
       fetchOrders(),
       fetchAdminProducts(),
       fetchAllNavCategories(),
@@ -428,7 +432,6 @@ export default function Admin() {
       adSpendApi.fetch(),
       emailCampaignsApi.fetch(),
       socialStatsApi.fetch(),
-      couponStatsApi.fetch(),
       fetchPageViews(),
       fetchBlockedAttempts(),
     ])
@@ -449,7 +452,6 @@ export default function Admin() {
     setAdSpend(as.rows)
     setEmailCampaigns(ec.rows)
     setSocialStats(ss.rows)
-    setCouponStats(cs.rows)
     setPageViews(pv.views)
     setBlockedAttempts(ba.attempts)
     setLoading(false)
@@ -1240,6 +1242,12 @@ export default function Admin() {
                             added with a default of 0, so orders taken before
                             delivery charges existed carry a 0 rather than a
                             null and would show a free delivery line. */}
+                        {Number(o.discount_amount) > 0 && (
+                          <div className="ditem">
+                            <span>Discount · <span className="mono">{o.coupon_code}</span></span>
+                            <span className="mono">− {taka(o.discount_amount)}</span>
+                          </div>
+                        )}
                         {o.delivery_zone && (
                           <div className="ditem">
                             <span>
@@ -1911,52 +1919,7 @@ export default function Admin() {
             </>
           )}
 
-          {marketingSub === 'coupons' && (
-            <>
-              <form
-                className="pform"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (!couponDraft.code.trim()) return
-                  handleMarketingAdd(couponStatsApi, couponDraft, setCouponDraft, ['uses', 'revenue'])
-                }}
-              >
-                <div className="pform-head"><h3 className="display">Log a coupon</h3></div>
-                <div className="pf-grid">
-                  <label className="pf-field">
-                    <span className="mono">CODE</span>
-                    <input value={couponDraft.code} onChange={(e) => setCouponDraft({ ...couponDraft, code: e.target.value.toUpperCase() })} placeholder="SUNDAY10" />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">USES</span>
-                    <input type="number" value={couponDraft.uses} onChange={(e) => setCouponDraft({ ...couponDraft, uses: e.target.value })} />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">REVENUE (৳)</span>
-                    <input type="number" value={couponDraft.revenue} onChange={(e) => setCouponDraft({ ...couponDraft, revenue: e.target.value })} />
-                  </label>
-                </div>
-                <button type="submit" className="mof-submit mono" disabled={marketingBusy === couponStatsApi}>
-                  {marketingBusy === couponStatsApi ? 'Saving…' : 'Add row'}
-                </button>
-              </form>
-
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>COUPONS</div>
-                {couponStats.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
-                {couponStats.map((r) => (
-                  <div className="mini-row" key={r.id}>
-                    <div className="mini-name">{r.code}</div>
-                    <div className="mini-right">
-                      <div className="mono">{r.uses} uses</div>
-                      <div className="mono dim">{taka(r.revenue)}</div>
-                    </div>
-                    <button className="mof-item-x" onClick={() => handleMarketingDelete(couponStatsApi, r.id)}>×</button>
-                  </div>
-                ))}
-              </section>
-            </>
-          )}
+          {marketingSub === 'coupons' && <CouponManager orders={orders} />}
 
           {marketingSub === 'links' && <LinkGenerator products={products} />}
           </>

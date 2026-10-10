@@ -7,6 +7,7 @@ import { sendOrderConfirmation } from '../lib/email.js'
 import { getAttribution } from '../lib/attribution.js'
 import { saveAbandonedCart, markCartConverted } from '../lib/abandonedCart.js'
 import { BKASH_NUMBER, DISTRICTS, quote, isTrxId, cleanTrxId } from '../lib/delivery.js'
+import { checkCoupon, couponMessage } from '../lib/coupons.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import { Sentry } from '../lib/sentry.js'
 import './checkout.css'
@@ -37,6 +38,9 @@ function orderMessage(error) {
   if (priceChanged) {
     return `The price of ${priceChanged[1]} has changed — please remove it from your cart and add it again.`
   }
+
+  const coupon = couponMessage(error)
+  if (coupon) return `${coupon} It's been taken off — place the order again without it, or try another code.`
 
   if (raw.includes('TRX_REQUIRED')) {
     return 'Please enter the bKash Transaction ID for your advance payment.'
@@ -76,6 +80,12 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [copied, setCopied] = useState(false)
+  // Discount code: what's typed, and once Apply has checked it, the code and
+  // the money it takes off. place_order checks it again when the order goes in.
+  const [couponInput, setCouponInput] = useState('')
+  const [coupon, setCoupon] = useState(null) // { code, discount }
+  const [couponError, setCouponError] = useState('')
+  const [couponBusy, setCouponBusy] = useState(false)
 
   // Debounced so this doesn't fire on every keystroke — the admin panel's
   // Abandoned Cart list is for spotting a checkout that stalled, not a
@@ -104,8 +114,25 @@ export default function Checkout() {
 
   // The district decides everything below it: the delivery charge, whether an
   // advance is owed, and how much the rider still collects.
-  const bill = quote(subtotal, form.district)
+  const bill = quote(subtotal, form.district, coupon?.discount || 0)
   const needsAdvance = bill.advance > 0
+
+  async function applyCoupon(e) {
+    e.preventDefault()
+    const code = couponInput.trim()
+    if (!code) return
+    setCouponBusy(true)
+    setCouponError('')
+    const { coupon: found, error } = await checkCoupon(code, subtotal, form.phone)
+    setCouponBusy(false)
+    if (error) {
+      setCoupon(null)
+      setCouponError(error)
+      return
+    }
+    setCoupon(found)
+    setCouponInput('')
+  }
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -195,6 +222,8 @@ export default function Checkout() {
           advance_amount: bill.advance,
           advance_method: needsAdvance ? 'bkash' : null,
           advance_trx_id: trxId,
+          coupon_code: coupon?.code || null,
+          discount_amount: bill.discount,
           utm_source: attribution.utm_source || null,
           utm_medium: attribution.utm_medium || null,
           utm_campaign: attribution.utm_campaign || null,
@@ -214,6 +243,9 @@ export default function Checkout() {
     if (orderError) {
       setSubmitting(false)
       setSubmitError(orderMessage(orderError))
+      // A coupon that stopped working (used up, already used on this phone)
+      // comes off, so the next try goes through at full price.
+      if (couponMessage(orderError)) setCoupon(null)
       console.error('[Supabase] place_order failed:', orderError.message)
       // A failed checkout is caught and handled gracefully right here, so it
       // would never otherwise reach Sentry's automatic unhandled-error
@@ -233,6 +265,8 @@ export default function Checkout() {
         total: bill.total,
         advance: bill.advance,
         due: bill.due,
+        discount: bill.discount,
+        couponCode: coupon?.code || null,
         trxId,
       },
       customer: form,
@@ -395,13 +429,42 @@ export default function Checkout() {
                 <span>৳ {(item.price * item.qty).toLocaleString()}</span>
               </div>
             ))}
+            {/* Discount code — checked on Apply, and again by place_order. */}
+            {coupon ? (
+              <div className="coupon-on mono">
+                <span>CODE <strong>{coupon.code}</strong> APPLIED</span>
+                <button type="button" onClick={() => setCoupon(null)}>Remove</button>
+              </div>
+            ) : (
+              <form className="coupon-form" onSubmit={applyCoupon}>
+                <input
+                  value={couponInput}
+                  onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError('') }}
+                  placeholder="Discount code"
+                  aria-label="Discount code"
+                  autoCapitalize="characters"
+                  spellCheck="false"
+                />
+                <button type="submit" className="mono" disabled={couponBusy || !couponInput.trim()}>
+                  {couponBusy ? '…' : 'Apply'}
+                </button>
+              </form>
+            )}
+            {couponError && <em className="err mono coupon-err">{couponError}</em>}
+
             <div className="summary-row mono">
               <span>SUBTOTAL</span>
               <span>{money(subtotal)}</span>
             </div>
-            <div className={`summary-row mono ${form.zone ? '' : 'steel'}`}>
+            {bill.discount > 0 && (
+              <div className="summary-row mono discount">
+                <span>DISCOUNT ({coupon.code})</span>
+                <span>− {money(bill.discount)}</span>
+              </div>
+            )}
+            <div className={`summary-row mono ${bill.zone ? '' : 'steel'}`}>
               <span>DELIVERY</span>
-              <span>{form.zone ? money(bill.fee) : 'Pick a zone'}</span>
+              <span>{bill.zone ? money(bill.fee) : 'Pick a district'}</span>
             </div>
             <div className="summary-row mono total">
               <span>TOTAL</span>

@@ -212,6 +212,10 @@ Deno.serve(async (req) => {
 
     const items: OrderItem[] = order.order_items ?? []
     const amountLabel = status === 'delivered' ? 'TOTAL PAID' : 'TOTAL'
+    // The whole order — items less any coupon, plus delivery. Older orders
+    // from before delivery charges have no total, so they fall back to the
+    // subtotal they were taken at.
+
 
     const body = `
       <div style="margin:28px 0 6px;font-size:22px;color:#16160F;">
@@ -232,7 +236,7 @@ Deno.serve(async (req) => {
             ${amountLabel}
           </td>
           <td style="padding:14px 0 0;font-size:16px;color:#16160F;text-align:right;font-weight:bold;">
-            ${taka(order.subtotal)}
+            ${taka(order.total ?? order.subtotal)}
           </td>
         </tr>
       </table>

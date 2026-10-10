@@ -8,6 +8,12 @@ import { lowSizes, LOW_STOCK_AT } from './stock.js'
 // This check is convenience, not security — the real enforcement lives in the
 // Supabase RLS policies, which reject queries from any other logged-in account
 // even if someone bypasses this file. Both must name the same address.
+// What the items actually sold for: the subtotal less any coupon. Revenue
+// figures use this, so a discount isn't counted as money taken.
+function itemsNet(o) {
+  return Number(o.subtotal) - (Number(o.discount_amount) || 0)
+}
+
 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || '').trim().toLowerCase()
 
 export function isAdminEmail(email) {
@@ -269,8 +275,8 @@ export function computeStats(orders) {
   const open = [...pending, ...shipped]
 
   // Revenue counts delivered orders only — COD money isn't real until it lands.
-  const revenue = delivered.reduce((sum, o) => sum + Number(o.subtotal), 0)
-  const openValue = open.reduce((sum, o) => sum + Number(o.subtotal), 0)
+  const revenue = delivered.reduce((sum, o) => sum + itemsNet(o), 0)
+  const openValue = open.reduce((sum, o) => sum + itemsNet(o), 0)
 
   // Pieces, not orders — one order can carry several units of several products.
   // Cancelled orders never counted as a sale, so they're left out.
@@ -312,7 +318,7 @@ export function dailySeries(orders, days = 14) {
     const bucket = buckets.find((b) => b.date.getTime() === placed.getTime())
     if (bucket) {
       bucket.orders += 1
-      bucket.value += Number(o.subtotal)
+      bucket.value += itemsNet(o)
     }
   })
 
@@ -368,7 +374,7 @@ export function monthlySeries(orders, months = 6) {
       if (!bucket) return
 
       bucket.orders += 1
-      bucket.value += Number(o.subtotal)
+      bucket.value += itemsNet(o)
       ;(o.order_items || []).forEach((it) => {
         bucket.units += Number(it.qty)
       })
@@ -624,7 +630,6 @@ function metricApi(table) {
 export const adSpendApi = metricApi('ad_spend')
 export const emailCampaignsApi = metricApi('email_campaigns')
 export const socialStatsApi = metricApi('social_stats')
-export const couponStatsApi = metricApi('coupon_stats')
 
 // ---------- Analytics ----------
 

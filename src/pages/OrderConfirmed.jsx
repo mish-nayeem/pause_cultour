@@ -38,6 +38,12 @@ export default function OrderConfirmed() {
           ))}
           {/* Orders placed before delivery charges existed have no `delivery`
               block, so the receipt falls back to the plain subtotal. */}
+          {order.delivery?.discount > 0 && (
+            <div className="receipt-row mono">
+              <span>DISCOUNT ({order.delivery.couponCode})</span>
+              <span>− ৳ {order.delivery.discount.toLocaleString()}</span>
+            </div>
+          )}
           {order.delivery && (
             <>
               <div className="receipt-row mono">
