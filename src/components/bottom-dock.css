@@ -1,0 +1,28 @@
+/* See BottomDock.jsx. Zero height, so it takes no room in the page. */
+.dock {
+  position: sticky;
+  bottom: 0;
+  height: 0;
+  z-index: 70;
+}
+
+.dock-inner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* Inside the dock the pills are laid out side by side, not fixed. */
+.dock-inner > * {
+  pointer-events: auto;
+  position: static !important;
+  transform: none !important;
+}
+
+.dock-inner .sf-pill { order: 0; }
+.dock-inner .mob-cart { order: 1; }
