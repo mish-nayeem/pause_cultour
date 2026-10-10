@@ -15,8 +15,7 @@
 .sf-pill {
   position: fixed;
   left: 50%;
-  /* Parks just above the footer once it scrolls into view (footerLift.js). */
-  bottom: calc(24px + var(--footer-lift, 0px));
+  bottom: 24px;
   transform: translateX(-50%);
   z-index: 70;
   background: #fff;

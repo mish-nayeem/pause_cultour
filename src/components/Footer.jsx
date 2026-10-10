@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DockSlot } from './BottomDock.jsx'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient.js'
 import { INSTAGRAM, FACEBOOK, TIKTOK } from '../content/info-pages.js'
@@ -46,6 +47,8 @@ export default function Footer() {
   }
 
   return (
+    <>
+    <DockSlot />
     <footer className="site-footer">
       <div className="foot-main">
         <div className="foot-left">
@@ -131,5 +134,6 @@ export default function Footer() {
         <div className="foot-fine mono">© {new Date().getFullYear()} PAUSE · DHAKA, BD</div>
       </div>
     </footer>
+    </>
   )
 }

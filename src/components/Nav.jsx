@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
 import { IconUser } from './Icons.jsx'
 import { lookbookPath } from '../lib/lookbook.js'
-import { useFooterLift } from '../lib/footerLift.js'
+import { InDock } from './BottomDock.jsx'
 import { watchUser } from '../lib/auth.js'
 import { isAdminEmail } from '../lib/admin.js'
 import './nav.css'
@@ -18,7 +18,6 @@ const LOGO_HALF_DEPTH = ((LOGO_LAYERS - 1) * LOGO_STEP) / 2
 
 export default function Nav({ overlay = false }) {
   const { count } = useCart()
-  useFooterLift()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -223,9 +222,11 @@ export default function Nav({ overlay = false }) {
           or beside the shop's FILTER pill. Not on the cart and checkout
           pages themselves. */}
       {!menuOpen && !['/cart', '/checkout'].includes(location.pathname) && (
-        <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
-          {count > 0 ? `CART (${count})` : 'CART'}
-        </Link>
+        <InDock>
+          <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
+            {count > 0 ? `CART (${count})` : 'CART'}
+          </Link>
+        </InDock>
       )}
 
       {/* Mobile panel */}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { InDock } from './BottomDock.jsx'
 import './shop-filter.css'
 
 // Sizes in the order a shopper reads them, with the spelled-out names on the
@@ -99,13 +100,15 @@ export default function ShopFilter({ sizes, hideSoldOut, size, onChange }) {
       )}
 
       {!open && (
-        <button
-          className="sf-pill"
-          onClick={() => setOpen(true)}
-          aria-haspopup="dialog"
-        >
-          FILTER{activeCount > 0 ? ` · ${activeCount}` : ''}
-        </button>
+        <InDock>
+          <button
+            className="sf-pill"
+            onClick={() => setOpen(true)}
+            aria-haspopup="dialog"
+          >
+            FILTER{activeCount > 0 ? ` · ${activeCount}` : ''}
+          </button>
+        </InDock>
       )}
     </>
   )
