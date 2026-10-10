@@ -29,6 +29,14 @@
 
 .sf-pill:hover { background: var(--ink); color: #fff; }
 
+.sf-pill { transition: background 0.15s ease, color 0.15s ease, opacity 0.2s ease, transform 0.2s ease; }
+
+.sf-pill.away {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+}
+
 /* Clear, not dimmed — the grid stays visible behind the panel; a tap
    anywhere outside it closes. */
 .sf-back {

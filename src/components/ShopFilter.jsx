@@ -34,7 +34,18 @@ function sizeLabel(size) {
 // Changes apply as they're tapped — there's no "apply" step to forget.
 export default function ShopFilter({ sizes, hideSoldOut, size, onChange }) {
   const [open, setOpen] = useState(false)
+  // Steps aside once the footer scrolls into view, so it never sits on top
+  // of the footer's own links and logo.
+  const [atFooter, setAtFooter] = useState(false)
   const activeCount = (hideSoldOut ? 1 : 0) + (size ? 1 : 0)
+
+  useEffect(() => {
+    const footer = document.querySelector('footer')
+    if (!footer || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([entry]) => setAtFooter(entry.isIntersecting))
+    io.observe(footer)
+    return () => io.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -99,7 +110,12 @@ export default function ShopFilter({ sizes, hideSoldOut, size, onChange }) {
       )}
 
       {!open && (
-        <button className="sf-pill" onClick={() => setOpen(true)} aria-haspopup="dialog">
+        <button
+          className={`sf-pill ${atFooter ? 'away' : ''}`}
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          tabIndex={atFooter ? -1 : 0}
+        >
           FILTER{activeCount > 0 ? ` · ${activeCount}` : ''}
         </button>
       )}
