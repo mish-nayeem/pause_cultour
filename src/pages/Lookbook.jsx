@@ -17,9 +17,23 @@ export default function Lookbook() {
   const { drop } = useParams()
   const [looks, setLooks] = useState(null)
   const [openId, setOpenId] = useState(null)
+  // Which photo is shown big.
+  const [current, setCurrent] = useState(0)
   // When a finger last went down — the click that follows a touch shouldn't
   // undo what the touch just opened.
   const touchedAt = useRef(0)
+
+  // ← and → on a keyboard step through the photos.
+  useEffect(() => {
+    if (!looks?.length) return
+    function onKey(e) {
+      if (e.target.closest?.('input, textarea')) return
+      if (e.key === 'ArrowLeft') { setCurrent((i) => (i - 1 + looks.length) % looks.length); setOpenId(null) }
+      if (e.key === 'ArrowRight') { setCurrent((i) => (i + 1) % looks.length); setOpenId(null) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [looks])
 
   usePageMeta(drop ? `${drop} — Lookbook` : 'Lookbook', drop ? `The ${drop} lookbook from PAUSE.` : undefined)
 
@@ -27,6 +41,7 @@ export default function Lookbook() {
     let cancelled = false
     setLooks(null)
     setOpenId(null)
+    setCurrent(0)
 
     Promise.all([fetchLooks(drop), fetchProducts()]).then(([{ looks: rows }, { products }]) => {
       if (cancelled) return
@@ -61,57 +76,93 @@ export default function Lookbook() {
         </div>
 
         {looks === null && (
-          <div className="lb-grid">
-            {[0, 1, 2, 3].map((i) => <div className="lb-look lb-ghost shimmer" key={i} />)}
+          <div className="lb-viewer">
+            <div className="lb-look lb-main lb-ghost shimmer" />
+            <div className="lb-hint" />
+            <div className="lb-thumbs">
+              {[0, 1, 2, 3, 4, 5].map((i) => <div className="lb-thumb shimmer" key={i} />)}
+            </div>
           </div>
         )}
 
         {looks?.length === 0 && <p className="lb-msg mono">The lookbook for this drop is coming soon.</p>}
 
-        {looks?.length > 0 && (
-          <div className="lb-grid">
-            {looks.map((look) => {
-              const open = openId === look.id
-              const hasInfo = look.title || look.items.length > 0
-              return (
-                <figure
+        {looks?.length > 0 && (() => {
+          const look = looks[Math.min(current, looks.length - 1)]
+          const open = openId === look.id
+          const hasInfo = look.title || look.items.length > 0
+          const go = (i) => { setCurrent((i + looks.length) % looks.length); setOpenId(null) }
+          return (
+            // Big photo on the left, every photo of the drop as small
+            // squares on the right; picking a square shows it big.
+            <div className="lb-viewer">
+              <figure
+                className={`lb-look lb-main ${open ? 'open' : ''}`}
+                // A finger shows the names the moment it lands, not after
+                // the tap completes; a mouse click still toggles them.
+                onPointerDown={(e) => {
+                  if (e.pointerType === 'mouse' || !hasInfo || e.target.closest('.lb-nav')) return
+                  touchedAt.current = Date.now()
+                  setOpenId(look.id)
+                }}
+                onClick={(e) => {
+                  if (e.target.closest('.lb-nav')) return
+                  if (!hasInfo || Date.now() - touchedAt.current < 800) return
+                  setOpenId(open ? null : look.id)
+                }}
+              >
+                <ShimmerImage
                   key={look.id}
-                  className={`lb-look ${open ? 'open' : ''}`}
-                  // A finger shows the names the moment it lands, not after
-                  // the tap completes; a mouse click still toggles them.
-                  onPointerDown={(e) => {
-                    if (e.pointerType === 'mouse' || !hasInfo) return
-                    touchedAt.current = Date.now()
-                    setOpenId(look.id)
-                  }}
-                  onClick={() => {
-                    if (!hasInfo || Date.now() - touchedAt.current < 800) return
-                    setOpenId(open ? null : look.id)
-                  }}
-                >
-                  <ShimmerImage
-                    src={imgUrl(look.image, { w: 1000 })}
-                    alt={look.title || look.items.map((it) => it.label || it.product.name).join(', ') || drop}
-                    style={{ objectPosition: look.focus || 'center' }}
-                    loading="lazy"
-                  />
+                  src={imgUrl(look.image, { w: 1400 })}
+                  alt={look.title || look.items.map((it) => it.label || it.product.name).join(', ') || drop}
+                  style={{ objectPosition: look.focus || 'center' }}
+                />
 
-                  {hasInfo && (
-                    <figcaption className="lb-info" onClick={(e) => e.stopPropagation()}>
-                      {look.title && <div className="lb-title">{look.title}</div>}
-                      {look.items.map(({ product: p, label }) => (
-                        <Link to={`/product/${p.id}`} className="lb-item" key={p.id}>
-                          <span>{label || `${p.name}${p.variant ? ` — ${p.variant}` : ''}`}</span>
-                          <span className="lb-arrow" aria-hidden="true">→</span>
-                        </Link>
-                      ))}
-                    </figcaption>
-                  )}
-                </figure>
-              )
-            })}
-          </div>
-        )}
+                {looks.length > 1 && (
+                  <>
+                    <button type="button" className="lb-nav prev" onClick={() => go(current - 1)} aria-label="Previous photo">‹</button>
+                    <button type="button" className="lb-nav next" onClick={() => go(current + 1)} aria-label="Next photo">›</button>
+                    <span className="lb-count mono">{current + 1} / {looks.length}</span>
+                  </>
+                )}
+
+                {hasInfo && (
+                  <figcaption className="lb-info" onClick={(e) => e.stopPropagation()}>
+                    {look.title && <div className="lb-title">{look.title}</div>}
+                    {look.items.map(({ product: p, label }) => (
+                      <Link to={`/product/${p.id}`} className="lb-item" key={p.id}>
+                        <span>{label || `${p.name}${p.variant ? ` — ${p.variant}` : ''}`}</span>
+                        <span className="lb-arrow" aria-hidden="true">→</span>
+                      </Link>
+                    ))}
+                  </figcaption>
+                )}
+              </figure>
+
+              {/* Points from the small photos to the big one: pick one and
+                  it shows there. */}
+              <div className="lb-hint mono" aria-hidden="true">
+                <span className="lb-hint-arrow">←</span>
+                <span className="lb-hint-text">TAP A PHOTO{' '}<br />TO VIEW IT</span>
+              </div>
+
+              <div className="lb-thumbs" data-lenis-prevent>
+                {looks.map((l, i) => (
+                  <button
+                    type="button"
+                    key={l.id}
+                    className={`lb-thumb ${i === current ? 'on' : ''}`}
+                    onClick={() => go(i)}
+                    aria-label={`Photo ${i + 1}`}
+                    aria-current={i === current}
+                  >
+                    <img src={imgUrl(l.image, { w: 240 })} alt="" loading="lazy" style={{ objectPosition: l.focus || 'center' }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       <Footer />
