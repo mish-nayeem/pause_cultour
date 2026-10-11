@@ -1,0 +1,95 @@
+/* Admin → Products → Collections. Colours from the admin theme tokens. */
+
+.cl-new { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+
+.cl-new input {
+  flex: 1;
+  min-width: 220px;
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  color: var(--ink);
+  padding: 11px 13px;
+  font-size: 13.5px;
+  text-transform: uppercase;
+}
+
+.cl-new input:focus { outline: none; border-color: var(--cobalt); }
+
+.cl-error { font-size: 12.5px; color: var(--pill-cancelled, #c1304a); margin-bottom: 12px; }
+
+.cl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.cl-card {
+  border: 1px solid var(--steel-line);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin .main .cl-open {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  border-radius: 0;
+}
+
+.cl-cover {
+  aspect-ratio: 4 / 3;
+  background: var(--paper-dim);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 11.5px;
+  color: var(--steel);
+}
+
+.cl-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.cl-meta { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px 6px; font-size: 12px; }
+.cl-name { font-weight: 700; font-size: 14.5px; letter-spacing: 0.02em; }
+
+.cl-rename {
+  margin: 10px 14px 0;
+  border: 1px solid var(--cobalt);
+  background: transparent;
+  color: var(--ink);
+  padding: 8px 10px;
+  font-size: 13.5px;
+  text-transform: uppercase;
+}
+
+.cl-rename:focus { outline: none; }
+
+.cl-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 14px; }
+
+.admin .main .cl-actions button {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.admin .main .cl-actions .cl-del { color: var(--pill-cancelled, #c1304a); }
+
+.admin .main .cl-back {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--cobalt);
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.cl-title { font-size: 26px; margin-bottom: 4px; }

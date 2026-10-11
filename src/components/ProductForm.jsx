@@ -15,7 +15,7 @@ const BLANK = {
   variant: '',
   price: '',
   cost: '',
-  drop: 'DROP 02',
+  drop: '',
   category: 'T-SHIRTS',
   isNew: false,
   featured: false,
@@ -86,9 +86,10 @@ function initialDetailRows(existing, labels) {
     : [{ label: '', value: '' }]
 }
 
-export default function ProductForm({ existing, existingIds = [], categories = [], detailLabels = [], onDone, onCancel }) {
+export default function ProductForm({ existing, existingIds = [], categories = [], drops = [], initialDrop = '', detailLabels = [], onDone, onCancel }) {
   const isNewRecord = !existing
-  const [p, setP] = useState(() => (existing ? fromRow(existing) : { ...BLANK, id: nextProductId(existingIds) }))
+  // A product added from Products → Collections starts in that collection.
+  const [p, setP] = useState(() => (existing ? fromRow(existing) : { ...BLANK, drop: initialDrop, id: nextProductId(existingIds) }))
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -403,10 +404,32 @@ export default function ProductForm({ existing, existingIds = [], categories = [
           <em className="pf-hint mono">For the margin panel — never shown to customers.</em>
         </label>
 
-        <label className="pf-field">
-          <span className="mono">DROP</span>
-          <input value={p.drop} onChange={(e) => set('drop', e.target.value)} placeholder="DROP 02" />
-        </label>
+        <div className="pf-field pf-cat-field">
+          <span className="mono">COLLECTION / DROP</span>
+          {/* The collections made in Products → Collections; picking one
+              keeps the spelling the same as the menu and the lookbook. */}
+          {drops.length > 0 && (
+            <div className="pf-cats">
+              {[...new Set([...drops, p.drop].filter(Boolean))].map((d) => (
+                <button
+                  type="button"
+                  key={d}
+                  className={`pf-cat ${p.drop === d ? 'on' : ''}`}
+                  onClick={() => set('drop', p.drop === d ? '' : d)}
+                >
+                  <span className="pf-box" />
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+          <input
+            value={p.drop || ''}
+            onChange={(e) => set('drop', e.target.value)}
+            placeholder={drops.length ? 'Or type a name' : 'e.g. PAUSE UNIVERSITY'}
+            style={drops.length ? { marginTop: '8px' } : undefined}
+          />
+        </div>
 
         <div className="pf-field pf-cat-field">
           <span className="mono">CATEGORY</span>

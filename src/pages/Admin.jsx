@@ -44,11 +44,13 @@ import { collectLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import TickerManager from '../components/TickerManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
+import CollectionManager from '../components/CollectionManager.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
 import ManualOrderForm from '../components/ManualOrderForm.jsx'
-import { fetchAllNavCategories } from '../lib/navCategories.js'
+import { fetchAllNavCategories, DROPS_MENU } from '../lib/navCategories.js'
+import { dropKey } from '../lib/lookbook.js'
 import { stockMap, totalStock, LOW_STOCK_AT } from '../lib/stock.js'
 import { fetchWishlist, groupDemand } from '../lib/wishlist.js'
 import { COURIERS, courierLabel, sendToCourier, syncCourierStatus } from '../lib/courier.js'
@@ -124,6 +126,7 @@ const PRODUCTS_SUBS = [
   { key: 'stock', label: 'Stock levels' },
   { key: 'best', label: 'Best sellers' },
   { key: 'margin', label: 'Cost & margin' },
+  { key: 'collections', label: 'Collections' },
 ]
 
 const CUSTOMERS_SUBS = [
@@ -391,6 +394,10 @@ export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [monthMetric, setMonthMetric] = useState('units')
   const [editing, setEditing] = useState(null) // null | 'new' | product row
+  // Products → Collections: the collection open, and the one a new product
+  // is being added to (prefills its Drop).
+  const [openCollection, setOpenCollection] = useState(null)
+  const [newProductDrop, setNewProductDrop] = useState('')
   const [addingOrder, setAddingOrder] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [overviewSub, setOverviewSub] = useState('stats')
@@ -494,6 +501,21 @@ export default function Admin() {
   // The names already in use plus the ones on the shop menu, so a product can
   // be filed under a menu category that has nothing in it yet — the spellings
   // have to match exactly for the menu to find the product.
+  // Collection (drop) names for the product form: the DROPS menu's rows plus
+  // any drop a product already carries, one per name however it's spelt.
+  const [menuDrops, setMenuDrops] = useState([])
+  useEffect(() => {
+    if (!editing) return
+    fetchAllNavCategories(DROPS_MENU).then(({ categories }) => setMenuDrops(categories.map((c) => c.label)))
+  }, [editing])
+  const collectionNames = useMemo(() => {
+    const seen = new Map()
+    for (const n of [...menuDrops, ...products.map((p) => p.drop_name)]) {
+      if (n && n.trim() && !seen.has(dropKey(n))) seen.set(dropKey(n), n.trim())
+    }
+    return [...seen.values()]
+  }, [menuDrops, products])
+
   const productCategories = useMemo(
     () =>
       [
@@ -1492,6 +1514,8 @@ export default function Admin() {
             existing={editing === 'new' ? null : editing}
             existingIds={products.map((p) => p.id)}
             categories={productCategories}
+            drops={collectionNames}
+            initialDrop={newProductDrop}
             detailLabels={collectLabels(products)}
             onCancel={() => setEditing(null)}
             onDone={() => {
@@ -1521,7 +1545,7 @@ export default function Admin() {
               <div className="panel-note mono">
                 Click a product to edit it. Images upload straight to Supabase Storage.
               </div>
-              <button className="add-product mono" onClick={() => setEditing('new')}>
+              <button className="add-product mono" onClick={() => { setNewProductDrop(''); setEditing('new') }}>
                 + Add product
               </button>
             </div>
@@ -1577,6 +1601,17 @@ export default function Admin() {
               ))}
             </div>
           </section>
+          )}
+
+          {productsSub === 'collections' && (
+            <CollectionManager
+              products={products}
+              open={openCollection}
+              onOpen={setOpenCollection}
+              onAddProduct={(drop) => { setNewProductDrop(drop); setEditing('new') }}
+              onEditProduct={(p) => setEditing(p)}
+              onChanged={reload}
+            />
           )}
 
           {productsSub === 'stock' && (

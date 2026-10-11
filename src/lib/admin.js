@@ -752,7 +752,7 @@ function toRow(p) {
     variant: p.variant,
     price: Number(p.price),
     cost: p.cost === '' || p.cost == null ? null : Number(p.cost),
-    drop_name: p.drop,
+    drop_name: p.drop?.trim() || null,
     category: p.category || null,
     is_new: Boolean(p.isNew),
     featured: Boolean(p.featured),
