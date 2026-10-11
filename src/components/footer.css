@@ -81,18 +81,21 @@
   gap: 32px 72px;
 }
 
-.foot-label {
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  font-weight: 700;
+.site-footer .foot-label {
+  /* Headings in the sans, the links and text under them in the mono. */
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  font-weight: 800;
   color: var(--ink);
   margin-bottom: 16px;
 }
 
 .foot-about p {
-  font-size: 13.5px;
-  line-height: 1.7;
-  font-weight: 500;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.75;
+  font-weight: 400;
   color: var(--ink);
   max-width: 34ch;
 }
@@ -104,8 +107,9 @@
 }
 
 .foot-col a {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--ink);
   text-decoration: none;
   width: fit-content;
