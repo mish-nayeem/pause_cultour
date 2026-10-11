@@ -45,14 +45,17 @@
   grid-template-columns: minmax(0, 1.5fr) auto minmax(0, 1fr);
   gap: 24px;
   padding: 0 40px;
-  /* One height for both sides, so the small photos scroll inside their box
-     while the big photo stays exactly where it is. */
-  height: calc(100vh - 160px);
-  height: calc(100dvh - 160px);
-  min-height: 420px;
+  align-items: start;
 }
 
-.lb-main { height: 100%; aspect-ratio: auto; width: 100%; }
+/* The big photo whole, at its own shape — never cropped. A tall one simply
+   runs down the page as it scrolls. */
+.lb-main { aspect-ratio: auto; width: 100%; min-height: 200px; }
+.lb-look.lb-main img { height: auto; object-fit: initial; }
+.lb-look.lb-main:hover img { transform: none; }
+
+/* The arrow and the small photos stay on screen while the page (and the big
+   photo) scroll past. */
 
 .lb-nav {
   position: absolute;
@@ -93,7 +96,10 @@
 }
 
 .lb-hint {
-  align-self: center;
+  position: sticky;
+  top: 50vh;
+  align-self: start;
+  margin-top: 30vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -113,7 +119,10 @@
 /* Every photo of the drop as a small square, in a square box that scrolls
    when there are many. */
 .lb-thumbs {
-  height: 100%;
+  position: sticky;
+  top: 100px;
+  max-height: calc(100vh - 130px);
+  max-height: calc(100dvh - 130px);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 6px;
@@ -217,8 +226,8 @@
 @media (max-width: 860px) {
   .lb-page { padding-top: 26px; }
   .lb-head { padding: 0 20px 22px; }
-  .lb-viewer { grid-template-columns: 1fr; gap: 14px; padding: 0 14px; height: auto; min-height: 0; }
-  .lb-main { height: auto; aspect-ratio: 4 / 5; }
+  .lb-viewer { grid-template-columns: 1fr; gap: 14px; padding: 0 14px; }
+  .lb-hint, .lb-thumbs { position: static; margin-top: 0; }
   .lb-hint-arrow { font-size: 22px; transform: rotate(90deg); animation: none; }
   .lb-thumbs { height: auto; max-height: 80vw; }
   .lb-thumbs-in { column-count: 4; }
