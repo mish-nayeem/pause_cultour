@@ -216,10 +216,6 @@ export default function Shop() {
                 <QuickAdd product={p} />
               </div>
               <div className="sinfo">
-                {/* Said in words above the price rather than as a sheet over
-                    the photo — the piece is still worth looking at, and it can
-                    still go on a wishlist. */}
-                {isAllSoldOut(p) && <div className="sout mono">SOLD OUT</div>}
                 <div className="sname">{p.name}</div>
                 <div className="smeta mono">
                   <span>{p.variant}</span>

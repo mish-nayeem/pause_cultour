@@ -372,8 +372,8 @@
   /* A chunky black pill holding just the logo and MENU, centred — sized
      to its contents rather than stretched across the screen. */
   .site-header {
-    gap: 40px;
-    padding: 0 30px;
+    gap: 26px;
+    padding: 0 24px;
     min-height: 58px;
     width: auto;
     border-radius: 999px;
@@ -382,9 +382,15 @@
   .logo-3d img { height: 28px; }
 
   /* The narrowest phones: a tighter pill so it clears the back button. */
-  @media (max-width: 360px) {
-    .site-header { gap: 22px; padding: 0 20px; }
-    .mob-right { gap: 16px; }
+  @media (max-width: 380px) {
+    .site-header { gap: 16px; padding: 0 16px; }
+    .mob-right { gap: 13px; }
+    .menu-btn { font-size: 13px; }
+  }
+
+  @media (max-width: 340px) {
+    .site-header { gap: 12px; padding: 0 12px; }
+    .mob-right { gap: 10px; }
   }
 
   /* Swap: inline links out, hamburger in. */
@@ -394,7 +400,7 @@
   .mob-right {
     display: flex;
     align-items: center;
-    gap: 22px;
+    gap: 18px;
   }
 
 

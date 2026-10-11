@@ -640,16 +640,26 @@
   white-space: nowrap;
 }
 
-/* Details: just the values, one per line, ruled like the size chart. */
+/* Details: just the values, one per line, each after a dot. */
 .detail-list { list-style: none; margin: 0; padding: 0; }
 .detail-list li {
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  position: relative;
+  padding: 3px 0 3px 16px;
   color: #fff;
   font-size: 13.5px;
   line-height: 1.5;
 }
-.detail-list li:last-child { border-bottom: none; }
+/* A dot at the start of each line, no rules between them. */
+.detail-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.82em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
 
 .sheet-table tr:last-child td { border-bottom: none; }
 
