@@ -76,7 +76,7 @@ function blankChart(sizes) {
   }
 }
 
-// A new product starts with the labels used on earlier ones (Fabric, Fit…),
+// A new product starts with the boxes the last product had (Fabric, Fit…),
 // values empty. A saved product starts with what it has.
 function initialDetailRows(existing, labels) {
   if (existing) {
@@ -88,7 +88,7 @@ function initialDetailRows(existing, labels) {
     : [{ label: '', value: '' }]
 }
 
-export default function ProductForm({ existing, existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], onDone, onCancel }) {
+export default function ProductForm({ existing, existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
   const [p, setP] = useState(() => (existing ? fromRow(existing) : { ...BLANK, drop: initialDrop, publishAt: toLocalInput(initialPublishAt), id: nextProductId(existingIds) }))
@@ -101,7 +101,10 @@ export default function ProductForm({ existing, existingIds = [], categories = [
   const fileRef = useRef(null)
 
   const knownLabels = mergeLabels(detailLabels, rememberedLabels())
-  const [detailRows, setDetailRows] = useState(() => initialDetailRows(existing, knownLabels))
+  const [detailRows, setDetailRows] = useState(() => {
+    const last = rememberedLabels()
+    return initialDetailRows(existing, last.length ? last : startLabels)
+  })
 
   // A product either keeps counts or it doesn't; the form shows one of two
   // states rather than a checkbox plus a dead set of inputs.
@@ -516,9 +519,10 @@ export default function ProductForm({ existing, existingIds = [], categories = [
       {/* ---- Details ---- */}
       <div className="pf-label mono">DETAILS</div>
       <div className="pf-note mono">
-        Name on the left (Fabric, Fit…), the detail on the right. Customers only
-        see rows with both filled in — leave either side empty and that row stays
-        hidden. Names you've used before come back on every new product.
+        Box name on the left (Fabric, Fit…), the detail on the right. Customers see
+        only what's on the right — "Fabric | 100% cotton" shows as "100% cotton".
+        Leave the right side empty and that row isn't shown. A new product starts
+        with the last product's boxes; add one with + Add box, drop one with ×.
       </div>
 
       <div className="pf-detail-grid">
@@ -566,7 +570,7 @@ export default function ProductForm({ existing, existingIds = [], categories = [
         className="pf-chart-add mono"
         onClick={() => updateDetailRows([...detailRows, { label: '', value: '' }])}
       >
-        + Add row
+        + Add box
       </button>
 
       {/* ---- Sizes ---- */}

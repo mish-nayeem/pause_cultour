@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
-import { IconUser } from './Icons.jsx'
+import { IconUser, IconSearch } from './Icons.jsx'
+import SearchOverlay from './SearchOverlay.jsx'
 import { lookbookPath } from '../lib/lookbook.js'
 import { InDock } from './BottomDock.jsx'
 import { watchUser } from '../lib/auth.js'
@@ -27,6 +28,7 @@ export default function Nav({ overlay = false }) {
   // Mobile panel: false, 'shop' (SHOP — the shop's categories and
   // collections) or 'menu' (MENU — everything else).
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [categories, setCategories] = useState([])
   const [drops, setDrops] = useState([])
 
@@ -166,6 +168,11 @@ export default function Nav({ overlay = false }) {
             </li>
             <li onMouseEnter={() => showMenu(null)}><Link to="/about">ABOUT US</Link></li>
             <li onMouseEnter={() => showMenu(null)}>
+              <button type="button" className="search-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title="Search">
+                <IconSearch width="15" height="15" />
+              </button>
+            </li>
+            <li onMouseEnter={() => showMenu(null)}>
               <Link to="/cart" className="cart">CART ({count})</Link>
             </li>
             <li onMouseEnter={() => showMenu(null)}>
@@ -280,16 +287,20 @@ export default function Nav({ overlay = false }) {
           )}
 
           <div className="mob-links mono">
+            <button type="button" className="mob-search" onClick={() => { setMenuOpen(false); setSearchOpen(true) }}>
+              SEARCH
+            </button>
             <Link to="/about">ABOUT US</Link>
             <Link to="/cart">CART ({count})</Link>
             <Link to={accountLink} className="mob-admin">
-              <IconUser width="13" height="13" /> {user ? accountLabel.toUpperCase() : 'LOG IN / SIGN UP'}
+              <IconUser width="13" height="13" /> {user ? 'MY ACCOUNT' : 'LOG IN / SIGN UP'}
             </Link>
           </div>
           </>
           )}
         </div>
       )}
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </div>
   )
 }

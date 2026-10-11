@@ -640,10 +640,16 @@
   white-space: nowrap;
 }
 
-/* Details follow the size chart's layout: the name on the left, the value
-   pushed to the right edge like the last column of a chart row. */
-.detail-table .row-label { width: 40%; padding-right: 18px; }
-.detail-table .detail-cell { text-align: right; padding-left: 0; }
+/* Details: just the values, one per line, ruled like the size chart. */
+.detail-list { list-style: none; margin: 0; padding: 0; }
+.detail-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.detail-list li:last-child { border-bottom: none; }
 
 .sheet-table tr:last-child td { border-bottom: none; }
 

@@ -40,7 +40,7 @@ import BkashCheck from '../components/BkashCheck.jsx'
 import CouponManager from '../components/CouponManager.jsx'
 import SaleManager from '../components/SaleManager.jsx'
 import ProductForm from '../components/ProductForm.jsx'
-import { collectLabels } from '../lib/details.js'
+import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import TickerManager from '../components/TickerManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
@@ -1522,6 +1522,7 @@ export default function Admin() {
             initialDrop={newProductDrop}
             initialPublishAt={newProductLaunch}
             detailLabels={collectLabels(products)}
+            startLabels={lastLabels(products)}
             onCancel={() => setEditing(null)}
             onDone={() => {
               setEditing(null)

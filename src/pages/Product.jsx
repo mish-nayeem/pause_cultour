@@ -321,7 +321,8 @@ export default function Product() {
 
   // Only rows with both the name and the detail filled in are shown — a lone
   // value with no name isn't a detail a shopper can make sense of.
-  const detailLines = parseDetails(product.details).filter((row) => row.label && row.value)
+  // Only the values reach the customer — the labels are the admin's.
+  const detailLines = parseDetails(product.details).filter((row) => row.value)
 
   // Read straight from the browser's note each render — no state to keep in
   // step when the shopper switches size.
@@ -639,16 +640,11 @@ export default function Product() {
       {sheet === 'details' && (
         <Sheet eyebrow="DETAILS" title={product.name} onClose={() => setSheet(null)}>
           <div className="sheet-table-wrap">
-            <table className="sheet-table detail-table">
-              <tbody>
-                {detailLines.map((row, i) => (
-                  <tr key={i}>
-                    <td className="row-label">{row.label}</td>
-                    <td className="detail-cell">{row.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="detail-list">
+              {detailLines.map((row, i) => (
+                <li key={i}>{row.value}</li>
+              ))}
+            </ul>
           </div>
         </Sheet>
       )}
