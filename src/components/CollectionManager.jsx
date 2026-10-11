@@ -9,6 +9,7 @@ import {
   updateNavCategory,
   deleteNavCategory,
 } from '../lib/navCategories.js'
+import { toLocalInput, fromLocalInput, isScheduled, launchLabel } from '../lib/schedule.js'
 import './collection-manager.css'
 
 function taka(n) {
@@ -51,6 +52,30 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
   }, [rows, products])
 
   const productsIn = (name) => products.filter((p) => dropKey(p.drop_name) === dropKey(name))
+
+  // The collection's launch: the latest launch time among its products that
+  // haven't gone live yet (null when everything is already live).
+  const launchOf = (items) => {
+    const times = items.filter((p) => isScheduled(p)).map((p) => p.publish_at)
+    return times.length ? times.sort().at(-1) : null
+  }
+
+  const [launchInput, setLaunchInput] = useState('')
+  useEffect(() => { setLaunchInput('') }, [open])
+
+  // Sets (or clears, with null) the launch time on every product in the
+  // collection at once — upload the whole drop, then give it one time.
+  async function scheduleAll(name, iso) {
+    const ids = productsIn(name).map((p) => p.id)
+    if (!ids.length) return
+    setBusy(true)
+    setError('')
+    const { error } = await supabase.from('products').update({ publish_at: iso }).in('id', ids)
+    setBusy(false)
+    if (error) return setError("Couldn't save the launch time — has supabase-migration-scheduled-products.sql been run?")
+    setLaunchInput('')
+    onChanged()
+  }
 
   async function create(e) {
     e.preventDefault()
@@ -120,6 +145,8 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
   // ---------- One collection open ----------
   if (open) {
     const items = productsIn(open)
+    const launch = launchOf(items)
+    const waiting = items.filter((p) => isScheduled(p)).length
     return (
       <section className="panel">
         <div className="orders-head">
@@ -128,9 +155,43 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
             <h3 className="display cl-title">{open}</h3>
             <div className="panel-note mono">{items.length} product{items.length === 1 ? '' : 's'} in this collection</div>
           </div>
-          <button className="add-product mono" onClick={() => onAddProduct(open)}>
+          <button className="add-product mono" onClick={() => onAddProduct(open, launch)}>
             + Add product to {open}
           </button>
+        </div>
+
+        {/* Upload the whole drop first, then give every product one launch
+            time — they all appear together, e.g. at 10 pm. */}
+        <div className="cl-launch">
+          <div className="cl-launch-state mono">
+            {launch
+              ? `${waiting} of ${items.length} hidden until ${launchLabel(launch)}`
+              : 'Live — every product here is showing in the shop'}
+          </div>
+          <div className="cl-launch-row">
+            <input
+              type="datetime-local"
+              value={launchInput || toLocalInput(launch)}
+              onChange={(e) => setLaunchInput(e.target.value)}
+            />
+            <button
+              type="button"
+              className="add-product mono"
+              disabled={busy || items.length === 0 || !(launchInput || launch)}
+              onClick={() => scheduleAll(open, fromLocalInput(launchInput || toLocalInput(launch)))}
+            >
+              Set launch for all {items.length}
+            </button>
+            {launch && (
+              <button type="button" className="cl-now mono" disabled={busy} onClick={() => scheduleAll(open, null)}>
+                Launch now
+              </button>
+            )}
+          </div>
+          <em className="cl-hint mono">
+            Until then these products are hidden from the shop and can't be ordered. New products added
+            here start with the same time; a product can have its own time in its edit form.
+          </em>
         </div>
 
         {items.length === 0 && (
@@ -150,7 +211,9 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
               <div className="tc mono dim">{p.variant}</div>
               <div className="tc mono">{taka(p.price)}</div>
               <div className="tc mono dim">{p.category || ''}</div>
-              <div className="tc mono dim">Edit →</div>
+              <div className="tc mono dim">
+                {isScheduled(p) ? <span className="sched-tag">Live {launchLabel(p.publish_at)}</span> : 'Edit →'}
+              </div>
             </div>
           ))}
         </div>
@@ -187,6 +250,7 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
         {collections.map((c) => {
           const items = productsIn(c.name)
           const cover = items.find((p) => p.images?.[0])?.images[0]
+          const launch = launchOf(items)
           return (
             <div className="cl-card" key={c.name}>
               <button type="button" className="cl-open" onClick={() => onOpen(c.name)}>
@@ -196,6 +260,7 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
                 <div className="cl-meta">
                   {renaming === c.name ? null : <span className="cl-name">{c.name}</span>}
                   <span className="mono dim">{items.length} product{items.length === 1 ? '' : 's'}</span>
+                  {launch && <span className="sched-tag cl-sched">Launches {launchLabel(launch)}</span>}
                 </div>
               </button>
 
@@ -214,7 +279,7 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
 
               <div className="cl-actions mono">
                 <button type="button" onClick={() => onOpen(c.name)}>Open</button>
-                <button type="button" onClick={() => onAddProduct(c.name)}>+ Product</button>
+                <button type="button" onClick={() => onAddProduct(c.name, launch)}>+ Product</button>
                 <button type="button" onClick={() => setRenaming(c.name)} disabled={busy}>Rename</button>
                 {!c.row && <button type="button" onClick={() => adopt(c.name)} disabled={busy} title="Add it to the DROPS menu">Add to menu</button>}
                 <button type="button" className="cl-del" onClick={() => remove(c)} disabled={busy}>Delete</button>

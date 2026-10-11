@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { toLocalInput, launchLabel } from '../lib/schedule.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import { saveProduct, deleteProduct } from '../lib/admin.js'
@@ -50,6 +51,7 @@ function fromRow(row) {
     details: row.details ?? '',
     sizeChart: row.size_chart ?? null,
     colourGroup: row.colour_group ?? '',
+    publishAt: toLocalInput(row.publish_at),
   }
 }
 
@@ -86,10 +88,10 @@ function initialDetailRows(existing, labels) {
     : [{ label: '', value: '' }]
 }
 
-export default function ProductForm({ existing, existingIds = [], categories = [], drops = [], initialDrop = '', detailLabels = [], onDone, onCancel }) {
+export default function ProductForm({ existing, existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], onDone, onCancel }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
-  const [p, setP] = useState(() => (existing ? fromRow(existing) : { ...BLANK, drop: initialDrop, id: nextProductId(existingIds) }))
+  const [p, setP] = useState(() => (existing ? fromRow(existing) : { ...BLANK, drop: initialDrop, publishAt: toLocalInput(initialPublishAt), id: nextProductId(existingIds) }))
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -740,6 +742,28 @@ export default function ProductForm({ existing, existingIds = [], categories = [
           </label>
         </div>
       )}
+
+      {/* ---- Launch time ---- */}
+      <div className="pf-field pf-launch">
+        <span className="mono">GOES LIVE AT (OPTIONAL)</span>
+        <div className="pf-launch-row">
+          <input
+            type="datetime-local"
+            value={p.publishAt || ''}
+            onChange={(e) => set('publishAt', e.target.value)}
+          />
+          {p.publishAt && (
+            <button type="button" className="pf-ghost mono" onClick={() => set('publishAt', '')}>
+              Clear — live now
+            </button>
+          )}
+        </div>
+        <em className="pf-hint mono">
+          {p.publishAt && new Date(p.publishAt) > new Date()
+            ? `Hidden from the shop until ${launchLabel(new Date(p.publishAt).toISOString())} — then it appears by itself.`
+            : 'Leave empty to show it as soon as it\'s saved. Set a time to keep it hidden until then (e.g. a drop at 10 pm).'}
+        </em>
+      </div>
 
       {/* ---- Flags ---- */}
       <div className="pf-flags">

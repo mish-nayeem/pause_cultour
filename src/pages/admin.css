@@ -514,6 +514,17 @@
   letter-spacing: 0.04em;
 }
 
+/* Scheduled: hidden from the shop until its launch time. */
+.sched-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--cobalt);
+  border: 1px solid var(--cobalt);
+  padding: 2px 6px;
+  margin-right: 6px;
+  letter-spacing: 0.02em;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1000px) {

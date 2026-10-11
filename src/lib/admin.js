@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { fromLocalInput } from './schedule.js'
 import { lowSizes, LOW_STOCK_AT } from './stock.js'
 
 // ---------- Admin allowlist ----------
@@ -764,6 +765,7 @@ function toRow(p) {
     details: p.details ?? '',
     size_chart: p.sizeChart ?? null,
     colour_group: p.colourGroup?.trim() || null,
+    publish_at: fromLocalInput(p.publishAt),
   }
 }
 
