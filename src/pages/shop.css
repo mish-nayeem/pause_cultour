@@ -140,8 +140,10 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--signal);
+  background: #2fd16b; /* green: new */
 }
+
+.snew.out .rec { background: var(--signal); } /* red: sold out */
 
 /* Sits in the card's text, above the name and price. The photo is left
    alone — nothing is dimmed or covered. */

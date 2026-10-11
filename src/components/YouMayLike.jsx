@@ -51,7 +51,11 @@ export default function YouMayLike({ currentId }) {
           <Link to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`} className="yml-card" key={p.id}>
             <div className="yml-thumb">
               <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} loading="lazy" />
-              {p.isNew && <span className="yml-new mono">NEW</span>}
+              {isAllSoldOut(p) ? (
+                <span className="snew out mono"><i className="rec" />SOLD OUT</span>
+              ) : (
+                p.isNew && <span className="snew mono"><i className="rec" />NEW</span>
+              )}
               <SaleBadge product={p} />
               <QuickAdd product={p} />
             </div>
