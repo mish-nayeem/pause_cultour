@@ -70,7 +70,7 @@ export default function Lookbook() {
 
       <div className="lb-page">
         <div className="lb-head">
-          {/* The drop's name first, smaller and pale, then "LOOKBOOK" in full ink. */}
+          {/* The drop's name, then "LOOKBOOK" — same size, same ink. */}
           <h1 className="display">
             <span className="lb-drop">{drop}</span> LOOKBOOK
           </h1>
