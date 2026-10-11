@@ -16,11 +16,7 @@
   text-transform: uppercase;
 }
 
-.lb-head .lb-drop {
-  font-size: 0.62em;
-  color: #c4c4c0;
-  margin-right: 0.15em;
-}
+.lb-head .lb-drop { margin-right: 0.15em; }
 
 
 .lb-msg {
