@@ -45,7 +45,7 @@
 
 .hm-row {
   display: grid;
-  grid-template-columns: 96px 1fr 110px 116px 92px 34px;
+  grid-template-columns: 96px 1fr 110px 104px 116px 92px 34px;
   gap: 14px;
   align-items: center;
   padding: 12px 0;
@@ -194,3 +194,18 @@
 }
 
 .hm-size-note strong { color: var(--ink); }
+
+/* Upload for: PC / Laptop / Tab or Mobile. */
+.hm-device { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; font-size: 12px; }
+.hm-device span { color: var(--steel); letter-spacing: 0.08em; margin-right: 4px; }
+.admin .main .hm-device button {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.admin .main .hm-device button.on { background: var(--cobalt); color: #fff; border-color: transparent; }
+.admin[data-theme='dark'] .main .hm-device button.on { color: #15171a; }

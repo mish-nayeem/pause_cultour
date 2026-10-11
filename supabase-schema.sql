@@ -1542,3 +1542,17 @@ create policy "Signed-in admins manage looks"
   to authenticated
   using (public.is_admin())
   with check (public.is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Homepage hero: which screens a slide is for
+-- ---------------------------------------------------------------------------
+-- 'desktop' — PC, laptop and tablet; 'mobile' — phones only; 'all' — both
+-- (every slide made before this existed). Picked in Admin → Homepage.
+alter table hero_slides add column if not exists device text not null default 'all';
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'hero_slides_device_check') then
+    alter table hero_slides add constraint hero_slides_device_check check (device in ('all', 'desktop', 'mobile'));
+  end if;
+end $$;

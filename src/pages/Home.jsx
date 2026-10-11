@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
-import { fetchHeroSlides } from '../lib/hero.js'
+import { fetchHeroSlides, slidesFor, PHONE_QUERY } from '../lib/hero.js'
 import { fetchTicker } from '../lib/siteSettings.js'
 import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
@@ -11,8 +11,19 @@ import './home.css'
 const SLIDE_MS = 5000
 
 export default function Home() {
-  const [slides, setSlides] = useState([])
+  const [allSlides, setAllSlides] = useState([])
   const [active, setActive] = useState(0)
+  // Phones and bigger screens each get their own hero photos (Admin →
+  // Homepage → "For: PC / Mobile"); follows a resize or rotation too.
+  const [isPhone, setIsPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(PHONE_QUERY)
+    const onChange = () => setIsPhone(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  const slides = useMemo(() => slidesFor(allSlides, isPhone), [allSlides, isPhone])
+  useEffect(() => { setActive(0) }, [isPhone])
   // Admin → Homepage → Ticker. Empty until loaded, so the old lines never
   // flash up before a sale announcement.
   const [ticker, setTicker] = useState(null)
@@ -25,7 +36,7 @@ export default function Home() {
     let cancelled = false
     fetchHeroSlides().then(({ slides }) => {
       if (cancelled) return
-      setSlides(slides)
+      setAllSlides(slides)
       setActive(0)
     })
     fetchTicker().then((lines) => {
