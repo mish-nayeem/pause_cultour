@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
 import { IconUser, IconSearch } from './Icons.jsx'
-import SearchOverlay from './SearchOverlay.jsx'
+import SearchBar from './SearchBar.jsx'
 import { lookbookPath } from '../lib/lookbook.js'
 import { InDock } from './BottomDock.jsx'
 import { watchUser } from '../lib/auth.js'
@@ -41,6 +41,7 @@ export default function Nav({ overlay = false }) {
   // and without this grace period the menu shuts halfway there.
   function showMenu(name) {
     clearTimeout(closeTimer.current)
+    if (name) setSearchOpen(false)
     if (name !== openMenu) setByCollection(false)
     setOpenMenu(name)
   }
@@ -79,6 +80,7 @@ export default function Nav({ overlay = false }) {
     setMenuOpen(false)
     setOpenMenu(null)
     setByCollection(false)
+    setSearchOpen(false)
   }, [location.pathname, location.search])
 
   // The mobile panel covers the screen, so the page behind it shouldn't scroll.
@@ -168,7 +170,7 @@ export default function Nav({ overlay = false }) {
             </li>
             <li onMouseEnter={() => showMenu(null)}><Link to="/about">ABOUT US</Link></li>
             <li onMouseEnter={() => showMenu(null)}>
-              <button type="button" className="search-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title="Search">
+              <button type="button" className="search-btn" onClick={() => { setOpenMenu(null); setSearchOpen((v) => !v) }} aria-label="Search" title="Search">
                 <IconSearch width="15" height="15" />
               </button>
             </li>
@@ -190,8 +192,17 @@ export default function Nav({ overlay = false }) {
         <div className="mob-right">
           <button
             type="button"
+            className="search-btn mob-search-btn"
+            onClick={() => { setMenuOpen(false); setSearchOpen((v) => !v) }}
+            aria-label="Search"
+            aria-expanded={searchOpen}
+          >
+            <IconSearch width="17" height="17" />
+          </button>
+          <button
+            type="button"
             className="menu-btn"
-            onClick={() => setMenuOpen((v) => (v === 'shop' ? false : 'shop'))}
+            onClick={() => { setSearchOpen(false); setMenuOpen((v) => (v === 'shop' ? false : 'shop')) }}
             aria-expanded={menuOpen === 'shop'}
           >
             {menuOpen === 'shop' ? 'CLOSE' : 'SHOP'}
@@ -199,13 +210,15 @@ export default function Nav({ overlay = false }) {
           <button
             type="button"
             className="menu-btn"
-            onClick={() => setMenuOpen((v) => (v === 'menu' ? false : 'menu'))}
+            onClick={() => { setSearchOpen(false); setMenuOpen((v) => (v === 'menu' ? false : 'menu')) }}
             aria-expanded={menuOpen === 'menu'}
           >
             {menuOpen === 'menu' ? 'CLOSE' : 'MENU'}
           </button>
         </div>
       </header>
+
+      {searchOpen && <SearchBar onClose={() => setSearchOpen(false)} />}
 
       {/* Desktop hover dropdown — same panel for both menus, so moving between
           SHOP and DROPS swaps the contents instead of stacking two boxes. */}
@@ -300,7 +313,6 @@ export default function Nav({ overlay = false }) {
           )}
         </div>
       )}
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </div>
   )
 }
