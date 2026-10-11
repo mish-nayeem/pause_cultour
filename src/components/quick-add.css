@@ -37,6 +37,12 @@
 }
 
 .qa-plus svg { width: 20px; height: 20px; }
+
+/* Once the photo's corner has been measured (imageTone.js) the + is plain
+   black on a light photo and plain white on a dark one; the blend above is
+   only the fallback while that's unknown. */
+.qa-plus.on-light { mix-blend-mode: normal; color: #000; }
+.qa-plus.on-dark { mix-blend-mode: normal; color: #fff; }
 .qa-plus:hover { transform: scale(1.12); }
 
 /* Turns into an × while the sizes are showing. */
