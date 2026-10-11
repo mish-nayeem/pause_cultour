@@ -140,7 +140,7 @@
 
 .site-header a.cart::before {
   content: '● ';
-  color: var(--signal);
+  color: #1877f2; /* Facebook blue */
 }
 
 .site-header a.admin-link {
