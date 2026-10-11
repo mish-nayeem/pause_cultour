@@ -216,12 +216,15 @@ export default function Shop() {
                 <QuickAdd product={p} />
               </div>
               <div className="sinfo">
-                <div className="sname">{p.name}</div>
+                {/* NOTIFY ME sits on the name's line, right above the price. */}
+                <div className="card-top">
+                  <div className="sname">{p.name}</div>
+                  {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
+                </div>
                 <div className="smeta mono">
                   <span>{p.variant}</span>
                   <CardPrice product={p} />
                 </div>
-                {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
               </div>
             </Link>
           ))}
