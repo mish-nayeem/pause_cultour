@@ -60,12 +60,14 @@ export default function YouMayLike({ currentId }) {
               <QuickAdd product={p} />
             </div>
             <div className="yml-info">
-              <div className="yml-name">{p.name}</div>
+              <div className="card-top">
+                <div className="yml-name">{p.name}</div>
+                {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
+              </div>
               <div className="yml-meta mono">
                 <span>{p.variant}</span>
                 <CardPrice product={p} />
               </div>
-              {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
             </div>
           </Link>
         ))}

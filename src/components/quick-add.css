@@ -89,15 +89,21 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Small "NOTIFY ME" under a sold-out card's price. */
+/* Small "NOTIFY ME" on a sold-out card, at the right end of the name's
+   line — straight above the price. */
+.card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .card-notify {
-  display: inline-block;
-  margin-top: 8px;
+  flex-shrink: 0;
   font-size: 10.5px;
   letter-spacing: 0.08em;
   color: var(--ink);
   text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
