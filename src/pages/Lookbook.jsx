@@ -72,7 +72,6 @@ export default function Lookbook() {
         <div className="lb-head">
           <div className="label mono">LOOKBOOK</div>
           <h1 className="display">{drop}</h1>
-          <Link to={`/shop?d=${encodeURIComponent(drop)}`} className="lb-shop mono">SHOP THIS DROP →</Link>
         </div>
 
         {looks === null && (
@@ -80,7 +79,9 @@ export default function Lookbook() {
             <div className="lb-look lb-main lb-ghost shimmer" />
             <div className="lb-hint" />
             <div className="lb-thumbs">
-              {[0, 1, 2, 3, 4, 5].map((i) => <div className="lb-thumb shimmer" key={i} />)}
+              <div className="lb-thumbs-in">
+                {[0, 1, 2, 3, 4, 5].map((i) => <div className="lb-thumb shimmer" key={i} />)}
+              </div>
             </div>
           </div>
         )}
@@ -143,22 +144,23 @@ export default function Lookbook() {
                   it shows there. */}
               <div className="lb-hint mono" aria-hidden="true">
                 <span className="lb-hint-arrow">←</span>
-                <span className="lb-hint-text">TAP A PHOTO{' '}<br />TO VIEW IT</span>
               </div>
 
               <div className="lb-thumbs" data-lenis-prevent>
-                {looks.map((l, i) => (
-                  <button
-                    type="button"
-                    key={l.id}
-                    className={`lb-thumb ${i === current ? 'on' : ''}`}
-                    onClick={() => go(i)}
-                    aria-label={`Photo ${i + 1}`}
-                    aria-current={i === current}
-                  >
-                    <img src={imgUrl(l.image, { w: 240 })} alt="" loading="lazy" style={{ objectPosition: l.focus || 'center' }} />
-                  </button>
-                ))}
+                <div className="lb-thumbs-in">
+                  {looks.map((l, i) => (
+                    <button
+                      type="button"
+                      key={l.id}
+                      className={`lb-thumb ${i === current ? 'on' : ''}`}
+                      onClick={() => go(i)}
+                      aria-label={`Photo ${i + 1}`}
+                      aria-current={i === current}
+                    >
+                      <img src={imgUrl(l.image, { w: 240 })} alt="" loading="lazy" style={{ objectPosition: l.focus || 'center' }} />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )
