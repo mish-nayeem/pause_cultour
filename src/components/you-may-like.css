@@ -57,16 +57,7 @@
 
 .yml-card:hover .yml-thumb img { transform: scale(1.035); }
 
-.yml-new {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--paper);
-  background: rgba(22, 22, 15, 0.72);
-  padding: 4px 8px;
-}
+/* The NEW / SOLD OUT corner tag is shared with the shop grid (.snew, shop.css). */
 
 .yml-info { padding: 14px 16px 20px; }
 

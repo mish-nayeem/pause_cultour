@@ -40,7 +40,7 @@ import BkashCheck from '../components/BkashCheck.jsx'
 import CouponManager from '../components/CouponManager.jsx'
 import SaleManager from '../components/SaleManager.jsx'
 import ProductForm from '../components/ProductForm.jsx'
-import { collectLabels } from '../lib/details.js'
+import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import TickerManager from '../components/TickerManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
@@ -51,6 +51,7 @@ import LinkGenerator from '../components/LinkGenerator.jsx'
 import ManualOrderForm from '../components/ManualOrderForm.jsx'
 import { fetchAllNavCategories, DROPS_MENU } from '../lib/navCategories.js'
 import { dropKey } from '../lib/lookbook.js'
+import { isScheduled, launchLabel } from '../lib/schedule.js'
 import { stockMap, totalStock, LOW_STOCK_AT } from '../lib/stock.js'
 import { fetchWishlist, groupDemand } from '../lib/wishlist.js'
 import { COURIERS, courierLabel, sendToCourier, syncCourierStatus } from '../lib/courier.js'
@@ -398,6 +399,9 @@ export default function Admin() {
   // is being added to (prefills its Drop).
   const [openCollection, setOpenCollection] = useState(null)
   const [newProductDrop, setNewProductDrop] = useState('')
+  // A product added to a collection whose launch is scheduled starts with
+  // the same launch time.
+  const [newProductLaunch, setNewProductLaunch] = useState('')
   const [addingOrder, setAddingOrder] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [overviewSub, setOverviewSub] = useState('stats')
@@ -1516,7 +1520,9 @@ export default function Admin() {
             categories={productCategories}
             drops={collectionNames}
             initialDrop={newProductDrop}
+            initialPublishAt={newProductLaunch}
             detailLabels={collectLabels(products)}
+            startLabels={lastLabels(products)}
             onCancel={() => setEditing(null)}
             onDone={() => {
               setEditing(null)
@@ -1545,7 +1551,7 @@ export default function Admin() {
               <div className="panel-note mono">
                 Click a product to edit it. Images upload straight to Supabase Storage.
               </div>
-              <button className="add-product mono" onClick={() => { setNewProductDrop(''); setEditing('new') }}>
+              <button className="add-product mono" onClick={() => { setNewProductDrop(''); setNewProductLaunch(''); setEditing('new') }}>
                 + Add product
               </button>
             </div>
@@ -1590,6 +1596,7 @@ export default function Admin() {
                     )}
                   </div>
                   <div className="tc mono">
+                    {isScheduled(p) && <span className="sched-tag">Live {launchLabel(p.publish_at)}</span>}
                     {totalStock(p) === 0 && <span className="out-tag">Sold out</span>}
                     {totalStock(p) === null &&
                       Array.isArray(p.sizes_out) &&
@@ -1608,7 +1615,7 @@ export default function Admin() {
               products={products}
               open={openCollection}
               onOpen={setOpenCollection}
-              onAddProduct={(drop) => { setNewProductDrop(drop); setEditing('new') }}
+              onAddProduct={(drop, launch) => { setNewProductDrop(drop); setNewProductLaunch(launch || ''); setEditing('new') }}
               onEditProduct={(p) => setEditing(p)}
               onChanged={reload}
             />

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useCart } from '../context/CartContext.jsx'
 import { availableSizes, roomLeft } from '../lib/stock.js'
 import { sortSizes } from './ShopFilter.jsx'
+import { useCornerTone } from '../lib/imageTone.js'
 import './quick-add.css'
 
 // The + in the corner of a product photo on the grid: adds to the cart
@@ -14,6 +15,8 @@ export default function QuickAdd({ product }) {
   const [note, setNote] = useState('') // '' | 'added' | 'max'
   const ref = useRef(null)
   const sizes = sortSizes(availableSizes(product))
+  // Black + on a light photo, white + on a dark one.
+  const tone = useCornerTone(product.images?.[0])
 
   useEffect(() => {
     if (!open) return
@@ -67,7 +70,7 @@ export default function QuickAdd({ product }) {
 
       <button
         type="button"
-        className={`qa-plus ${open ? 'on' : ''}`}
+        className={`qa-plus ${open ? 'on' : ''} ${tone ? `on-${tone}` : ''}`}
         aria-label={sizes.length === 1 ? `Add ${product.name} to cart` : `Add ${product.name} to cart — choose a size`}
         aria-expanded={sizes.length > 1 ? open : undefined}
         onClick={(e) => {

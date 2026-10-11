@@ -140,8 +140,10 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--signal);
+  background: #2fd16b; /* green: new */
 }
+
+.snew.out .rec { background: var(--signal); } /* red: sold out */
 
 /* Sits in the card's text, above the name and price. The photo is left
    alone — nothing is dimmed or covered. */
@@ -190,7 +192,19 @@
 
 @media (max-width: 860px) {
   .shop-head { padding: 26px 20px 18px; }
-  .filters { padding: 0 20px 20px; }
+  /* Phones: one row of categories that swipes sideways instead of stacking
+     up as the list grows. Bigger screens keep wrapping onto a new row. */
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 20px 20px;
+    margin-top: -4px;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filters button { flex-shrink: 0; white-space: nowrap; }
   .shop-grid { grid-template-columns: repeat(2, 1fr); }
   .shop-msg { padding: 36px 20px; }
 }

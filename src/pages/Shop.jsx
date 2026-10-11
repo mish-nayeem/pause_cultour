@@ -205,7 +205,13 @@ export default function Shop() {
             >
               <div className="sthumb">
                 <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} />
-                {p.isNew && <span className="snew mono"><i className="rec" />NEW</span>}
+                {/* Sold out takes the corner over NEW: green dot for new,
+                    red for sold out. */}
+                {isAllSoldOut(p) ? (
+                  <span className="snew out mono"><i className="rec" />SOLD OUT</span>
+                ) : (
+                  p.isNew && <span className="snew mono"><i className="rec" />NEW</span>
+                )}
                 <SaleBadge product={p} />
                 <QuickAdd product={p} />
               </div>

@@ -17,6 +17,9 @@ export default function HeroManager() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [newLabel, setNewLabel] = useState('')
+  // Which screens the next upload is for: 'desktop' (PC, laptop, tablet)
+  // or 'mobile' (phones).
+  const [newDevice, setNewDevice] = useState('desktop')
   const [confirmId, setConfirmId] = useState(null)
 
   async function load() {
@@ -48,6 +51,7 @@ export default function HeroManager() {
         label: newLabel.trim().toUpperCase(),
         imageUrl: url,
         sortOrder: slides.length,
+        device: newDevice,
       })
       if (createError) throw new Error('Could not save the slide')
       setNewLabel('')
@@ -57,6 +61,13 @@ export default function HeroManager() {
     } finally {
       setBusy(false)
     }
+  }
+
+  async function setDevice(slide, device) {
+    setBusy(true)
+    await updateHeroSlide(slide.id, { device })
+    await load()
+    setBusy(false)
   }
 
   async function setFocus(slide, focus) {
@@ -114,6 +125,25 @@ export default function HeroManager() {
 
       {error && <div className="err-banner mono">{error}</div>}
 
+      <div className="hm-device mono" role="radiogroup" aria-label="Upload for">
+        <span>UPLOAD FOR</span>
+        {[
+          ['desktop', 'PC / Laptop / Tab'],
+          ['mobile', 'Mobile'],
+        ].map(([k, label]) => (
+          <button
+            type="button"
+            key={k}
+            role="radio"
+            aria-checked={newDevice === k}
+            className={newDevice === k ? 'on' : ''}
+            onClick={() => setNewDevice(k)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="hm-add">
         <input
           className="hm-label-input mono"
@@ -130,10 +160,20 @@ export default function HeroManager() {
       {/* Sits next to the upload button rather than in the intro text, so it's
           read at the moment the file is being chosen. */}
       <div className="hm-size-note mono">
-        <strong>Image size:</strong> upload a wide landscape photo, around
-        2400 × 1350 px (16:9). The hero fills the whole screen, so taller or
-        narrower images will be cropped — use the "Keep …" setting on each
-        slide to choose which part stays in frame.
+        {newDevice === 'mobile' ? (
+          <>
+            <strong>Mobile image size:</strong> a tall portrait photo, around
+            1080 × 1920 px (9:16). Shown on phones only.
+          </>
+        ) : (
+          <>
+            <strong>PC image size:</strong> a wide landscape photo, around
+            2400 × 1350 px (16:9). Shown on PC, laptop and tablet.
+          </>
+        )}{' '}
+        The hero fills the whole screen, so a photo of another shape gets cropped —
+        use the "Keep …" setting on each slide to choose which part stays in frame.
+        If one side has no slides yet, the other side's slides show there instead.
       </div>
 
       {loading && <div className="empty mono">Loading…</div>}
@@ -171,6 +211,18 @@ export default function HeroManager() {
               <span>{i + 1}</span>
               <button onClick={() => move(i, 1)} disabled={i === slides.length - 1 || busy}>→</button>
             </div>
+
+            <select
+              className="hm-focus mono"
+              value={s.device || 'all'}
+              disabled={busy}
+              onChange={(e) => setDevice(s, e.target.value)}
+              title="Which screens this slide shows on"
+            >
+              <option value="desktop">PC / Tab</option>
+              <option value="mobile">Mobile</option>
+              <option value="all">Both</option>
+            </select>
 
             <select
               className="hm-focus mono"

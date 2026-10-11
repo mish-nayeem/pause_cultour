@@ -3,9 +3,9 @@
 // migrating: each row is one line, "Label: value". A line with no label is an
 // ordinary bullet, which is exactly what every product saved before this was.
 //
-// The storefront only shows rows that have both a label and a value. A row
-// with an empty value isn't written at all; a value with no label is kept in
-// the text but stays hidden from customers.
+// Customers see only the values ("100% cotton"), one per line — the labels
+// are the admin's own way of keeping the boxes in order. A row with an empty
+// value isn't written at all.
 
 const MAX_LABEL = 30
 const LABELS_KEY = 'pause_detail_labels'
@@ -21,6 +21,8 @@ export function parseDetails(text) {
         const label = line.slice(0, i).trim()
         const value = line.slice(i + 1).trim()
         if (label && value) return { label, value }
+        // "Care:" with nothing after it is an empty box, not a detail.
+        if (label && !value) return { label, value: '' }
       }
       return { label: '', value: line }
     })
@@ -52,8 +54,18 @@ export function collectLabels(products) {
   return [...seen.values()]
 }
 
-// Labels typed into the form are remembered in this browser too, so one that
-// was added but left blank on the last product still comes back on the next.
+// The boxes the most recently made product had (newest by created_at) —
+// what a new product's form starts with when this browser has none saved.
+export function lastLabels(products) {
+  const newest = [...products]
+    .filter((p) => parseDetails(p.details).some((r) => r.label))
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0]
+  return newest ? parseDetails(newest.details).filter((r) => r.label).map((r) => r.label) : []
+}
+
+// The boxes on the last product saved in this browser — every one of them,
+// filled or not, so a new product starts with exactly that set (values
+// empty). Boxes removed with × don't come back.
 export function rememberedLabels() {
   try {
     const saved = JSON.parse(localStorage.getItem(LABELS_KEY) || '[]')
@@ -65,8 +77,7 @@ export function rememberedLabels() {
 
 export function rememberLabels(labels) {
   try {
-    const merged = mergeLabels(rememberedLabels(), labels)
-    localStorage.setItem(LABELS_KEY, JSON.stringify(merged))
+    localStorage.setItem(LABELS_KEY, JSON.stringify(mergeLabels(labels)))
   } catch {
     // Storage blocked: the labels on saved products still carry over.
   }

@@ -372,6 +372,7 @@ declare
   -- recomputed below and the order refused if what was sent doesn't match.
   db_price      numeric;
   db_drop       text;
+  db_publish    timestamptz;
   calc_subtotal numeric := 0;
   zone_key      text;
   zone_fee      numeric;
@@ -419,12 +420,18 @@ begin
     -- FOR UPDATE holds the row until this transaction ends, so a second
     -- checkout for the same product waits here instead of reading the same
     -- count and selling the same piece twice.
-    select p.stock, p.price, p.drop_name, true into cur_stock, db_price, db_drop, has_row
+    select p.stock, p.price, p.drop_name, p.publish_at, true into cur_stock, db_price, db_drop, db_publish, has_row
       from products p
      where p.id::text = item ->> 'product_id'
        for update;
 
     if not coalesce(has_row, false) then
+      raise exception 'UNAVAILABLE:%', item ->> 'product_name';
+    end if;
+
+    -- Scheduled for later (products.publish_at): not on sale yet, however
+    -- the request got hold of its id. The admin can still enter a DM sale.
+    if db_publish is not null and db_publish > now() and not public.is_admin() then
       raise exception 'UNAVAILABLE:%', item ->> 'product_name';
     end if;
 
@@ -1542,3 +1549,43 @@ create policy "Signed-in admins manage looks"
   to authenticated
   using (public.is_admin())
   with check (public.is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Homepage hero: which screens a slide is for
+-- ---------------------------------------------------------------------------
+-- 'desktop' — PC, laptop and tablet; 'mobile' — phones only; 'all' — both
+-- (every slide made before this existed). Picked in Admin → Homepage.
+alter table hero_slides add column if not exists device text not null default 'all';
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'hero_slides_device_check') then
+    alter table hero_slides add constraint hero_slides_device_check check (device in ('all', 'desktop', 'mobile'));
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Scheduled products
+-- ---------------------------------------------------------------------------
+-- publish_at: when a product goes live (e.g. a drop at 10 pm). Until then
+-- visitors can't see it at all — not in the shop, not by its link — and
+-- place_order refuses it. null = live as soon as it's saved. The admin
+-- always sees every product.
+alter table products add column if not exists publish_at timestamptz;
+
+-- Every read-only policy on products is replaced by this one, so an older
+-- "anyone can view" rule can't keep showing scheduled products.
+do $$
+declare pol record;
+begin
+  for pol in select policyname from pg_policies
+              where schemaname = 'public' and tablename = 'products' and cmd = 'SELECT'
+  loop
+    execute format('drop policy %I on products', pol.policyname);
+  end loop;
+end $$;
+
+create policy "Anyone can view products"
+  on products for select
+  to anon, authenticated
+  using (publish_at is null or publish_at <= now() or public.is_admin());

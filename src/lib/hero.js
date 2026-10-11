@@ -31,11 +31,13 @@ export async function fetchAllHeroSlides() {
   return { slides: data, error: null }
 }
 
-export async function createHeroSlide({ label, imageUrl, sortOrder }) {
+// device: 'desktop' (PC, laptop, tablet) or 'mobile' (phones).
+export async function createHeroSlide({ label, imageUrl, sortOrder, device = 'all' }) {
   const { error } = await supabase.from('hero_slides').insert({
     label,
     image_url: imageUrl,
     sort_order: sortOrder,
+    device,
   })
 
   if (error) {
@@ -84,4 +86,16 @@ export async function reorderHeroSlides(slides) {
   }
 
   return { error: null }
+}
+
+// Phones get the 'mobile' slides; PC, laptop and tablet the 'desktop' ones.
+export const PHONE_QUERY = '(max-width: 767px)'
+
+// The slides for this kind of screen ('all' slides show on both). If none
+// are made for it yet, the other screen's slides stand in, so the hero is
+// never left empty.
+export function slidesFor(slides, isPhone) {
+  const want = isPhone ? 'mobile' : 'desktop'
+  const mine = slides.filter((s) => !s.device || s.device === 'all' || s.device === want)
+  return mine.length ? mine : slides
 }
