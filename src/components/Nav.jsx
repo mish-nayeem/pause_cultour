@@ -113,6 +113,21 @@ export default function Nav({ overlay = false }) {
     navigate(`/shop?d=${encodeURIComponent(drop)}`)
   }
 
+  // Which nav link is the page you're on — shown in blue.
+  const path = location.pathname
+  const here = path.startsWith('/lookbook')
+    ? 'drops'
+    : path.startsWith('/shop') || path.startsWith('/product')
+      ? 'shop'
+      : path === '/about'
+        ? 'about'
+        : path === '/cart' || path === '/checkout'
+          ? 'cart'
+          : path === '/login' || path === '/account' || path === '/admin'
+            ? 'account'
+            : ''
+  const cls = (name, extra = '') => `${extra} ${here === name ? 'here' : ''}`.trim()
+
   const catList = ['ALL', 'NEW', ...categories]
   const openList = openMenu === 'drops' ? drops : catList
   const openGo = openMenu === 'drops' ? goLookbook : goCategory
@@ -163,22 +178,22 @@ export default function Nav({ overlay = false }) {
         <nav className="desk-nav">
           <ul>
             <li onMouseEnter={() => showMenu('shop')}>
-              <Link to="/shop" className={openMenu === 'shop' ? 'dim' : ''}>SHOP</Link>
+              <Link to="/shop" className={cls('shop', openMenu === 'shop' ? 'dim' : '')}>SHOP</Link>
             </li>
             <li onMouseEnter={() => showMenu(drops.length > 0 ? 'drops' : null)}>
-              <Link to="/shop" className={openMenu === 'drops' ? 'dim' : ''}>DROPS</Link>
+              <Link to="/shop" className={cls('drops', openMenu === 'drops' ? 'dim' : '')}>DROPS</Link>
             </li>
-            <li onMouseEnter={() => showMenu(null)}><Link to="/about">ABOUT US</Link></li>
+            <li onMouseEnter={() => showMenu(null)}><Link to="/about" className={cls('about')}>ABOUT US</Link></li>
             <li onMouseEnter={() => showMenu(null)}>
               <button type="button" className="search-btn" onClick={() => { setOpenMenu(null); setSearchOpen((v) => !v) }} aria-label="Search" title="Search">
                 <IconSearch width="15" height="15" />
               </button>
             </li>
             <li onMouseEnter={() => showMenu(null)}>
-              <Link to="/cart" className="cart">CART ({count})</Link>
+              <Link to="/cart" className={cls('cart', 'cart')}>CART ({count})</Link>
             </li>
             <li onMouseEnter={() => showMenu(null)}>
-              <Link to={accountLink} className="admin-link" title={accountLabel} aria-label={accountLabel}>
+              <Link to={accountLink} className={cls('account', 'admin-link')} title={accountLabel} aria-label={accountLabel}>
                 <IconUser width="15" height="15" />
               </Link>
             </li>
@@ -201,7 +216,7 @@ export default function Nav({ overlay = false }) {
           </button>
           <button
             type="button"
-            className="menu-btn"
+            className={`menu-btn ${here === 'shop' ? 'here' : ''}`}
             onClick={() => { setSearchOpen(false); setMenuOpen((v) => (v === 'shop' ? false : 'shop')) }}
             aria-expanded={menuOpen === 'shop'}
           >

@@ -138,6 +138,11 @@
 .site-header a:hover { opacity: 0.62; }
 .site-header a.dim { opacity: 0.62; }
 
+/* The link for the page you're on. */
+.site-header a.here,
+.site-header .menu-btn.here,
+.site-header a.admin-link.here { color: #4b9bff; }
+
 .site-header a.cart::before {
   content: '● ';
   color: #1877f2; /* Facebook blue */
