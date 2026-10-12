@@ -446,6 +446,10 @@
 
   .mob-cart:hover { background: var(--ink); color: #fff; }
 
+  /* While the filter panel is open its CLOSE button takes the pills'
+     place; CART would otherwise show round its edges. */
+  body:has(.sf-back) .mob-cart { visibility: hidden; }
+
   body:has(.sf-pill, .sf-back) .mob-cart {
     left: calc(50% + 5px);
     transform: none;

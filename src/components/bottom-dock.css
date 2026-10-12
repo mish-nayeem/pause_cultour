@@ -28,6 +28,11 @@
   justify-content: center;
   gap: 10px;
   pointer-events: none;
+  /* Its own layer: iPhone Safari otherwise repaints the pills only in part
+     while its toolbar slides in and out, leaving half a button. */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Inside the dock the pills are laid out side by side, not fixed. */
@@ -35,6 +40,8 @@
   pointer-events: auto;
   position: static !important;
   transform: none !important;
+  /* Each pill keeps its full width — never squeezed to cut its text. */
+  flex: none;
 }
 
 .dock-inner .sf-pill { order: 0; }
