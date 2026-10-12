@@ -402,7 +402,6 @@ export default function Product() {
             however many photos the product has. */}
         <aside className="info">
           <div className="code-row">
-            <div className="code mono">{product.sku} · {product.variant.toUpperCase()}</div>
             <button type="button" className="share-btn mono" onClick={handleShare}>
               <IconShare width="15" height="15" strokeWidth="2.2" />
               {shared ? 'LINK COPIED' : 'SHARE'}
