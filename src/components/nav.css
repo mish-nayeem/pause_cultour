@@ -365,8 +365,8 @@
   /* A chunky black pill holding just the logo and MENU, centred — sized
      to its contents rather than stretched across the screen. */
   .site-header {
-    gap: 26px;
-    padding: 0 24px;
+    gap: 22px;
+    padding: 0 22px;
     min-height: 58px;
     width: auto;
     border-radius: 999px;
@@ -381,8 +381,10 @@
     .menu-btn { font-size: 13px; }
   }
 
+  /* With the cart bag in, the pill is too wide to sit centred clear of
+     the back button here, so it moves right by the button's width. */
   @media (max-width: 340px) {
-    .site-header { gap: 12px; padding: 0 12px; }
+    .site-header { gap: 12px; padding: 0 12px; margin-left: 40px; }
     .mob-right { gap: 10px; }
   }
 
@@ -393,7 +395,27 @@
   .mob-right {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
+  }
+
+  /* The cart bag, after MENU — the search glass's size and colour. */
+  .mob-bag { position: relative; text-decoration: none; }
+  .mob-bag.here { color: #4b9bff; }
+
+  .mob-bag-count {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 9.5px;
+    line-height: 15px;
+    text-align: center;
   }
 
 

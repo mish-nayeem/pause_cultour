@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
-import { IconUser, IconSearch } from './Icons.jsx'
+import { IconUser, IconSearch, IconBag } from './Icons.jsx'
 import SearchBar from './SearchBar.jsx'
 import { lookbookPath } from '../lib/lookbook.js'
 import { InDock } from './BottomDock.jsx'
@@ -231,6 +231,17 @@ export default function Nav({ overlay = false }) {
           >
             {menuOpen === 'menu' ? 'CLOSE' : 'MENU'}
           </button>
+          {/* The cart as a bag, the same size as the search glass, with a
+              count once something is in it. */}
+          <Link
+            to="/cart"
+            className={`search-btn mob-bag ${here === 'cart' ? 'here' : ''}`}
+            onClick={() => { setMenuOpen(false); setSearchOpen(false) }}
+            aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
+          >
+            <IconBag width="17" height="17" />
+            {count > 0 && <span className="mob-bag-count mono">{count}</span>}
+          </Link>
         </div>
       </header>
 

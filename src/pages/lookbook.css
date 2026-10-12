@@ -36,13 +36,16 @@
   cursor: pointer;
 }
 
-/* Small photos on the left, the big one on the right, a narrow gap between.
-   The small-photo side is as wide as a portrait (4:5) photo at full screen
-   height leaves free, so a portrait photo sits right up against it; the side
-   keeps that width whatever photo is showing, so nothing jumps. */
+/* Heading and small photos on the left, the big photo on the right
+   starting level with the heading, a narrow gap between. The left side
+   takes what the big photo leaves: the big one is as tall as the screen
+   allows, at the drop's usual shape (--lb-ar, width ÷ height, set from the
+   photos), so it reaches the right edge with no empty band — and the left
+   side keeps its width whichever photo is showing, so nothing jumps. */
 .lb-viewer {
-  --lb-h: calc(100vh - 190px);
-  --lb-tw: clamp(280px, calc(100% - 12px - var(--lb-h) * 0.8), 60%);
+  --lb-ar: 0.8;
+  --lb-h: calc(100vh - 130px);
+  --lb-tw: max(300px, calc(100% - 12px - var(--lb-h) * var(--lb-ar)));
   display: flex;
   gap: 12px;
   padding: 0 32px;
@@ -50,12 +53,24 @@
 }
 
 @supports (height: 100dvh) {
-  .lb-viewer { --lb-h: calc(100dvh - 190px); }
+  .lb-viewer { --lb-h: calc(100dvh - 130px); }
 }
 
-/* The big photo whole and uncropped, as tall as the screen allows, so the
-   full picture is in view without scrolling. The frame shrinks to the
-   photo, so the product names sit on the photo itself. */
+.lb-side {
+  flex: 0 0 var(--lb-tw);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: var(--lb-h);
+  position: sticky;
+  top: 100px;
+}
+
+.lb-side .lb-head { padding: 0 0 14px; }
+
+/* The big photo whole and uncropped — its own shape, never stretched —
+   so the full picture is in view without scrolling. The frame shrinks to
+   the photo, so the product names sit on the photo itself. */
 .lb-main {
   aspect-ratio: auto;
   flex: 0 1 auto;
@@ -73,7 +88,7 @@
   object-fit: contain;
 }
 .lb-look.lb-main:hover img { transform: none; }
-.lb-main.lb-ghost { width: calc(var(--lb-h) * 0.8); height: var(--lb-h); }
+.lb-main.lb-ghost { width: calc(var(--lb-h) * var(--lb-ar)); height: var(--lb-h); }
 
 /* The small photos stay on screen while the page scrolls. */
 
@@ -97,12 +112,11 @@
 
 /* Every photo of the drop small, five to a row, in a box as tall as the
    big photo that scrolls on its own when there are many. */
+/* Small photos, five to a row, under the heading; they scroll on their
+   own when there are more than fit beside the big photo. */
 .lb-thumbs {
-  flex: 0 0 var(--lb-tw);
-  min-width: 0;
-  position: sticky;
-  top: 100px;
-  max-height: var(--lb-h);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -210,6 +224,9 @@
   .lb-head { padding: 0 20px 18px; }
   /* Phones: the big photo on top, the small ones under it. */
   .lb-viewer { flex-direction: column; align-items: stretch; gap: 10px; padding: 0 14px; }
+  /* Heading, then the big photo, then the small ones. */
+  .lb-side { display: contents; }
+  .lb-side .lb-head { order: -2; padding: 0 6px 4px; }
   .lb-main { order: -1; position: relative; top: auto; max-width: 100%; align-self: center; }
   .lb-look.lb-main img { max-height: 72vh; max-height: 72dvh; }
   .lb-main.lb-ghost { width: 100%; height: 72vh; max-width: 100%; }

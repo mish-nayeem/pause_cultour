@@ -23,6 +23,17 @@ export default function Lookbook() {
   // When a finger last went down — the click that follows a touch shouldn't
   // undo what the touch just opened.
   const touchedAt = useRef(0)
+  // Width ÷ height of each photo, read as its small version loads. The
+  // big-photo side is sized for the drop's usual shape (the middle one), so
+  // the photos fill it with no empty band on the right.
+  const [shapes, setShapes] = useState({})
+  function noteShape(id, img) {
+    if (!img.naturalWidth || !img.naturalHeight) return
+    const r = img.naturalWidth / img.naturalHeight
+    setShapes((prev) => (prev[id] === r ? prev : { ...prev, [id]: r }))
+  }
+  const known = Object.values(shapes).sort((a, b) => a - b)
+  const shape = known.length ? known[Math.floor(known.length / 2)] : 0.8
 
   // ← and → on a keyboard step through the photos.
   useEffect(() => {
@@ -43,6 +54,7 @@ export default function Lookbook() {
     setLooks(null)
     setOpenId(null)
     setCurrent(0)
+    setShapes({})
 
     Promise.all([fetchLooks(drop), fetchProducts()]).then(([{ looks: rows }, { products }]) => {
       if (cancelled) return
@@ -65,23 +77,31 @@ export default function Lookbook() {
     return () => { cancelled = true }
   }, [drop])
 
+  const heading = (
+    <div className="lb-head">
+      {/* The drop's name in ink, then "LOOKBOOK" the same size in pale grey. */}
+      <h1 className="display">
+        <span className="lb-drop">{drop}</span> <span className="lb-word">LOOKBOOK</span>
+      </h1>
+    </div>
+  )
+
   return (
     <>
       <Nav />
 
       <div className="lb-page">
-        <div className="lb-head">
-          {/* The drop's name in ink, then "LOOKBOOK" the same size in pale grey. */}
-          <h1 className="display">
-            <span className="lb-drop">{drop}</span> <span className="lb-word">LOOKBOOK</span>
-          </h1>
-        </div>
+        {/* With photos, the heading sits over the small photos and the big
+            photo starts level with it; otherwise it heads the page. */}
+        {!(looks?.length > 0) && heading}
 
         {looks === null && (
           <div className="lb-viewer">
-            <div className="lb-thumbs">
-              <div className="lb-thumbs-in">
-                {Array.from({ length: 10 }, (_, i) => <div className="lb-thumb shimmer" key={i} />)}
+            <div className="lb-side">
+              <div className="lb-thumbs">
+                <div className="lb-thumbs-in">
+                  {Array.from({ length: 10 }, (_, i) => <div className="lb-thumb shimmer" key={i} />)}
+                </div>
               </div>
             </div>
             <div className="lb-look lb-main lb-ghost shimmer" />
@@ -98,21 +118,30 @@ export default function Lookbook() {
           return (
             // Every photo of the drop small on the left, five to a row; the
             // one picked shows big on the right, whole and on one screen.
-            <div className="lb-viewer">
-              <div className="lb-thumbs" data-lenis-prevent>
-                <div className="lb-thumbs-in">
-                  {looks.map((l, i) => (
-                    <button
-                      type="button"
-                      key={l.id}
-                      className={`lb-thumb ${i === current ? 'on' : ''}`}
-                      onClick={() => go(i)}
-                      aria-label={`Photo ${i + 1}`}
-                      aria-current={i === current}
-                    >
-                      <img src={imgUrl(l.image, { w: 240 })} alt="" loading="lazy" style={{ objectPosition: l.focus || 'center' }} />
-                    </button>
-                  ))}
+            <div className="lb-viewer" style={{ '--lb-ar': shape }}>
+              <div className="lb-side">
+                {heading}
+                <div className="lb-thumbs" data-lenis-prevent>
+                  <div className="lb-thumbs-in">
+                    {looks.map((l, i) => (
+                      <button
+                        type="button"
+                        key={l.id}
+                        className={`lb-thumb ${i === current ? 'on' : ''}`}
+                        onClick={() => go(i)}
+                        aria-label={`Photo ${i + 1}`}
+                        aria-current={i === current}
+                      >
+                        <img
+                          src={imgUrl(l.image, { w: 240 })}
+                          alt=""
+                          loading="lazy"
+                          style={{ objectPosition: l.focus || 'center' }}
+                          onLoad={(e) => noteShape(l.id, e.currentTarget)}
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
