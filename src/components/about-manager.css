@@ -191,3 +191,23 @@
   .am-side { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 12px; }
   .am-order { gap: 10px; }
 }
+
+/* Heading on top, text under it — the same two the About page shows. */
+.am-fields {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.am-fields .am-text-input { min-width: 0; }
+
+.am-heading-input,
+.am-heading {
+  font-family: 'Anton', sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.am-row .am-fields { min-width: 0; }

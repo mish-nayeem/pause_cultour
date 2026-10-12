@@ -1,25 +1,24 @@
 .about-page {
-  max-width: 940px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 40px 40px 80px;
 }
 
+/* The footer's @pause.cultour mark, as the page title. */
 .about-head {
   padding-bottom: 34px;
   border-bottom: 1px solid var(--steel-line);
-  margin-bottom: 44px;
+  margin-bottom: 48px;
 }
 
-.about-head .label {
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  color: var(--steel);
-  margin-bottom: 10px;
-}
+.about-head h1 { margin: 0; line-height: 0; }
 
-.about-head h1 {
-  font-size: clamp(30px, 4vw, 44px);
-  line-height: 1.02;
+.about-head img {
+  display: block;
+  height: clamp(48px, 6vw, 84px);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .about-msg {
@@ -28,8 +27,16 @@
   padding: 40px 0;
 }
 
+/* Photo left, words right — two even columns on a computer. */
+.about-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 5vw, 80px);
+  align-items: start;
+}
+
 .about-block + .about-block {
-  margin-top: 64px;
+  margin-top: 80px;
 }
 
 /* Rounded like the homepage hero, so the photography across the site reads as
@@ -46,18 +53,35 @@
   filter: grayscale(20%) contrast(1.03);
 }
 
+.about-copy {
+  padding-top: clamp(8px, 2vw, 28px);
+  max-width: 560px;
+}
+
+.about-heading {
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: clamp(30px, 3.4vw, 50px);
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  margin: 0 0 26px;
+}
+
 .about-text {
-  margin-top: 22px;
-  font-size: 15.5px;
+  margin: 0;
+  font-size: 15px;
   line-height: 1.75;
   color: #3a3a30;
-  max-width: 58ch;
   white-space: pre-line;
 }
 
+.about-text + .about-text { margin-top: 18px; }
+
 .about-page .back-link {
   display: inline-block;
-  margin-top: 56px;
+  margin-top: 64px;
   font-size: 12px;
   color: var(--steel);
   text-decoration: none;
@@ -67,8 +91,12 @@
 
 @media (max-width: 860px) {
   .about-page { padding: 26px 20px 60px; }
-  .about-head { margin-bottom: 32px; }
-  .about-block + .about-block { margin-top: 44px; }
+  .about-head { margin-bottom: 30px; padding-bottom: 26px; }
+  .about-head img { height: 52px; }
+  .about-block { grid-template-columns: 1fr; gap: 22px; }
+  .about-block + .about-block { margin-top: 52px; }
   .about-shot { border-radius: 16px; }
-  .about-text { margin-top: 18px; font-size: 14.5px; }
+  .about-copy { padding-top: 0; }
+  .about-heading { font-size: 30px; margin-bottom: 16px; }
+  .about-text { font-size: 14.5px; }
 }
