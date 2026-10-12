@@ -49,6 +49,8 @@ import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
 import ManualOrderForm from '../components/ManualOrderForm.jsx'
+import useDragList from '../lib/useDragList.js'
+import { queueOrder, saveQueueOrder } from '../lib/products.js'
 import { fetchAllNavCategories, DROPS_MENU } from '../lib/navCategories.js'
 import { dropKey } from '../lib/lookbook.js'
 import { isScheduled, launchLabel } from '../lib/schedule.js'
@@ -531,6 +533,21 @@ export default function Admin() {
       ].sort(),
     [products, navCategories]
   )
+
+  // Product catalog = the shop's ALL page, top to bottom. Dragging a row by
+  // its handle changes that order; categories stay newest upload first.
+  const queue = useMemo(() => queueOrder(products), [products])
+  const [queueError, setQueueError] = useState('')
+  const drag = useDragList(queue, async (ids) => {
+    setQueueError('')
+    const at = new Map(ids.map((id, i) => [id, i + 1]))
+    setProducts((prev) => prev.map((p) => ({ ...p, shop_position: at.get(p.id) ?? p.shop_position })))
+    const { error } = await saveQueueOrder(ids)
+    if (error) {
+      setQueueError("Couldn't save the order — has supabase-migration-shop-order.sql been run?")
+      reload()
+    }
+  })
 
   const filteredOrders = useMemo(() => {
     const byStatus =
@@ -1559,13 +1576,24 @@ export default function Admin() {
 
             <ImageMigration onDone={reload} />
 
+            {products.length > 1 && (
+              <div className="queue-note mono">
+                This is the order of the shop's <strong>ALL</strong> page. Drag a product by
+                the <span className="queue-grip-inline">⠿</span> handle to move it up or down.
+                Category pages (hoodies, jackets…) always show the newest upload first, and a
+                new upload starts at the top here too.
+              </div>
+            )}
+            {queueError && <div className="err-banner mono">{queueError}</div>}
+
             {products.length === 0 && <div className="empty mono">No products in the catalog.</div>}
 
             <div className="table">
-              {products.map((p) => (
+              {drag.list.map((p) => (
                 <div
-                  className="trow prow clickable"
+                  className={`trow prow clickable queue ${drag.dragId === p.id ? 'dragging' : ''}`}
                   key={p.id}
+                  ref={drag.rowRef(p.id)}
                   onClick={() => setEditing(p)}
                 >
                   <div className="pthumb">
@@ -1605,6 +1633,20 @@ export default function Admin() {
                         <span className="out-tag">{p.sizes_out.length} size out</span>
                       )}
                   </div>
+                  <button
+                    type="button"
+                    className="drag-handle"
+                    aria-label={`Drag to move ${p.name}`}
+                    title="Drag to move"
+                    onPointerDown={(e) => drag.start(e, p.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <svg width="12" height="18" viewBox="0 0 12 18" aria-hidden="true">
+                      {[3, 9, 15].map((y) => (
+                        <g key={y}><circle cx="3" cy={y} r="1.6" /><circle cx="9" cy={y} r="1.6" /></g>
+                      ))}
+                    </svg>
+                  </button>
                 </div>
               ))}
             </div>

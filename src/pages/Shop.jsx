@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
-import { fetchProducts } from '../lib/products.js'
+import { fetchProducts, queueOrder } from '../lib/products.js'
 import { CardPrice, SaleBadge } from '../components/SalePrice.jsx'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { imgUrl } from '../lib/images.js'
@@ -53,12 +53,13 @@ export default function Shop() {
     return () => { cancelled = true }
   }, [])
 
-  // A drop is its own view of the catalog, so it replaces the category filter
-  // rather than narrowing it — arriving from the DROPS menu shows that drop
+  // ALL follows the order set in the admin; every other view is newest
+  // upload first. A drop is its own view of the catalog, so it replaces the
+  // category filter rather than narrowing it — arriving from the DROPS menu shows that drop
   // whole, not the part of it that happens to match the last category picked.
   const inView = useMemo(() => {
     if (activeDrop) return products.filter((p) => p.drop === activeDrop)
-    if (active === 'ALL') return products
+    if (active === 'ALL') return queueOrder(products)
     if (active === 'NEW') return products.filter((p) => p.isNew)
     return products.filter((p) => p.category === active)
   }, [products, active, activeDrop])

@@ -1176,3 +1176,48 @@
   color: #151318;
   border-color: transparent;
 }
+
+/* ---------- Product catalog: drag to set the ALL page order ---------- */
+
+.trow.prow.queue { grid-template-columns: 52px 1.4fr 1fr 100px 1.1fr 110px 30px; }
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--steel);
+  cursor: grab;
+  touch-action: none;
+  justify-self: end;
+}
+
+.drag-handle svg { fill: currentColor; }
+.drag-handle:hover { color: var(--ink); }
+
+.trow.prow.queue.dragging {
+  position: relative;
+  z-index: 2;
+  background: var(--paper);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  cursor: grabbing;
+}
+
+.trow.prow.queue.dragging .drag-handle { cursor: grabbing; color: var(--cobalt); }
+
+body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
+
+.queue-note {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--steel);
+  margin: 4px 0 14px;
+  max-width: 70ch;
+}
+
+.queue-note strong { color: var(--ink); }
+.queue-grip-inline { color: var(--ink); font-size: 14px; }

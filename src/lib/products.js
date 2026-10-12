@@ -22,7 +22,32 @@ function mapRow(row) {
     details: row.details || '',
     sizeChart: row.size_chart || null,
     colourGroup: row.colour_group || '',
+    shopPosition: row.shop_position ?? null,
+    createdAt: row.created_at,
   }
+}
+
+// The shop's ALL page order. Products the admin hasn't placed yet (just
+// uploaded) come first, newest first; then the admin's own order from
+// Products → Product catalog. Works on both the shop's and the admin's rows.
+export function queueOrder(list) {
+  const pos = (p) => p.shopPosition ?? p.shop_position ?? null
+  const made = (p) => new Date(p.createdAt ?? p.created_at ?? 0).getTime()
+  return [...list].sort((a, b) => {
+    const pa = pos(a)
+    const pb = pos(b)
+    if (pa == null && pb == null) return made(b) - made(a)
+    if (pa == null) return -1
+    if (pb == null) return 1
+    return pa - pb
+  })
+}
+
+// Admin: saves the ALL page order — ids top to bottom.
+export async function saveQueueOrder(ids) {
+  const { error } = await supabase.rpc('reorder_products', { ids })
+  if (error) console.error('[Supabase] reorder_products failed:', error.message)
+  return { error }
 }
 
 // The same piece in its other colours. Each colour is its own product row, so

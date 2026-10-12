@@ -18,11 +18,11 @@ export default function YouMayLike({ currentId }) {
   const [page, setPage] = useState(1)
   const topRef = useRef(null)
 
-  // The catalogue comes back oldest first, so the newest are at the end.
+  // The catalogue already comes back newest first.
   useEffect(() => {
     let cancelled = false
     fetchProducts().then(({ products: all }) => {
-      if (!cancelled) setProducts([...all].reverse())
+      if (!cancelled) setProducts(all)
     })
     return () => { cancelled = true }
   }, [])

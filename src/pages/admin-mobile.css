@@ -119,6 +119,18 @@
   .admin .trow.prow > :nth-child(5) { grid-area: c5; white-space: normal; }
   .admin .trow.prow > :nth-child(6) { grid-area: c6; white-space: normal; }
   .admin .trow.prow > .tc:empty { display: none; }
+
+  /* Catalog rows carry a drag handle down the right-hand side. */
+  .admin .trow.prow.queue {
+    grid-template-columns: 46px minmax(0, 1fr) auto 32px;
+    grid-template-areas:
+      'thumb name name handle'
+      'thumb c3 c4 handle'
+      'thumb c5 c5 handle'
+      'thumb c6 c6 handle';
+  }
+
+  .admin .trow.prow.queue > .drag-handle { grid-area: handle; align-self: center; height: 48px; }
   .admin .trow.prow .stock-chips { flex-wrap: wrap; }
 
   /* bKash check: each waiting order as a card instead of a wide table that
