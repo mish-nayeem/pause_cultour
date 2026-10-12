@@ -9,7 +9,8 @@ import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './lookbook.css'
 
-// A drop's lookbook: big photos, two to a row. Tapping (or hovering) a photo
+// A drop's lookbook: small photos on the left, the picked one big on the
+// right. Tapping (or hovering) a photo
 // names the pieces in it, and each name opens that product's page. Only the
 // photos uploaded in Admin → Lookbook show here — product photos stay in the
 // shop.
@@ -78,12 +79,12 @@ export default function Lookbook() {
 
         {looks === null && (
           <div className="lb-viewer">
-            <div className="lb-look lb-main lb-ghost shimmer" />
             <div className="lb-thumbs">
               <div className="lb-thumbs-in">
-                {[0, 1, 2, 3, 4, 5].map((i) => <div className="lb-thumb shimmer" key={i} />)}
+                {Array.from({ length: 10 }, (_, i) => <div className="lb-thumb shimmer" key={i} />)}
               </div>
             </div>
+            <div className="lb-look lb-main lb-ghost shimmer" />
           </div>
         )}
 
@@ -95,9 +96,26 @@ export default function Lookbook() {
           const hasInfo = look.title || look.items.length > 0
           const go = (i) => { setCurrent((i + looks.length) % looks.length); setOpenId(null) }
           return (
-            // Big photo on the left, every photo of the drop as small
-            // squares on the right; picking a square shows it big.
+            // Every photo of the drop small on the left, five to a row; the
+            // one picked shows big on the right, whole and on one screen.
             <div className="lb-viewer">
+              <div className="lb-thumbs" data-lenis-prevent>
+                <div className="lb-thumbs-in">
+                  {looks.map((l, i) => (
+                    <button
+                      type="button"
+                      key={l.id}
+                      className={`lb-thumb ${i === current ? 'on' : ''}`}
+                      onClick={() => go(i)}
+                      aria-label={`Photo ${i + 1}`}
+                      aria-current={i === current}
+                    >
+                      <img src={imgUrl(l.image, { w: 240 })} alt="" loading="lazy" style={{ objectPosition: l.focus || 'center' }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <figure
                 className={`lb-look lb-main ${open ? 'open' : ''}`}
                 // A finger shows the names the moment it lands, not after
@@ -135,23 +153,6 @@ export default function Lookbook() {
                   </figcaption>
                 )}
               </figure>
-
-              <div className="lb-thumbs" data-lenis-prevent>
-                <div className="lb-thumbs-in">
-                  {looks.map((l, i) => (
-                    <button
-                      type="button"
-                      key={l.id}
-                      className={`lb-thumb ${i === current ? 'on' : ''}`}
-                      onClick={() => go(i)}
-                      aria-label={`Photo ${i + 1}`}
-                      aria-current={i === current}
-                    >
-                      <img src={imgUrl(l.image, { w: 240 })} alt="" loading="lazy" style={{ objectPosition: l.focus || 'center' }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           )
         })()}
