@@ -21,6 +21,9 @@ export default function Nav({ overlay = false }) {
   const { count } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
+  // The shop (drops included) and product pages: where people pick things
+  // to buy. There the cart is the CART pill at the bottom, beside FILTER.
+  const pickingPage = /^\/(shop|product\/)/.test(location.pathname)
 
   const [openMenu, setOpenMenu] = useState(null)  // null | 'shop' | 'drops'
   // SHOP's "Shop by collection" second row (the drops, as shop filters).
@@ -232,16 +235,20 @@ export default function Nav({ overlay = false }) {
             {menuOpen === 'menu' ? 'CLOSE' : 'MENU'}
           </button>
           {/* The cart as a bag, the same size as the search glass, with a
-              count once something is in it. */}
-          <Link
-            to="/cart"
-            className={`search-btn mob-bag ${here === 'cart' ? 'here' : ''}`}
-            onClick={() => { setMenuOpen(false); setSearchOpen(false) }}
-            aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
-          >
-            <IconBag width="17" height="17" />
-            {count > 0 && <span className="mob-bag-count mono">{count}</span>}
-          </Link>
+              count once something is in it. Not on the shop (drops
+              included) or a product page: there CART sits at the bottom
+              beside FILTER instead. */}
+          {!pickingPage && (
+            <Link
+              to="/cart"
+              className={`search-btn mob-bag ${here === 'cart' ? 'here' : ''}`}
+              onClick={() => { setMenuOpen(false); setSearchOpen(false) }}
+              aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
+            >
+              <IconBag width="17" height="17" />
+              {count > 0 && <span className="mob-bag-count mono">{count}</span>}
+            </Link>
+          )}
         </div>
       </header>
 
@@ -280,7 +287,7 @@ export default function Nav({ overlay = false }) {
       {/* Mobile only: the cart as a floating button at the bottom — centred,
           or beside the shop's FILTER pill. Only where people pick things to
           buy: the shop and a product page (not the lookbook). */}
-      {!menuOpen && /^\/(shop|product\/)/.test(location.pathname) && (
+      {!menuOpen && pickingPage && (
         <InDock>
           <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
             {count > 0 ? `CART (${count})` : 'CART'}
