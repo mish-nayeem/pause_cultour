@@ -4,14 +4,12 @@
   padding: 40px 40px 80px;
 }
 
-/* The footer's @pause.cultour mark, as the page title. */
+/* The footer's @pause.cultour mark, centred, as the page title. */
 .about-head {
-  padding-bottom: 34px;
-  border-bottom: 1px solid var(--steel-line);
   margin-bottom: 48px;
 }
 
-.about-head h1 { margin: 0; line-height: 0; }
+.about-head h1 { margin: 0; line-height: 0; display: flex; justify-content: center; }
 
 .about-head img {
   display: block;
@@ -91,7 +89,7 @@
 
 @media (max-width: 860px) {
   .about-page { padding: 26px 20px 60px; }
-  .about-head { margin-bottom: 30px; padding-bottom: 26px; }
+  .about-head { margin-bottom: 30px; }
   .about-head img { height: 52px; }
   .about-block { grid-template-columns: 1fr; gap: 22px; }
   .about-block + .about-block { margin-top: 52px; }
