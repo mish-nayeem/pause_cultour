@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useLocation } from 'react-router-dom'
 import './bottom-dock.css'
 
 // The floating FILTER and CART pills live in a zero-height sticky strip that
@@ -9,10 +8,21 @@ import './bottom-dock.css'
 // stop at the top of the footer — done by the browser, so it moves with the
 // scroll itself instead of chasing it from script (which made it shake).
 
+// The slot tells the pills when it appears or goes away. On a product page
+// the footer only shows once the product has loaded, after the pills are
+// already on screen, so looking for the slot once wasn't enough.
+let slot = null
+const listeners = new Set()
+
+function setSlot(el) {
+  slot = el
+  listeners.forEach((fn) => fn(el))
+}
+
 export function DockSlot() {
   return (
     <div className="dock">
-      <div className="dock-inner" id="bottom-dock" />
+      <div className="dock-inner" ref={setSlot} />
     </div>
   )
 }
@@ -21,12 +31,13 @@ export function DockSlot() {
 // footer), otherwise in place, where the pill's own CSS fixes it to the
 // bottom of the screen.
 export function InDock({ children }) {
-  const { pathname } = useLocation()
-  const [target, setTarget] = useState(null)
+  const [target, setTarget] = useState(slot)
 
   useEffect(() => {
-    setTarget(document.getElementById('bottom-dock'))
-  }, [pathname])
+    setTarget(slot)
+    listeners.add(setTarget)
+    return () => { listeners.delete(setTarget) }
+  }, [])
 
   return target ? createPortal(children, target) : children
 }
