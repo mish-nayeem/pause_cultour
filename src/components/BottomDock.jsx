@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './bottom-dock.css'
 
-// The floating FILTER and CART pills live in a zero-height sticky strip that
+// The shop's floating FILTER pill lives in a zero-height sticky strip that
 // sits right before the footer (the Footer renders <DockSlot />). Sticky
 // keeps the strip at the bottom of the screen while scrolling and lets it
 // stop at the top of the footer — done by the browser, so it moves with the
 // scroll itself instead of chasing it from script (which made it shake).
 
-// The slot tells the pills when it appears or goes away. On a product page
-// the footer only shows once the product has loaded, after the pills are
-// already on screen, so looking for the slot once wasn't enough.
+// The slot tells the pill when it appears or goes away — the footer can
+// show up after the pill is already on screen, so looking for the slot once
+// isn't enough.
 let slot = null
 const listeners = new Set()
 

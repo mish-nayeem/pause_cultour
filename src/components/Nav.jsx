@@ -5,7 +5,6 @@ import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
 import { IconUser, IconSearch, IconBag } from './Icons.jsx'
 import SearchBar from './SearchBar.jsx'
 import { lookbookPath } from '../lib/lookbook.js'
-import { InDock } from './BottomDock.jsx'
 import { watchUser } from '../lib/auth.js'
 import { isAdminEmail } from '../lib/admin.js'
 import './nav.css'
@@ -84,6 +83,31 @@ export default function Nav({ overlay = false }) {
     setSearchOpen(false)
   }, [location.pathname, location.search])
 
+  // A tap anywhere outside the open mobile panel (and outside the nav pill,
+  // whose SHOP / MENU buttons toggle it themselves) closes it. That tap only
+  // closes — it doesn't also press whatever was under it on the page.
+  const panelRef = useRef(null)
+  const headerRef = useRef(null)
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDown(e) {
+      if (panelRef.current?.contains(e.target) || headerRef.current?.contains(e.target)) return
+      setMenuOpen(false)
+      // Swallow the click this tap makes on the page — but never one on the
+      // nav pill, so SHOP / MENU answer straight away afterwards.
+      const swallow = (ev) => {
+        window.removeEventListener('click', swallow, { capture: true })
+        if (headerRef.current?.contains(ev.target)) return
+        ev.stopPropagation()
+        ev.preventDefault()
+      }
+      window.addEventListener('click', swallow, { capture: true })
+      setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 400)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [menuOpen])
+
   // The mobile panel covers the screen, so the page behind it shouldn't scroll.
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
@@ -145,7 +169,7 @@ export default function Nav({ overlay = false }) {
         </button>
       )}
 
-      <header className="site-header">
+      <header className="site-header" ref={headerRef}>
         <Link to="/" className="logo" aria-label="PAUSE — home">
           <span className="logo-3d">
             {Array.from({ length: LOGO_LAYERS }, (_, i) => {
@@ -201,10 +225,10 @@ export default function Nav({ overlay = false }) {
           </ul>
         </nav>
 
-        {/* Mobile: just a MENU word — the cart floats at the bottom of the
-            screen instead (below), within thumb reach. */}
         {/* Phones: SHOP opens the shop's categories and collections; MENU
-            has the rest. Whichever is open reads CLOSE. */}
+            has the rest. SHOP turns blue while open and a second tap shuts
+            it; MENU reads CLOSE while open. A tap outside the panel shuts
+            either. */}
         <div className="mob-right">
           <button
             type="button"
@@ -217,11 +241,11 @@ export default function Nav({ overlay = false }) {
           </button>
           <button
             type="button"
-            className={`menu-btn ${here === 'shop' ? 'here' : ''}`}
+            className={`menu-btn ${here === 'shop' || menuOpen === 'shop' ? 'here' : ''}`}
             onClick={() => { setSearchOpen(false); setMenuOpen((v) => (v === 'shop' ? false : 'shop')) }}
             aria-expanded={menuOpen === 'shop'}
           >
-            {menuOpen === 'shop' ? 'CLOSE' : 'SHOP'}
+            SHOP
           </button>
           <button
             type="button"
@@ -232,7 +256,8 @@ export default function Nav({ overlay = false }) {
             {menuOpen === 'menu' ? 'CLOSE' : 'MENU'}
           </button>
           {/* The cart as a bag, the same size as the search glass, with a
-              count once something is in it. */}
+              count once something is in it — on every page; it's the only
+              cart button on a phone. */}
           <Link
             to="/cart"
             className={`search-btn mob-bag ${here === 'cart' ? 'here' : ''}`}
@@ -277,20 +302,9 @@ export default function Nav({ overlay = false }) {
         </div>
       )}
 
-      {/* Mobile only: the cart as a floating button at the bottom — centred,
-          or beside the shop's FILTER pill. Only where people pick things to
-          buy: the shop and a product page (not the lookbook). */}
-      {!menuOpen && /^\/(shop|product\/)/.test(location.pathname) && (
-        <InDock>
-          <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
-            {count > 0 ? `CART (${count})` : 'CART'}
-          </Link>
-        </InDock>
-      )}
-
       {/* Mobile panel */}
       {menuOpen && (
-        <div className="mob-panel" data-lenis-prevent>
+        <div className="mob-panel" ref={panelRef} data-lenis-prevent>
           {menuOpen === 'shop' && (
             <>
               <div className="mob-section mono">SHOP</div>

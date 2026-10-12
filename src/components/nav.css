@@ -162,8 +162,6 @@
 .mob-right { display: none; }
 
 /* Mobile's floating cart; hidden on desktop, where CART sits in the pill. */
-.mob-cart { display: none; }
-
 .menu-btn {
   background: none;
   border: none;
@@ -420,38 +418,4 @@
 
 
   .mob-panel { display: block; }
-
-  /* Twin of the shop's FILTER pill — white, grey type — centred at the
-     bottom, or just right of FILTER when the shop shows it. */
-  .mob-cart {
-    pointer-events: auto;
-    display: block;
-    position: fixed;
-    left: 50%;
-    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    padding: 12px 26px;
-    border-radius: 4px;
-    background: #fff;
-    color: #8b8a82;
-    font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    text-decoration: none;
-    box-shadow: 0 6px 20px rgba(22, 22, 15, 0.18);
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .mob-cart:hover { background: var(--ink); color: #fff; }
-
-  /* While the filter panel is open its CLOSE button takes the pills'
-     place; CART would otherwise show round its edges. */
-  body:has(.sf-back) .mob-cart { visibility: hidden; }
-
-  body:has(.sf-pill, .sf-back) .mob-cart {
-    left: calc(50% + 5px);
-    transform: none;
-  }
 }
