@@ -226,9 +226,9 @@ export default function Nav({ overlay = false }) {
         </nav>
 
         {/* Phones: SHOP opens the shop's categories and collections; MENU
-            has the rest. SHOP turns blue while open and a second tap shuts
-            it; MENU reads CLOSE while open. A tap outside the panel shuts
-            either. */}
+            has the rest (the cart is the bag beside them). Whichever is open
+            turns blue and a second tap shuts it; so does a tap outside the
+            panel. */}
         <div className="mob-right">
           <button
             type="button"
@@ -249,11 +249,11 @@ export default function Nav({ overlay = false }) {
           </button>
           <button
             type="button"
-            className="menu-btn"
+            className={`menu-btn ${menuOpen === 'menu' ? 'here' : ''}`}
             onClick={() => { setSearchOpen(false); setMenuOpen((v) => (v === 'menu' ? false : 'menu')) }}
             aria-expanded={menuOpen === 'menu'}
           >
-            {menuOpen === 'menu' ? 'CLOSE' : 'MENU'}
+            MENU
           </button>
           {/* The cart as a bag, the same size as the search glass, with a
               count once something is in it — on every page; it's the only
@@ -342,7 +342,6 @@ export default function Nav({ overlay = false }) {
 
           <div className="mob-links mono">
             <Link to="/about">ABOUT US</Link>
-            <Link to="/cart">CART ({count})</Link>
             <Link to={accountLink} className="mob-admin">
               <IconUser width="13" height="13" /> {user ? 'MY ACCOUNT' : 'LOG IN / SIGN UP'}
             </Link>
