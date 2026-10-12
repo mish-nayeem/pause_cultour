@@ -1,0 +1,166 @@
+/* ---------- Phone layout ---------- */
+/* Loaded after admin.css and admin-theme.css. On a phone the panel used to
+   stack everything at full width, so headers, tabs and rows took far more
+   room than they needed. This tightens each piece into a phone-sized form. */
+
+@media (max-width: 760px) {
+  /* The grid stretched its rows to fill the screen, so on a short tab the
+     top bar grew several times taller than it should be. */
+  .admin { align-content: start; }
+
+  .admin .admin-topbar { padding: 12px 16px; }
+  .admin .admin-burger span { background: currentColor; }
+
+  /* Header: title on the left, theme dots on the right, one row. The email
+     and the date are already shown elsewhere, so they are hidden here. */
+  .admin .top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .admin .top > div:first-child { min-width: 0; }
+
+  .admin .admin-crumb {
+    font-size: 10.5px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin .top h1 { font-size: 23px; line-height: 1.1; }
+  .admin .top-sub,
+  .admin .top-date,
+  .admin .theme-picker-label { display: none; }
+  .admin .top-right { flex: none; align-items: flex-end; }
+  .admin .theme-picker { padding: 5px 8px; gap: 6px; }
+  .admin .theme-swatch { width: 20px; height: 20px; }
+
+  /* Sub-tabs: one line you swipe sideways, instead of three wrapped rows. */
+  .admin .subtabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -16px 18px;
+    padding: 0 16px 2px;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .admin .subtabs::-webkit-scrollbar { display: none; }
+
+  .admin .subtab {
+    flex: none;
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 7px 14px;
+  }
+
+  /* Overview counters two to a row. In a row of three, the last card spans
+     the full width so it doesn't sit alone at half width. */
+  .admin .stat-row.three,
+  .admin .stat-row.four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .admin .stat-row.three > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .admin .stat { padding: 14px 14px 16px; }
+  .admin .stat-top { gap: 8px; margin-bottom: 10px; }
+  .admin .stat-label { font-size: 10.5px; letter-spacing: 0.05em; }
+  .admin .stat-value { font-size: 26px; }
+  .admin .stat-note { font-size: 11px; margin-top: 6px; }
+
+  /* Order rows as small cards: customer and status on top, order ID and
+     total in the middle, phone and date at the bottom. */
+  .admin .trow-wrap > .trow {
+    grid-template-columns: minmax(0, 1fr) 124px;
+    grid-template-areas:
+      'name status'
+      'id price'
+      'phone date';
+    gap: 6px 12px;
+    padding: 14px 0;
+  }
+
+  .admin .trow-wrap > .trow > :nth-child(1) { grid-area: id; }
+  .admin .trow-wrap > .trow > :nth-child(2) { grid-area: name; font-size: 14px; font-weight: 600; }
+  .admin .trow-wrap > .trow > :nth-child(3) { grid-area: phone; }
+  .admin .trow-wrap > .trow > :nth-child(4) { grid-area: date; text-align: right; }
+  .admin .trow-wrap > .trow > :nth-child(5) { grid-area: price; text-align: right; font-weight: 600; }
+  .admin .trow-wrap > .trow > :nth-child(6) { grid-area: status; }
+
+  /* Product rows keep a small photo on the left, with the details beside it. */
+  .admin .trow.prow {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'thumb name name'
+      'thumb c3 c4'
+      'thumb c5 c5'
+      'thumb c6 c6';
+    gap: 4px 12px;
+    align-items: center;
+    padding: 12px 0;
+  }
+
+  .admin .trow.prow > .pthumb {
+    display: block;
+    grid-area: thumb;
+    align-self: start;
+    width: 46px;
+    height: 56px;
+  }
+
+  .admin .trow.prow > :nth-child(2) { grid-area: name; white-space: normal; }
+  .admin .trow.prow > :nth-child(3) { grid-area: c3; }
+  .admin .trow.prow > :nth-child(4) { grid-area: c4; text-align: right; }
+  .admin .trow.prow > :nth-child(5) { grid-area: c5; white-space: normal; }
+  .admin .trow.prow > :nth-child(6) { grid-area: c6; white-space: normal; }
+  .admin .trow.prow > .tc:empty { display: none; }
+  .admin .trow.prow .stock-chips { flex-wrap: wrap; }
+
+  /* bKash check: each waiting order as a card instead of a wide table that
+     has to be scrolled sideways. */
+  .admin .bk-table { overflow: visible; }
+  .admin .bk-th { display: none; }
+
+  .admin .bk-row {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    padding: 12px 0;
+    font-size: 13px;
+  }
+
+  .admin .bk-row > :nth-child(1) { grid-column: 1; grid-row: 2; color: var(--steel); font-size: 12px; }
+  .admin .bk-row > :nth-child(2) { grid-column: 1; grid-row: 1; font-weight: 600; }
+  .admin .bk-row > :nth-child(3) { grid-column: 1; grid-row: 3; }
+  .admin .bk-row > :nth-child(4) { grid-column: 1 / -1; grid-row: 4; color: var(--steel); font-size: 12px; }
+  .admin .bk-row > :nth-child(5) { grid-column: 2; grid-row: 1; text-align: right; }
+  .admin .bk-row > :nth-child(6) { grid-column: 2; grid-row: 2; text-align: right; }
+  .admin .bk-row > :nth-child(7) { grid-column: 2; grid-row: 3; text-align: right; }
+
+  /* Forms (new coupon, log ad spend, new sale, product edit) get the same
+     rounded card and padding as the panels around them. */
+  .admin .pform {
+    padding: 18px 16px;
+    border-radius: var(--r-card);
+    box-shadow: var(--card-shadow);
+  }
+
+  .admin .pform-head { margin-bottom: 16px; }
+  .admin .pform-head h3 { font-size: 20px; }
+
+  /* Order status filters on one swipeable line too. */
+  .admin .orders-head .chips,
+  .admin .panel > .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .admin .chips::-webkit-scrollbar { display: none; }
+  .admin .chips > * { flex: none; }
+}
