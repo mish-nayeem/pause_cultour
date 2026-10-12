@@ -220,7 +220,8 @@
 .code-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* Just SHARE now — the code and colour live on the shop card. */
+  justify-content: flex-end;
   gap: 12px;
   margin-bottom: 14px;
 }
