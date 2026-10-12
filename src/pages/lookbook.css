@@ -38,7 +38,7 @@
 /* Big photo · arrow hint · small photos. */
 .lb-viewer {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 24px;
   padding: 0 40px;
   align-items: start;
@@ -53,30 +53,7 @@
 /* The arrow and the small photos stay on screen while the page (and the big
    photo) scroll past. */
 
-.lb-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  /* See-through: just the chevron, with a soft shadow so it reads on any photo. */
-  background: transparent;
-  color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
-  font-size: 40px;
-  line-height: 1;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  padding-bottom: 4px;
-  z-index: 2;
-}
 
-.lb-nav.prev { left: 14px; }
-.lb-nav.next { right: 14px; }
-.lb-nav:hover { background: rgba(255, 255, 255, 0.15); }
 
 .lb-count {
   position: absolute;
@@ -91,26 +68,8 @@
   z-index: 2;
 }
 
-.lb-hint {
-  position: sticky;
-  top: 50vh;
-  align-self: start;
-  margin-top: 30vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  color: var(--steel);
-  text-align: center;
-  min-width: 70px;
-}
 
-.lb-hint-arrow { font-size: 30px; line-height: 1; color: var(--ink); animation: lb-nudge 1.6s ease-in-out infinite; }
 
-@keyframes lb-nudge {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-6px); }
-}
 
 /* Every photo of the drop as a small square, in a square box that scrolls
    when there are many. */
@@ -121,9 +80,6 @@
   max-height: calc(100dvh - 130px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 6px;
-  border: 1px solid var(--steel-line);
-  background: var(--paper);
 }
 
 /* Columns of whole photos at their own shape — nothing cropped. */
@@ -223,11 +179,8 @@
   .lb-page { padding-top: 26px; }
   .lb-head { padding: 0 20px 22px; }
   .lb-viewer { grid-template-columns: 1fr; gap: 14px; padding: 0 14px; }
-  .lb-hint, .lb-thumbs { position: static; margin-top: 0; }
-  .lb-hint-arrow { font-size: 22px; transform: rotate(90deg); animation: none; }
-  .lb-thumbs { height: auto; max-height: 80vw; }
+  .lb-thumbs { position: static; height: auto; max-height: 80vw; }
   .lb-thumbs-in { column-count: 4; }
-  .lb-nav { width: 36px; height: 36px; font-size: 32px; }
   .lb-info { padding: 36px 10px 10px; gap: 4px; }
   .lb-item { font-size: 11px; }
   .lb-title { font-size: 9px; }

@@ -4,6 +4,7 @@ import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import YouMayLike from '../components/YouMayLike.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
+import Lightbox from '../components/Lightbox.jsx'
 import { IconShare, IconChat, IconPen } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
 import { ProductPrice } from '../components/SalePrice.jsx'
@@ -71,6 +72,8 @@ export default function Product() {
   const [notFound, setNotFound] = useState(false)
   const [activeSize, setActiveSize] = useState(null)
   const [justAdded, setJustAdded] = useState(false)
+  // The photo open full screen (its index), or null.
+  const [zoom, setZoom] = useState(null)
   const [capped, setCapped] = useState(false)
   const [wishEmail, setWishEmail] = useState(savedEmail)
   const [wishState, setWishState] = useState('idle') // idle | saving | error
@@ -100,6 +103,7 @@ export default function Product() {
   const [reviewState, setReviewState] = useState('idle') // idle | saving | error | done
 
   const galleryRef = useRef(null)
+  const closeZoom = useCallback(() => setZoom(null), [])
 
   usePageMeta(
     product?.name,
@@ -363,7 +367,7 @@ export default function Product() {
         <div className="gallery-wrap">
           <div className="gallery" ref={galleryRef} onScroll={handleGalleryScroll}>
             {product.images.map((img, i) => (
-              <div className="shot" key={img}>
+              <div className="shot" key={img} onClick={() => setZoom(i)} role="button" tabIndex={0} aria-label={`View photo ${i + 1} full screen`} onKeyDown={(e) => { if (e.key === 'Enter') setZoom(i) }}>
                 <ShimmerImage
                   src={imgUrl(img, { w: 1000 })}
                   alt={`${product.name} — view ${i + 1}`}
@@ -635,6 +639,10 @@ export default function Product() {
       </div>
 
       <YouMayLike currentId={product.id} />
+
+      {zoom !== null && (
+        <Lightbox images={product.images} start={zoom} alt={product.name} onClose={closeZoom} />
+      )}
 
       {sheet === 'details' && (
         <Sheet eyebrow="DETAILS" title={product.name} onClose={() => setSheet(null)}>

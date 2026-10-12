@@ -79,7 +79,6 @@ export default function Lookbook() {
         {looks === null && (
           <div className="lb-viewer">
             <div className="lb-look lb-main lb-ghost shimmer" />
-            <div className="lb-hint" />
             <div className="lb-thumbs">
               <div className="lb-thumbs-in">
                 {[0, 1, 2, 3, 4, 5].map((i) => <div className="lb-thumb shimmer" key={i} />)}
@@ -104,12 +103,11 @@ export default function Lookbook() {
                 // A finger shows the names the moment it lands, not after
                 // the tap completes; a mouse click still toggles them.
                 onPointerDown={(e) => {
-                  if (e.pointerType === 'mouse' || !hasInfo || e.target.closest('.lb-nav')) return
+                  if (e.pointerType === 'mouse' || !hasInfo) return
                   touchedAt.current = Date.now()
                   setOpenId(look.id)
                 }}
                 onClick={(e) => {
-                  if (e.target.closest('.lb-nav')) return
                   if (!hasInfo || Date.now() - touchedAt.current < 800) return
                   setOpenId(open ? null : look.id)
                 }}
@@ -122,11 +120,7 @@ export default function Lookbook() {
                 />
 
                 {looks.length > 1 && (
-                  <>
-                    <button type="button" className="lb-nav prev" onClick={() => go(current - 1)} aria-label="Previous photo">‹</button>
-                    <button type="button" className="lb-nav next" onClick={() => go(current + 1)} aria-label="Next photo">›</button>
-                    <span className="lb-count mono">{current + 1} / {looks.length}</span>
-                  </>
+                  <span className="lb-count mono">{current + 1} / {looks.length}</span>
                 )}
 
                 {hasInfo && (
@@ -141,12 +135,6 @@ export default function Lookbook() {
                   </figcaption>
                 )}
               </figure>
-
-              {/* Points from the small photos to the big one: pick one and
-                  it shows there. */}
-              <div className="lb-hint mono" aria-hidden="true">
-                <span className="lb-hint-arrow">←</span>
-              </div>
 
               <div className="lb-thumbs" data-lenis-prevent>
                 <div className="lb-thumbs-in">
