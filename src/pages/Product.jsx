@@ -407,13 +407,14 @@ export default function Product() {
         {/* Sticks while the stills scroll past, so size and price stay reachable
             however many photos the product has. */}
         <aside className="info">
-          <div className="code-row">
+          {/* The name at the very top, SHARE on its line at the right. */}
+          <div className="title-row">
+            <h1 className="display">{product.name}</h1>
             <button type="button" className="share-btn mono" onClick={handleShare}>
               <IconShare width="15" height="15" strokeWidth="2.2" />
               {shared ? 'LINK COPIED' : 'SHARE'}
             </button>
           </div>
-          <h1 className="display">{product.name}</h1>
           <ProductPrice product={product} />
           <p className="desc">{product.description}</p>
 

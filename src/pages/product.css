@@ -218,14 +218,16 @@
   flex-direction: column;
 }
 
-.code-row {
+.title-row {
   display: flex;
-  align-items: center;
-  /* Just SHARE now — the code and colour live on the shop card. */
-  justify-content: flex-end;
-  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 14px;
 }
+
+/* SHARE sits level with the name's first line. */
+.title-row .share-btn { margin-top: clamp(8px, 1vw, 13px); }
 
 .info .code { color: var(--ink); font-weight: 500; font-size: 12px; letter-spacing: 0.05em; margin-bottom: 0; }
 
@@ -253,7 +255,8 @@
   /* Anton is set tight; a little air between the letters keeps a
      product name readable at this size. */
   letter-spacing: 0.045em;
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  min-width: 0;
 }
 
 .info .price {
