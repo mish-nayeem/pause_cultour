@@ -9,43 +9,17 @@ import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './lookbook.css'
 
-// A drop's lookbook: small photos on the left, the picked one big on the
-// right. Tapping (or hovering) a photo
-// names the pieces in it, and each name opens that product's page. Only the
-// photos uploaded in Admin → Lookbook show here — product photos stay in the
-// shop.
+// A drop's lookbook: every photo in a grid, four to a row on a computer and
+// two on a phone. Tapping (or hovering) a photo names the pieces in it, and
+// each name opens that product's page. Only the photos uploaded in Admin →
+// Lookbook show here — product photos stay in the shop.
 export default function Lookbook() {
   const { drop } = useParams()
   const [looks, setLooks] = useState(null)
   const [openId, setOpenId] = useState(null)
-  // Which photo is shown big.
-  const [current, setCurrent] = useState(0)
   // When a finger last went down — the click that follows a touch shouldn't
   // undo what the touch just opened.
   const touchedAt = useRef(0)
-  // Width ÷ height of each photo, read as its small version loads. The
-  // big-photo side is sized for the drop's usual shape (the middle one), so
-  // the photos fill it with no empty band on the right.
-  const [shapes, setShapes] = useState({})
-  function noteShape(id, img) {
-    if (!img.naturalWidth || !img.naturalHeight) return
-    const r = img.naturalWidth / img.naturalHeight
-    setShapes((prev) => (prev[id] === r ? prev : { ...prev, [id]: r }))
-  }
-  const known = Object.values(shapes).sort((a, b) => a - b)
-  const shape = known.length ? known[Math.floor(known.length / 2)] : 0.8
-
-  // ← and → on a keyboard step through the photos.
-  useEffect(() => {
-    if (!looks?.length) return
-    function onKey(e) {
-      if (e.target.closest?.('input, textarea')) return
-      if (e.key === 'ArrowLeft') { setCurrent((i) => (i - 1 + looks.length) % looks.length); setOpenId(null) }
-      if (e.key === 'ArrowRight') { setCurrent((i) => (i + 1) % looks.length); setOpenId(null) }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [looks])
 
   usePageMeta(drop ? `${drop} — Lookbook` : 'Lookbook', drop ? `The ${drop} lookbook from PAUSE.` : undefined)
 
@@ -53,8 +27,6 @@ export default function Lookbook() {
     let cancelled = false
     setLooks(null)
     setOpenId(null)
-    setCurrent(0)
-    setShapes({})
 
     Promise.all([fetchLooks(drop), fetchProducts()]).then(([{ looks: rows }, { products }]) => {
       if (cancelled) return
@@ -77,114 +49,70 @@ export default function Lookbook() {
     return () => { cancelled = true }
   }, [drop])
 
-  const heading = (
-    <div className="lb-head">
-      {/* The drop's name in ink, then "LOOKBOOK" the same size in pale grey. */}
-      <h1 className="display">
-        <span className="lb-drop">{drop}</span> <span className="lb-word">LOOKBOOK</span>
-      </h1>
-    </div>
-  )
-
   return (
     <>
       <Nav />
 
       <div className="lb-page">
-        {/* With photos, the heading sits over the small photos and the big
-            photo starts level with it; otherwise it heads the page. */}
-        {!(looks?.length > 0) && heading}
+        <div className="lb-head">
+          {/* The drop's name in ink, then "LOOKBOOK" the same size in pale grey. */}
+          <h1 className="display">
+            <span className="lb-drop">{drop}</span> <span className="lb-word">LOOKBOOK</span>
+          </h1>
+        </div>
 
         {looks === null && (
-          <div className="lb-viewer">
-            <div className="lb-side">
-              <div className="lb-thumbs">
-                <div className="lb-thumbs-in">
-                  {Array.from({ length: 10 }, (_, i) => <div className="lb-thumb shimmer" key={i} />)}
-                </div>
-              </div>
-            </div>
-            <div className="lb-look lb-main lb-ghost shimmer" />
+          <div className="lb-grid">
+            {Array.from({ length: 8 }, (_, i) => <div className="lb-look lb-ghost shimmer" key={i} />)}
           </div>
         )}
 
         {looks?.length === 0 && <p className="lb-msg mono">The lookbook for this drop is coming soon.</p>}
 
-        {looks?.length > 0 && (() => {
-          const look = looks[Math.min(current, looks.length - 1)]
-          const open = openId === look.id
-          const hasInfo = look.title || look.items.length > 0
-          const go = (i) => { setCurrent((i + looks.length) % looks.length); setOpenId(null) }
-          return (
-            // Every photo of the drop small on the left, five to a row; the
-            // one picked shows big on the right, whole and on one screen.
-            <div className="lb-viewer" style={{ '--lb-ar': shape }}>
-              <div className="lb-side">
-                {heading}
-                <div className="lb-thumbs" data-lenis-prevent>
-                  <div className="lb-thumbs-in">
-                    {looks.map((l, i) => (
-                      <button
-                        type="button"
-                        key={l.id}
-                        className={`lb-thumb ${i === current ? 'on' : ''}`}
-                        onClick={() => go(i)}
-                        aria-label={`Photo ${i + 1}`}
-                        aria-current={i === current}
-                      >
-                        <img
-                          src={imgUrl(l.image, { w: 240 })}
-                          alt=""
-                          loading="lazy"
-                          style={{ objectPosition: l.focus || 'center' }}
-                          onLoad={(e) => noteShape(l.id, e.currentTarget)}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <figure
-                className={`lb-look lb-main ${open ? 'open' : ''}`}
-                // A finger shows the names the moment it lands, not after
-                // the tap completes; a mouse click still toggles them.
-                onPointerDown={(e) => {
-                  if (e.pointerType === 'mouse' || !hasInfo) return
-                  touchedAt.current = Date.now()
-                  setOpenId(look.id)
-                }}
-                onClick={(e) => {
-                  if (!hasInfo || Date.now() - touchedAt.current < 800) return
-                  setOpenId(open ? null : look.id)
-                }}
-              >
-                <ShimmerImage
+        {looks?.length > 0 && (
+          <div className="lb-grid">
+            {looks.map((look) => {
+              const open = openId === look.id
+              const hasInfo = look.title || look.items.length > 0
+              return (
+                <figure
                   key={look.id}
-                  src={imgUrl(look.image, { w: 1400 })}
-                  alt={look.title || look.items.map((it) => it.label || it.product.name).join(', ') || drop}
-                  style={{ objectPosition: look.focus || 'center' }}
-                />
+                  className={`lb-look ${open ? 'open' : ''}`}
+                  // A finger shows the names the moment it lands, not after
+                  // the tap completes; a mouse click still toggles them.
+                  onPointerDown={(e) => {
+                    if (e.pointerType === 'mouse' || !hasInfo) return
+                    touchedAt.current = Date.now()
+                    setOpenId(look.id)
+                  }}
+                  onClick={() => {
+                    if (!hasInfo || Date.now() - touchedAt.current < 800) return
+                    setOpenId(open ? null : look.id)
+                  }}
+                >
+                  <ShimmerImage
+                    src={imgUrl(look.image, { w: 900 })}
+                    alt={look.title || look.items.map((it) => it.label || it.product.name).join(', ') || drop}
+                    style={{ objectPosition: look.focus || 'center' }}
+                    loading="lazy"
+                  />
 
-                {looks.length > 1 && (
-                  <span className="lb-count mono">{current + 1} / {looks.length}</span>
-                )}
-
-                {hasInfo && (
-                  <figcaption className="lb-info" onClick={(e) => e.stopPropagation()}>
-                    {look.title && <div className="lb-title">{look.title}</div>}
-                    {look.items.map(({ product: p, label }) => (
-                      <Link to={`/product/${p.id}`} className="lb-item" key={p.id}>
-                        <span>{label || `${p.name}${p.variant ? ` — ${p.variant}` : ''}`}</span>
-                        <span className="lb-arrow" aria-hidden="true">→</span>
-                      </Link>
-                    ))}
-                  </figcaption>
-                )}
-              </figure>
-            </div>
-          )
-        })()}
+                  {hasInfo && (
+                    <figcaption className="lb-info" onClick={(e) => e.stopPropagation()}>
+                      {look.title && <div className="lb-title">{look.title}</div>}
+                      {look.items.map(({ product: p, label }) => (
+                        <Link to={`/product/${p.id}`} className="lb-item" key={p.id}>
+                          <span>{label || `${p.name}${p.variant ? ` — ${p.variant}` : ''}`}</span>
+                          <span className="lb-arrow" aria-hidden="true">→</span>
+                        </Link>
+                      ))}
+                    </figcaption>
+                  )}
+                </figure>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <Footer />
