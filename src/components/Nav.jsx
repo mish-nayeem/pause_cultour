@@ -87,6 +87,31 @@ export default function Nav({ overlay = false }) {
     setSearchOpen(false)
   }, [location.pathname, location.search])
 
+  // A tap anywhere outside the open mobile panel (and outside the nav pill,
+  // whose SHOP / MENU buttons toggle it themselves) closes it. That tap only
+  // closes — it doesn't also press whatever was under it on the page.
+  const panelRef = useRef(null)
+  const headerRef = useRef(null)
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDown(e) {
+      if (panelRef.current?.contains(e.target) || headerRef.current?.contains(e.target)) return
+      setMenuOpen(false)
+      // Swallow the click this tap makes on the page — but never one on the
+      // nav pill, so SHOP / MENU answer straight away afterwards.
+      const swallow = (ev) => {
+        window.removeEventListener('click', swallow, { capture: true })
+        if (headerRef.current?.contains(ev.target)) return
+        ev.stopPropagation()
+        ev.preventDefault()
+      }
+      window.addEventListener('click', swallow, { capture: true })
+      setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 400)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [menuOpen])
+
   // The mobile panel covers the screen, so the page behind it shouldn't scroll.
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
@@ -148,7 +173,7 @@ export default function Nav({ overlay = false }) {
         </button>
       )}
 
-      <header className="site-header">
+      <header className="site-header" ref={headerRef}>
         <Link to="/" className="logo" aria-label="PAUSE — home">
           <span className="logo-3d">
             {Array.from({ length: LOGO_LAYERS }, (_, i) => {
@@ -207,7 +232,9 @@ export default function Nav({ overlay = false }) {
         {/* Mobile: just a MENU word — the cart floats at the bottom of the
             screen instead (below), within thumb reach. */}
         {/* Phones: SHOP opens the shop's categories and collections; MENU
-            has the rest. Whichever is open reads CLOSE. */}
+            has the rest. SHOP turns blue while open and a second tap shuts
+            it; MENU reads CLOSE while open. A tap outside the panel shuts
+            either. */}
         <div className="mob-right">
           <button
             type="button"
@@ -220,11 +247,11 @@ export default function Nav({ overlay = false }) {
           </button>
           <button
             type="button"
-            className={`menu-btn ${here === 'shop' ? 'here' : ''}`}
+            className={`menu-btn ${here === 'shop' || menuOpen === 'shop' ? 'here' : ''}`}
             onClick={() => { setSearchOpen(false); setMenuOpen((v) => (v === 'shop' ? false : 'shop')) }}
             aria-expanded={menuOpen === 'shop'}
           >
-            {menuOpen === 'shop' ? 'CLOSE' : 'SHOP'}
+            SHOP
           </button>
           <button
             type="button"
@@ -297,7 +324,7 @@ export default function Nav({ overlay = false }) {
 
       {/* Mobile panel */}
       {menuOpen && (
-        <div className="mob-panel" data-lenis-prevent>
+        <div className="mob-panel" ref={panelRef} data-lenis-prevent>
           {menuOpen === 'shop' && (
             <>
               <div className="mob-section mono">SHOP</div>
