@@ -14,6 +14,7 @@ import { availableSizes, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
 import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
 import { currentUser } from '../lib/auth.js'
 import { parseDetails } from '../lib/details.js'
+import { rememberViewed } from '../lib/recent.js'
 import { isAdminEmail } from '../lib/admin.js'
 import { fetchReviews, submitReview } from '../lib/reviews.js'
 import usePageMeta, { useProductSchema } from '../lib/usePageMeta.js'
@@ -124,6 +125,7 @@ export default function Product() {
         setNotFound(true)
       } else {
         setProduct(product)
+        if (product) rememberViewed(product.id)
         setActiveSize(availableSizes(product)[0] || null)
         if (wantsNotify) setNotifyOpen(true)
       }
