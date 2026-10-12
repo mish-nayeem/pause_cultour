@@ -45,6 +45,7 @@ import HeroManager from '../components/HeroManager.jsx'
 import TickerManager from '../components/TickerManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
+import DropReport from '../components/DropReport.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
@@ -129,6 +130,7 @@ const PRODUCTS_SUBS = [
   { key: 'catalog', label: 'Product catalog' },
   { key: 'stock', label: 'Stock levels' },
   { key: 'best', label: 'Best sellers' },
+  { key: 'drops', label: 'Drop sales' },
   { key: 'margin', label: 'Cost & margin' },
   { key: 'collections', label: 'Collections' },
 ]
@@ -1715,6 +1717,8 @@ export default function Admin() {
             ))}
           </section>
           )}
+
+          {productsSub === 'drops' && <DropReport products={products} orders={orders} />}
 
           {productsSub === 'margin' && (
           <section className="panel">

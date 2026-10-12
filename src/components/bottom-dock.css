@@ -22,7 +22,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 25px;
+  /* Clear of the iPhone home bar too. */
+  bottom: calc(25px + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
   gap: 10px;

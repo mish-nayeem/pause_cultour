@@ -15,7 +15,7 @@
 .sf-pill {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 70;
   background: #fff;
@@ -41,7 +41,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
-  padding: 20px 16px 24px;
+  padding: 20px 16px calc(24px + env(safe-area-inset-bottom, 0px));
   animation: sf-in 0.16s ease-out;
 }
 
