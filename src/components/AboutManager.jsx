@@ -16,6 +16,7 @@ export default function AboutManager() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [newHeading, setNewHeading] = useState('')
   const [newText, setNewText] = useState('')
   const [confirmId, setConfirmId] = useState(null)
 
@@ -38,8 +39,8 @@ export default function AboutManager() {
     e.target.value = ''
     if (!file) return
 
-    if (!newText.trim()) {
-      setError('Write the text that goes under the photo first.')
+    if (!newHeading.trim() && !newText.trim()) {
+      setError('Write the heading and text that go next to the photo first.')
       return
     }
 
@@ -50,10 +51,12 @@ export default function AboutManager() {
       const url = await uploadImage(file, supabase, 'about')
       const { error: createError } = await createAboutBlock({
         imageUrl: url,
+        heading: newHeading.trim(),
         description: newText.trim(),
         sortOrder: blocks.length,
       })
       if (createError) throw new Error('Could not save the block')
+      setNewHeading('')
       setNewText('')
       await load()
     } catch (err) {
@@ -63,10 +66,18 @@ export default function AboutManager() {
     }
   }
 
-  async function saveText(block, description) {
-    if (description.trim() === (block.description || '')) return
+  // Heading and text save on their own, each when you click away from it.
+  async function saveField(block, field, value) {
+    if (value.trim() === (block[field] || '')) return
     setBusy(true)
-    await updateAboutBlock(block.id, { description: description.trim() })
+    const { error } = await updateAboutBlock(block.id, { [field]: value.trim() })
+    if (error) {
+      setError(
+        field === 'heading'
+          ? "Couldn't save the heading — has supabase-migration-about-heading.sql been run?"
+          : "Couldn't save the text — try again."
+      )
+    }
     await load()
     setBusy(false)
   }
@@ -105,21 +116,31 @@ export default function AboutManager() {
   return (
     <section className="panel">
       <div className="panel-note mono" style={{ marginBottom: '18px' }}>
-        This builds the About us page. Each block is one photo with your text
-        underneath it — add as many as you want and drag the order around with
+        This builds the About us page. Each block is one photo with a heading
+        and text beside it (photo on the left, words on the right on a computer;
+        stacked on a phone) — add as many as you want and move the order with
         the arrows. Hidden blocks stay here but don't show on the page.
       </div>
 
       {error && <div className="err-banner mono">{error}</div>}
 
       <div className="am-add">
-        <textarea
-          className="am-text-input"
-          placeholder="The text that goes under this photo…"
-          value={newText}
-          onChange={(e) => setNewText(e.target.value)}
-          rows={3}
-        />
+        <div className="am-fields">
+          <input
+            className="am-text-input am-heading-input"
+            placeholder="Heading — e.g. Made in Dhaka, worn everywhere"
+            value={newHeading}
+            onChange={(e) => setNewHeading(e.target.value)}
+            maxLength={120}
+          />
+          <textarea
+            className="am-text-input"
+            placeholder="The text under the heading… (an empty line starts a new paragraph)"
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
+            rows={4}
+          />
+        </div>
         <label className={`am-upload mono ${busy ? 'busy' : ''}`}>
           {busy ? 'Working…' : '+ Upload photo'}
           <input type="file" accept="image/*" onChange={handleUpload} disabled={busy} />
@@ -154,12 +175,22 @@ export default function AboutManager() {
               <img src={imgUrl(b.image_url, { w: 320 })} alt="" />
             </div>
 
-            <textarea
-              className="am-text"
-              defaultValue={b.description || ''}
-              rows={4}
-              onBlur={(e) => saveText(b, e.target.value)}
-            />
+            <div className="am-fields">
+              <input
+                className="am-text am-heading"
+                defaultValue={b.heading || ''}
+                placeholder="Heading"
+                maxLength={120}
+                onBlur={(e) => saveField(b, 'heading', e.target.value)}
+              />
+              <textarea
+                className="am-text"
+                defaultValue={b.description || ''}
+                placeholder="Text"
+                rows={5}
+                onBlur={(e) => saveField(b, 'description', e.target.value)}
+              />
+            </div>
 
             <div className="am-side">
               <div className="am-order mono">

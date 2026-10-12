@@ -826,11 +826,15 @@ create index if not exists products_colour_group_idx on products (colour_group);
 create table if not exists about_blocks (
   id bigint generated always as identity primary key,
   image_url text not null,
+  heading text not null default '',
   description text,
   sort_order int default 0,
   active boolean default true,
   created_at timestamptz default now()
 );
+
+-- Databases made before the heading existed get it here too.
+alter table about_blocks add column if not exists heading text not null default '';
 
 alter table about_blocks enable row level security;
 

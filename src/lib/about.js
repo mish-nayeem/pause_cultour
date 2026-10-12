@@ -30,9 +30,10 @@ export async function fetchAllAboutBlocks() {
   return { blocks: data, error: null }
 }
 
-export async function createAboutBlock({ imageUrl, description, sortOrder }) {
+export async function createAboutBlock({ imageUrl, heading, description, sortOrder }) {
   const { error } = await supabase.from('about_blocks').insert({
     image_url: imageUrl,
+    heading: heading || '',
     description,
     sort_order: sortOrder,
   })
