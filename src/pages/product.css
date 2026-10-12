@@ -182,6 +182,7 @@
   position: relative;
   background: var(--paper-dim);
   overflow: hidden;
+  cursor: zoom-in; /* opens full screen */
 }
 
 /* No fixed aspect ratio — each photo keeps its own shape so nothing is cropped
