@@ -1,5 +1,5 @@
-/* A drop's lookbook — small photos on the left, the picked one big on the
-   right, whole and within one screen. */
+/* A drop's lookbook — every photo in a grid, four to a row on a computer,
+   two on a phone. */
 
 .lb-page { padding: 36px 0 80px; }
 
@@ -36,117 +36,12 @@
   cursor: pointer;
 }
 
-/* Heading and small photos on the left, the big photo on the right
-   starting level with the heading, a narrow gap between. The left side
-   takes what the big photo leaves: the big one is as tall as the screen
-   allows, at the drop's usual shape (--lb-ar, width ÷ height, set from the
-   photos), so it reaches the right edge with no empty band — and the left
-   side keeps its width whichever photo is showing, so nothing jumps. */
-.lb-viewer {
-  --lb-ar: 0.8;
-  --lb-h: calc(100vh - 130px);
-  --lb-tw: max(300px, calc(100% - 12px - var(--lb-h) * var(--lb-ar)));
-  display: flex;
-  gap: 12px;
-  padding: 0 32px;
-  align-items: flex-start;
-}
-
-@supports (height: 100dvh) {
-  .lb-viewer { --lb-h: calc(100dvh - 130px); }
-}
-
-.lb-side {
-  flex: 0 0 var(--lb-tw);
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  max-height: var(--lb-h);
-  position: sticky;
-  top: 100px;
-}
-
-.lb-side .lb-head { padding: 0 0 14px; }
-
-/* The big photo whole and uncropped — its own shape, never stretched —
-   so the full picture is in view without scrolling. The frame shrinks to
-   the photo, so the product names sit on the photo itself. */
-.lb-main {
-  aspect-ratio: auto;
-  flex: 0 1 auto;
-  width: fit-content;
-  max-width: calc(100% - 12px - var(--lb-tw));
-  background: none;
-  position: sticky;
-  top: 100px;
-}
-.lb-look.lb-main img {
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: var(--lb-h);
-  object-fit: contain;
-}
-.lb-look.lb-main:hover img { transform: none; }
-.lb-main.lb-ghost { width: calc(var(--lb-h) * var(--lb-ar)); height: var(--lb-h); }
-
-/* The small photos stay on screen while the page scrolls. */
-
-
-
-.lb-count {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: #fff;
-  background: rgba(22, 22, 15, 0.6);
-  padding: 4px 8px;
-  border-radius: 3px;
-  z-index: 2;
-}
-
-
-
-
-/* Every photo of the drop small, five to a row, in a box as tall as the
-   big photo that scrolls on its own when there are many. */
-/* Small photos, five to a row, under the heading; they scroll on their
-   own when there are more than fit beside the big photo. */
-.lb-thumbs {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-}
-
-.lb-thumbs-in {
+/* Every photo, four to a row across the full width of the screen. */
+.lb-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
 }
-
-.lb-thumb {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: var(--paper-dim);
-  cursor: pointer;
-  overflow: hidden;
-  opacity: 0.55;
-  transition: opacity 0.15s ease;
-}
-
-.lb-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.lb-thumb.shimmer { aspect-ratio: 4 / 5; }
-.lb-thumb:hover { opacity: 0.85; }
-/* The photo showing big is simply clear; the rest stay dimmed. */
-.lb-thumb.on { opacity: 1; }
 
 .lb-look img {
   width: 100%;
@@ -222,16 +117,7 @@
 @media (max-width: 860px) {
   .lb-page { padding-top: 26px; }
   .lb-head { padding: 0 20px 18px; }
-  /* Phones: the big photo on top, the small ones under it. */
-  .lb-viewer { flex-direction: column; align-items: stretch; gap: 10px; padding: 0 14px; }
-  /* Heading, then the big photo, then the small ones. */
-  .lb-side { display: contents; }
-  .lb-side .lb-head { order: -2; padding: 0 6px 4px; }
-  .lb-main { order: -1; position: relative; top: auto; max-width: 100%; align-self: center; }
-  .lb-look.lb-main img { max-height: 72vh; max-height: 72dvh; }
-  .lb-main.lb-ghost { width: 100%; height: 72vh; max-width: 100%; }
-  .lb-thumbs { position: static; flex: none; max-height: none; overflow: visible; }
-  .lb-thumbs-in { gap: 4px; }
+  .lb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
   .lb-info { padding: 36px 10px 10px; gap: 4px; }
   .lb-item { font-size: 11px; }
   .lb-title { font-size: 9px; }
