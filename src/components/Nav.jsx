@@ -58,7 +58,8 @@ export default function Nav({ overlay = false }) {
   // The person icon leads to wherever this visitor belongs: the admin panel
   // for the owner, their account for a customer, the login page for a guest.
   const accountLink = !user ? '/login' : isAdminEmail(user.email) ? '/admin' : '/account'
-  const accountLabel = !user ? 'Log in' : isAdminEmail(user.email) ? 'Admin panel' : 'My account'
+  // Never says "Admin panel" — the icon's hover text is the same for everyone.
+  const accountLabel = !user ? 'Log in / Sign up' : 'My account'
 
   // Both menus are admin-managed lists, so an entry can be pulled the day it
   // sells out without touching the products behind it.
