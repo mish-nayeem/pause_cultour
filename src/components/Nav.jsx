@@ -5,7 +5,6 @@ import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
 import { IconUser, IconSearch, IconBag } from './Icons.jsx'
 import SearchBar from './SearchBar.jsx'
 import { lookbookPath } from '../lib/lookbook.js'
-import { InDock } from './BottomDock.jsx'
 import { watchUser } from '../lib/auth.js'
 import { isAdminEmail } from '../lib/admin.js'
 import './nav.css'
@@ -21,9 +20,6 @@ export default function Nav({ overlay = false }) {
   const { count } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
-  // The shop (drops included) and product pages: where people pick things
-  // to buy. There the cart is the CART pill at the bottom, beside FILTER.
-  const pickingPage = /^\/(shop|product\/)/.test(location.pathname)
 
   const [openMenu, setOpenMenu] = useState(null)  // null | 'shop' | 'drops'
   // SHOP's "Shop by collection" second row (the drops, as shop filters).
@@ -229,8 +225,6 @@ export default function Nav({ overlay = false }) {
           </ul>
         </nav>
 
-        {/* Mobile: just a MENU word — the cart floats at the bottom of the
-            screen instead (below), within thumb reach. */}
         {/* Phones: SHOP opens the shop's categories and collections; MENU
             has the rest. SHOP turns blue while open and a second tap shuts
             it; MENU reads CLOSE while open. A tap outside the panel shuts
@@ -262,20 +256,17 @@ export default function Nav({ overlay = false }) {
             {menuOpen === 'menu' ? 'CLOSE' : 'MENU'}
           </button>
           {/* The cart as a bag, the same size as the search glass, with a
-              count once something is in it. Not on the shop (drops
-              included) or a product page: there CART sits at the bottom
-              beside FILTER instead. */}
-          {!pickingPage && (
-            <Link
-              to="/cart"
-              className={`search-btn mob-bag ${here === 'cart' ? 'here' : ''}`}
-              onClick={() => { setMenuOpen(false); setSearchOpen(false) }}
-              aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
-            >
-              <IconBag width="17" height="17" />
-              {count > 0 && <span className="mob-bag-count mono">{count}</span>}
-            </Link>
-          )}
+              count once something is in it — on every page; it's the only
+              cart button on a phone. */}
+          <Link
+            to="/cart"
+            className={`search-btn mob-bag ${here === 'cart' ? 'here' : ''}`}
+            onClick={() => { setMenuOpen(false); setSearchOpen(false) }}
+            aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
+          >
+            <IconBag width="17" height="17" />
+            {count > 0 && <span className="mob-bag-count mono">{count}</span>}
+          </Link>
         </div>
       </header>
 
@@ -309,17 +300,6 @@ export default function Nav({ overlay = false }) {
             </div>
           )}
         </div>
-      )}
-
-      {/* Mobile only: the cart as a floating button at the bottom — centred,
-          or beside the shop's FILTER pill. Only where people pick things to
-          buy: the shop and a product page (not the lookbook). */}
-      {!menuOpen && pickingPage && (
-        <InDock>
-          <Link to="/cart" className="mob-cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
-            {count > 0 ? `CART (${count})` : 'CART'}
-          </Link>
-        </InDock>
       )}
 
       {/* Mobile panel */}

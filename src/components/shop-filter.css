@@ -110,9 +110,3 @@
 @media (prefers-reduced-motion: reduce) {
   .sf-back { animation: none; }
 }
-
-/* Phones: FILTER steps left of centre so the floating CART pill (nav.css)
-   sits beside it, the pair centred together. */
-@media (max-width: 860px) {
-  .sf-pill { left: calc(50% - 5px); transform: translateX(-100%); }
-}
