@@ -75,6 +75,7 @@ import {
 } from '../components/Icons.jsx'
 import './admin.css'
 import './admin-theme.css'
+import './admin-mobile.css'
 
 const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
 
