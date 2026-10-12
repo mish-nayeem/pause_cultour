@@ -238,11 +238,12 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--ink);
   cursor: pointer;
+  /* Always blue, not just on hover. */
+  color: var(--cobalt);
 }
 
-.share-btn:hover { color: var(--cobalt); }
+.share-btn:hover { opacity: 0.75; }
 
 .info h1 {
   font-size: clamp(28px, 3vw, 40px);
