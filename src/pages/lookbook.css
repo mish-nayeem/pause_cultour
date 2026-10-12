@@ -46,12 +46,27 @@
 
 /* The big photo whole, at its own shape — never cropped. A tall one simply
    runs down the page as it scrolls. */
-.lb-main { aspect-ratio: auto; width: 100%; min-height: 200px; }
-.lb-look.lb-main img { height: auto; object-fit: initial; }
+/* The big photo whole and uncropped, but never taller than the screen —
+   the full picture is in view without scrolling. The frame shrinks to the
+   photo, so the product names sit on the photo itself. */
+.lb-main {
+  aspect-ratio: auto;
+  width: fit-content;
+  max-width: 100%;
+  justify-self: center;
+  background: none;
+}
+.lb-look.lb-main img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: calc(100vh - 210px);
+  max-height: calc(100dvh - 210px);
+  object-fit: contain;
+}
 .lb-look.lb-main:hover img { transform: none; }
 
-/* The arrow and the small photos stay on screen while the page (and the big
-   photo) scroll past. */
+/* The small photos stay on screen while the page scrolls. */
 
 
 
@@ -179,6 +194,7 @@
   .lb-page { padding-top: 26px; }
   .lb-head { padding: 0 20px 22px; }
   .lb-viewer { grid-template-columns: 1fr; gap: 14px; padding: 0 14px; }
+  .lb-look.lb-main img { max-height: 72vh; max-height: 72dvh; }
   .lb-thumbs { position: static; height: auto; max-height: 80vw; }
   .lb-thumbs-in { column-count: 4; }
   .lb-info { padding: 36px 10px 10px; gap: 4px; }
