@@ -315,18 +315,6 @@
   padding: 12px 2px;
 }
 
-.mob-links .mob-search {
-  background: none;
-  border: none;
-  text-align: left;
-  color: var(--paper);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  padding: 12px 2px;
-  cursor: pointer;
-}
-
 /* Desktop: the magnifying glass that opens product search. */
 .search-btn {
   display: flex;

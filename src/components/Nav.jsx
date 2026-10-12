@@ -300,9 +300,6 @@ export default function Nav({ overlay = false }) {
           )}
 
           <div className="mob-links mono">
-            <button type="button" className="mob-search" onClick={() => { setMenuOpen(false); setSearchOpen(true) }}>
-              SEARCH
-            </button>
             <Link to="/about">ABOUT US</Link>
             <Link to="/cart">CART ({count})</Link>
             <Link to={accountLink} className="mob-admin">
