@@ -4,6 +4,7 @@ import { fetchProducts } from '../lib/products.js'
 import { imgUrl } from '../lib/images.js'
 import { IconSearch } from './Icons.jsx'
 import { CardPrice } from './SalePrice.jsx'
+import { recentIds } from '../lib/recent.js'
 import './search-bar.css'
 
 // Product search that opens right under the nav — the page stays where it
@@ -47,6 +48,20 @@ export default function SearchBar({ onClose }) {
     })
   }, [query, products])
 
+  // Before anything's typed: what this visitor last looked at, then the
+  // newest products (those marked NEW first).
+  const recent = useMemo(() => {
+    if (!products) return []
+    const byId = Object.fromEntries(products.map((p) => [String(p.id), p]))
+    return recentIds().map((id) => byId[id]).filter(Boolean).slice(0, 6)
+  }, [products])
+
+  const launches = useMemo(() => {
+    if (!products) return []
+    const fresh = products.filter((p) => p.isNew)
+    return (fresh.length ? fresh : products).slice(0, 6)
+  }, [products])
+
   function open(p) {
     onClose()
     navigate(`/product/${p.id}`)
@@ -72,6 +87,27 @@ export default function SearchBar({ onClose }) {
         <button type="button" className="sb-close mono" onClick={onClose} aria-label="Close search">✕</button>
       </div>
 
+      {!q && products && (recent.length > 0 || launches.length > 0) && (
+        <div className="sb-results sb-idle" data-lenis-prevent>
+          {recent.length > 0 && (
+            <section className="sb-sec">
+              <div className="sb-sec-label mono">RECENTLY VIEWED</div>
+              <div className="sb-tiles">
+                {recent.map((p) => <Tile key={p.id} p={p} onPick={open} />)}
+              </div>
+            </section>
+          )}
+          {launches.length > 0 && (
+            <section className="sb-sec">
+              <div className="sb-sec-label mono">NEW LAUNCHES</div>
+              <div className="sb-tiles">
+                {launches.map((p) => <Tile key={p.id} p={p} onPick={open} />)}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
       {q && (
         <div className="sb-results" data-lenis-prevent>
           {products === null && <p className="sb-msg mono">Searching…</p>}
@@ -91,5 +127,17 @@ export default function SearchBar({ onClose }) {
         </div>
       )}
     </div>
+  )
+}
+
+// A small photo with the name under it.
+function Tile({ p, onPick }) {
+  return (
+    <button type="button" className="sb-tile" onClick={() => onPick(p)}>
+      <span className="sb-tile-img">
+        {p.images[0] && <img src={imgUrl(p.images[0], { w: 200 })} alt="" loading="lazy" />}
+      </span>
+      <span className="sb-tile-name">{p.name}</span>
+    </button>
   )
 }
