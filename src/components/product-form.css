@@ -75,6 +75,33 @@
 
 .pf-img-x:hover { background: var(--signal); }
 
+/* The first photo — the shop card's — is marked MAIN; any other can be made
+   main in one tap. Both sit over the photo's bottom edge. */
+.pf-img-main,
+.pf-img-setmain {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 89px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  padding: 3px 0;
+  border: none;
+  border-radius: 4px;
+}
+
+.pf-img-main { background: var(--cobalt); color: #fff; }
+
+.pf-img-setmain {
+  background: rgba(22, 22, 15, 0.78);
+  /* Always light on the dark strip — the admin themes repaint --paper. */
+  color: #fff;
+  cursor: pointer;
+}
+
+.pf-img-setmain:hover { background: var(--cobalt); }
+
 .pf-img-move {
   display: flex;
   align-items: center;

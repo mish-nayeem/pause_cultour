@@ -183,6 +183,16 @@ export default function ProductForm({ existing, existingIds = [], categories = [
     })
   }
 
+  // Puts a photo first: the one the shop card shows, with the rest after it
+  // in the same order.
+  function makeMain(index) {
+    setP((prev) => {
+      const next = [...prev.images]
+      const [picked] = next.splice(index, 1)
+      return { ...prev, images: [picked, ...next] }
+    })
+  }
+
   function updateChart(fn) {
     setP((prev) => ({ ...prev, sizeChart: fn(prev.sizeChart) }))
   }
@@ -322,13 +332,19 @@ export default function ProductForm({ existing, existingIds = [], categories = [
       {/* ---- Images ---- */}
       <div className="pf-label mono">IMAGES</div>
       <div className="pf-note mono">
-        First image is the one shown on the shop grid. Upload goes to Supabase Storage.
+        The <strong>MAIN</strong> photo is the one on the shop card and first on the product page;
+        the rest follow in this order. Use ← → to reorder, or "Set as main" on any photo.
       </div>
 
       <div className="pf-images">
         {p.images.map((url, i) => (
           <div className="pf-img" key={url}>
             <img src={imgUrl(url, { w: 200 })} alt="" />
+            {i === 0 ? (
+              <span className="pf-img-main mono">MAIN</span>
+            ) : (
+              <button type="button" className="pf-img-setmain mono" onClick={() => makeMain(i)}>Set as main</button>
+            )}
             <button className="pf-img-x" onClick={() => removeImage(url)} title="Remove">
               <IconX width="13" height="13" />
             </button>

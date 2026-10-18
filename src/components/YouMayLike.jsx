@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Pager from './Pager.jsx'
-import ShimmerImage from './ShimmerImage.jsx'
+import { CardPhoto } from './CardPhotos.jsx'
 import QuickAdd from './QuickAdd.jsx'
 import { fetchProducts } from '../lib/products.js'
 import { CardPrice, SaleBadge } from './SalePrice.jsx'
-import { imgUrl } from '../lib/images.js'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import { isAllSoldOut } from '../lib/stock.js'
 import './you-may-like.css'
@@ -50,7 +49,7 @@ export default function YouMayLike({ currentId }) {
         {visible.map((p) => (
           <Link to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`} className="yml-card" key={p.id}>
             <div className="yml-thumb">
-              <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} loading="lazy" />
+              <CardPhoto images={p.images} alt={p.name} loading="lazy" />
               {isAllSoldOut(p) ? (
                 <span className="snew out mono"><i className="rec" />SOLD OUT</span>
               ) : (
