@@ -43,6 +43,23 @@ export function queueOrder(list) {
   })
 }
 
+// One card per piece: colours of the same piece (same colour group) show as
+// a single card — the first in the list's order that still has something
+// to buy, else the first. The others are picked on the product page.
+export function oneColourEach(list, inStock = () => true) {
+  const groups = new Map()
+  for (const p of list) {
+    const g = (p.colourGroup || '').trim().toUpperCase()
+    if (!g) continue
+    const chosen = groups.get(g)
+    if (!chosen || (!inStock(chosen) && inStock(p))) groups.set(g, p)
+  }
+  return list.filter((p) => {
+    const g = (p.colourGroup || '').trim().toUpperCase()
+    return !g || groups.get(g) === p
+  })
+}
+
 // Admin: saves the ALL page order — ids top to bottom.
 export async function saveQueueOrder(ids) {
   const { error } = await supabase.rpc('reorder_products', { ids })

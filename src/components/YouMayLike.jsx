@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Pager from './Pager.jsx'
 import { CardPhoto } from './CardPhotos.jsx'
 import QuickAdd from './QuickAdd.jsx'
-import { fetchProducts } from '../lib/products.js'
+import { fetchProducts, oneColourEach } from '../lib/products.js'
 import { CardPrice, SaleBadge } from './SalePrice.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import { isAllSoldOut } from '../lib/stock.js'
@@ -29,7 +29,13 @@ export default function YouMayLike({ currentId }) {
   // Arriving on another product starts the list over.
   useEffect(() => setPage(1), [currentId])
 
-  const others = products.filter((p) => String(p.id) !== String(currentId))
+  // Not this piece in any colour, and one card for each other piece.
+  const viewing = products.find((p) => String(p.id) === String(currentId))
+  const group = (viewing?.colourGroup || '').trim().toUpperCase()
+  const others = oneColourEach(
+    products.filter((p) => String(p.id) !== String(currentId) && !(group && (p.colourGroup || '').trim().toUpperCase() === group)),
+    (p) => !isAllSoldOut(p)
+  )
   const totalPages = Math.max(1, Math.ceil(others.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)
   const visible = others.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
