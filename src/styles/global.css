@@ -43,7 +43,9 @@ body {
 .display {
   font-family: 'Anton', sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.01em;
+  /* Anton is set tight; the same air between the letters as a product
+     page's name, so every heading reads as clearly. */
+  letter-spacing: 0.045em;
 }
 
 a {
