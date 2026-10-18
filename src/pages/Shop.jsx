@@ -5,11 +5,10 @@ import Footer from '../components/Footer.jsx'
 import { fetchProducts, queueOrder } from '../lib/products.js'
 import { CardPrice, SaleBadge } from '../components/SalePrice.jsx'
 import { fetchMenuCategories } from '../lib/navCategories.js'
-import { imgUrl } from '../lib/images.js'
 import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import Pager from '../components/Pager.jsx'
-import ShimmerImage from '../components/ShimmerImage.jsx'
+import { CardPhoto } from '../components/CardPhotos.jsx'
 import ShopFilter, { sortSizes } from '../components/ShopFilter.jsx'
 import QuickAdd from '../components/QuickAdd.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
@@ -205,7 +204,8 @@ export default function Shop() {
               key={p.id}
             >
               <div className="sthumb">
-                <ShimmerImage src={imgUrl(p.images[0], { w: 500 })} alt={p.name} />
+                {/* Phones: tap the photo for the product's next photo. */}
+                <CardPhoto images={p.images} alt={p.name} />
                 {/* Sold out takes the corner over NEW: green dot for new,
                     red for sold out. */}
                 {isAllSoldOut(p) ? (

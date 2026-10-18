@@ -103,3 +103,26 @@ button {
     animation: none;
   }
 }
+
+/* A shop card's photo dots (CardPhotos.jsx) — one per photo, the showing one
+   solid. Over the photo's bottom edge, clear of the + button. */
+.card-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.card-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.card-dots i.on { background: #fff; }
