@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import {
   getSession,
@@ -192,6 +192,40 @@ function taka(n) {
 
 function shortDate(iso) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+}
+
+// "09:24 pm · 19 Oct" — an order card's time and date.
+function orderWhen(iso) {
+  const d = new Date(iso)
+  return `${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })} · ${shortDate(iso)}`
+}
+
+// An order's details open over the list — a panel from the right on a
+// desktop, a sheet from the bottom on a phone — so the orders under it don't
+// get pushed down the page. Esc or a tap outside closes it.
+function OrderSheetFrame({ onClose, children }) {
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') close.current()
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [])
+
+  return (
+    <div className="osheet-overlay" onClick={onClose}>
+      <aside className="osheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} data-lenis-prevent>
+        {children}
+      </aside>
+    </div>
+  )
 }
 
 // Inline sparkline — avoids pulling in a charting library for one graph.
@@ -455,6 +489,7 @@ export default function Admin() {
       editing: editing === 'new' ? 'new' : editing?.id ?? null,
       addingOrder,
       openCollection,
+      expanded,
     },
     (v) => {
       setTab(v.tab)
@@ -468,6 +503,7 @@ export default function Admin() {
       setEditing(v.editing === 'new' ? 'new' : v.editing ? products.find((p) => p.id === v.editing) || null : null)
       setAddingOrder(v.addingOrder)
       setOpenCollection(v.openCollection)
+      setExpanded(v.expanded ?? null)
       // The drawer isn't a step of its own; going back just closes it.
       setMobileMenuOpen(false)
     }
@@ -591,6 +627,200 @@ export default function Admin() {
       reload()
     }
   })
+
+  const productsById = useMemo(() => new Map(products.map((p) => [String(p.id), p])), [products])
+  const expandedOrder = useMemo(() => orders.find((o) => o.id === expanded) || null, [orders, expanded])
+
+  // The open order's details, in sections: the pieces, the money, who and
+  // where, this number's history, courier, and what to do next.
+  function renderOrderSheet(o) {
+    const h = lookupCustomer(customers, o.customer_phone)
+    const history = returns.filter((r) => r.order_id === o.id && r.resolution && r.resolution.action !== 'reject')
+    const advance = Number(o.advance_amount) || 0
+    return (
+      <>
+        <header className="osheet-head">
+          <div>
+            <div className="osheet-id mono">{o.id}</div>
+            <div className="osheet-name">{o.customer_name}</div>
+            <div className="osheet-when mono">{orderWhen(o.created_at)}</div>
+          </div>
+          <div className="osheet-head-right">
+            <select
+              className={`status-select ${o.status} mono`}
+              value={o.status}
+              disabled={savingId === o.id}
+              onChange={(e) => handleStatusChange(o.id, e.target.value)}
+            >
+              {STATUSES.map((st) => (
+                <option key={st} value={st}>{st}</option>
+              ))}
+            </select>
+            <button type="button" className="osheet-close" onClick={() => setExpanded(null)} aria-label="Close">✕</button>
+          </div>
+        </header>
+
+        <section className="osec">
+          <div className="osec-label mono">ITEMS · {(o.order_items || []).reduce((n, it) => n + Number(it.ordered_qty ?? it.qty), 0)} pcs</div>
+          {(o.order_items || []).map((it) => {
+            const ordered = it.ordered_qty ?? it.qty
+            const src = productsById.get(String(it.product_id))?.images?.[0]
+            return (
+              <div className="oitem" key={it.id}>
+                <span className="oitem-thumb">{src && <img src={imgUrl(src, { w: 100 })} alt="" />}</span>
+                <span className="oitem-name">
+                  {it.product_name}
+                  <span className="mono dim">
+                    {' '}· {it.size} × {ordered}
+                    {ordered !== it.qty && <span className="ditem-back"> · {ordered - it.qty} returned</span>}
+                  </span>
+                </span>
+                <span className="mono">{taka(it.price * ordered)}</span>
+              </div>
+            )
+          })}
+          {(!o.order_items || o.order_items.length === 0) && <div className="mono dim">No line items recorded.</div>}
+          {history.map((r) => (
+            <div className="ditem-history mono" key={r.id}>
+              {r.resolution.action === 'exchange'
+                ? `Exchanged ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.from_size} → ${x.to_size} ×${x.qty}`).join(', ')}`
+                : `Refunded ${taka(r.resolution.refund)} · ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.size} ×${x.qty}`).join(', ')} back in stock`}
+              {' · '}{shortDate(r.resolution.at || r.processed_at)}
+            </div>
+          ))}
+        </section>
+
+        <section className="osec">
+          <div className="osec-label mono">PAYMENT</div>
+          <div className="orow"><span>Items</span><span className="mono">{taka(o.paid_subtotal ?? o.subtotal)}</span></div>
+          {Number(o.discount_amount) > 0 && (
+            <div className="orow">
+              <span>Discount · <span className="mono">{o.coupon_code}</span></span>
+              <span className="mono">− {taka(o.discount_amount)}</span>
+            </div>
+          )}
+          {/* Keyed off the zone, not the fee: orders from before delivery
+              charges carry a 0 fee and would show a free delivery line. */}
+          {o.delivery_zone && (
+            <div className="orow">
+              <span>Delivery · {o.delivery_zone === 'inside' ? 'Inside' : 'Outside'} Dhaka</span>
+              <span className="mono">{taka(o.delivery_fee ?? 0)}</span>
+            </div>
+          )}
+          {advance > 0 && (
+            <div className="orow">
+              <span>Advance · bKash <span className="mono trx">{o.advance_trx_id}</span></span>
+              <span className="mono">− {taka(advance)}</span>
+            </div>
+          )}
+          {o.refunded > 0 && (
+            <div className="orow ditem-refund"><span>Refunded</span><span className="mono">− {taka(o.refunded)}</span></div>
+          )}
+          <div className="orow ototal">
+            <span>{advance > 0 ? 'Cash to collect' : 'Total (COD)'}</span>
+            <span className="mono">{taka((o.paid_total ?? o.total ?? o.subtotal) - advance)}</span>
+          </div>
+        </section>
+
+        <section className="osec">
+          <div className="osec-label mono">CUSTOMER &amp; DELIVERY</div>
+          <div className="orow"><span className="dim">Name</span><span>{o.customer_name}</span></div>
+          <div className="orow">
+            <span className="dim">Phone</span>
+            <span className="mono">
+              <a href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+            </span>
+          </div>
+          {o.customer_email && <div className="orow"><span className="dim">Email</span><span className="mono oemail">{o.customer_email}</span></div>}
+          <div className="oaddr">
+            <span className="dim">Address</span>
+            <span>{o.customer_address}</span>
+            <span className="mono dim">{o.customer_area}</span>
+          </div>
+          {o.customer_note && (
+            <div className="oaddr">
+              <span className="dim">Note</span>
+              <span>{o.customer_note}</span>
+            </div>
+          )}
+        </section>
+
+        {/* Everything this phone number has done with us, so the confirmation
+            call can be made knowing whether the last parcels came back. */}
+        <section className="osec">
+          <div className="osec-label mono">THIS NUMBER</div>
+          {h.level === 'new' ? (
+            <div className="hist mono">First order from this number.</div>
+          ) : (
+            <>
+              <div className={`hist ${h.level} mono`}>
+                <span className="hist-dot" />
+                {h.total} orders · {h.delivered} delivered · {h.cancelled} cancelled
+                {h.open > 1 && ` · ${h.open} open`}
+              </div>
+              <div className="hist-note mono">
+                {h.level === 'risk'
+                  ? 'Refused before — worth confirming by phone before it ships.'
+                  : h.level === 'watch'
+                    ? 'One refusal on record.'
+                    : `${taka(h.collected)} collected from this customer.`}
+              </div>
+            </>
+          )}
+          {o.utm_source && (
+            <div className="orow" style={{ marginTop: '8px' }}>
+              <span className="dim">Came from</span>
+              <span className="mono">{[o.utm_source, o.utm_medium, o.utm_campaign].filter(Boolean).join(' · ')}</span>
+            </div>
+          )}
+        </section>
+
+        <section className="osec">
+          <div className="osec-label mono">COURIER</div>
+          {o.consignment_id ? (
+            <>
+              <div className="orow">
+                <span>{courierLabel(o.courier)}</span>
+                <span className="mono">{o.consignment_id}</span>
+              </div>
+              <div className="courier-row">
+                <span className="mono dim">
+                  {o.courier_status || 'booked'}
+                  {o.courier_synced_at && ` · synced ${shortDate(o.courier_synced_at)}`}
+                </span>
+                <button className="courier-btn ghost mono" disabled={courierBusy === o.id} onClick={() => handleCourierSync(o)}>
+                  {courierBusy === o.id ? 'Checking…' : 'Sync status'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="courier-row">
+              <select
+                className="courier-select mono"
+                value={courierPick[o.id] || COURIERS[0].key}
+                onChange={(e) => setCourierPick({ ...courierPick, [o.id]: e.target.value })}
+              >
+                {COURIERS.map((c) => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+              </select>
+              <button className="courier-btn mono" disabled={courierBusy === o.id} onClick={() => handleCourierSend(o)}>
+                {courierBusy === o.id ? 'Sending…' : 'Send to courier'}
+              </button>
+            </div>
+          )}
+        </section>
+
+        <div className="osheet-actions">
+          <a className="wa-btn" href={whatsappLink(o.customer_phone, shopToCustomerMessage(o))} target="_blank" rel="noreferrer">
+            <IconChat width="15" height="15" />
+            WhatsApp customer
+          </a>
+          <button className="courier-btn ghost mono" onClick={() => setSlipOrder(o)}>Print packing slip</button>
+        </div>
+      </>
+    )
+  }
 
   const filteredOrders = useMemo(() => {
     const byStatus =
@@ -1185,39 +1415,27 @@ export default function Admin() {
 
             {filteredOrders.length === 0 && <div className="empty mono">No matching orders.</div>}
 
-            <div className="table">
-              {filteredOrders.map((o) => (
-                <div className="trow-wrap" key={o.id}>
-                  <div className="trow" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>
-                    <div className="tc mono id">{o.id}</div>
-                    <div className="tc name">
-                      {o.customer_name}
-                      {lookupCustomer(customers, o.customer_phone).level === 'risk' && (
-                        <span className="risk-tag mono">
-                          {lookupCustomer(customers, o.customer_phone).cancelled} CANCELLED
-                        </span>
-                      )}
-                    </div>
-                    <div className="tc mono">
-                      {o.customer_phone}
-                      <a
-                        className="wa-mini"
-                        href={whatsappLink(o.customer_phone, shopToCustomerMessage(o))}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Message on WhatsApp"
-                        aria-label={`Message ${o.customer_name} on WhatsApp`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <IconChat width="14" height="14" />
-                      </a>
-                    </div>
-                    <div className="tc mono dim">{shortDate(o.created_at)}</div>
-                    <div className="tc mono price">
-                      {taka(o.total ?? o.subtotal)}
-                      {Number(o.advance_amount) > 0 && <span className="adv-tag">ADV</span>}
-                    </div>
-                    <div className="tc">
+            <div className="olist">
+              {filteredOrders.map((o) => {
+                const items = o.order_items || []
+                const first = items[0]
+                const risk = lookupCustomer(customers, o.customer_phone)
+                return (
+                  <div
+                    className={`ocard ${o.status} ${expanded === o.id ? 'on' : ''}`}
+                    key={o.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setExpanded(o.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setExpanded(o.id) }}
+                  >
+                    <div className="ocard-top">
+                      <div className="ocard-name">
+                        {o.customer_name}
+                        {risk.level === 'risk' && (
+                          <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
+                        )}
+                      </div>
                       <select
                         className={`status-select ${o.status} mono`}
                         value={o.status}
@@ -1225,207 +1443,64 @@ export default function Admin() {
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => handleStatusChange(o.id, e.target.value)}
                       >
-                        {STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
+                        {STATUSES.map((st) => (
+                          <option key={st} value={st}>{st}</option>
                         ))}
                       </select>
                     </div>
-                    <div className={`tc chev ${expanded === o.id ? 'open' : ''}`}>
-                      <IconChevron width="14" height="14" />
-                    </div>
-                  </div>
 
-                  {expanded === o.id && (
-                    <div className="tdetail">
-                      <div className="tdetail-col">
-                        <div className="dlabel mono">ITEMS</div>
-                        {(o.order_items || []).map((it) => {
-                          const ordered = it.ordered_qty ?? it.qty
+                    <div className="ocard-meta mono">
+                      <span>{o.id}</span>
+                      <span>{orderWhen(o.created_at)}</span>
+                    </div>
+
+                    <div className="ocard-items">
+                      <span className="ocard-thumbs">
+                        {items.slice(0, 3).map((it) => {
+                          const src = productsById.get(String(it.product_id))?.images?.[0]
                           return (
-                            <div className="ditem" key={it.id}>
-                              <span>
-                                {it.product_name} · {it.size} × {ordered}
-                                {ordered !== it.qty && (
-                                  <span className="mono ditem-back"> · {ordered - it.qty} returned</span>
-                                )}
-                              </span>
-                              <span className="mono">{taka(it.price * ordered)}</span>
-                            </div>
+                            <span className="ocard-thumb" key={it.id}>
+                              {src && <img src={imgUrl(src, { w: 80 })} alt="" loading="lazy" />}
+                            </span>
                           )
                         })}
-                        {(!o.order_items || o.order_items.length === 0) && (
-                          <div className="mono dim">No line items recorded.</div>
-                        )}
-                        {o.refunded > 0 && (
-                          <div className="ditem ditem-refund mono">
-                            <span>Refunded</span>
-                            <span>− {taka(o.refunded)}</span>
-                          </div>
-                        )}
-                        {/* What Support → Returns & exchanges did with this order. */}
-                        {returns
-                          .filter((r) => r.order_id === o.id && r.resolution && r.resolution.action !== 'reject')
-                          .map((r) => (
-                            <div className="ditem-history mono" key={r.id}>
-                              {r.resolution.action === 'exchange'
-                                ? `Exchanged ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.from_size} → ${x.to_size} ×${x.qty}`).join(', ')}`
-                                : `Refunded ${taka(r.resolution.refund)} · ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.size} ×${x.qty}`).join(', ')} back in stock`}
-                              {' · '}{new Date(r.resolution.at || r.processed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                            </div>
-                          ))}
+                      </span>
+                      <span className="ocard-what">
+                        {first ? `${first.product_name} · ${first.size} × ${first.ordered_qty ?? first.qty}` : 'No items'}
+                        {items.length > 1 && <span className="dim"> + {items.length - 1} more</span>}
+                      </span>
+                    </div>
 
-                        {o.utm_source && (
-                          <>
-                            <div className="dlabel mono" style={{ marginTop: '16px' }}>SOURCE</div>
-                            <div className="mono dim">
-                              {o.utm_source}
-                              {o.utm_medium && ` · ${o.utm_medium}`}
-                              {o.utm_campaign && ` · ${o.utm_campaign}`}
-                            </div>
-                          </>
-                        )}
-
-                        {/* Everything this phone number has done with us, so the
-                            confirmation call can be made knowing whether the
-                            last two parcels came back. */}
-                        <div className="dlabel mono" style={{ marginTop: '16px' }}>THIS NUMBER</div>
-                        {(() => {
-                          const h = lookupCustomer(customers, o.customer_phone)
-
-                          if (h.level === 'new') {
-                            return <div className="hist mono">First order from this number.</div>
-                          }
-
-                          return (
-                            <>
-                              <div className={`hist ${h.level} mono`}>
-                                <span className="hist-dot" />
-                                {h.total} orders · {h.delivered} delivered · {h.cancelled} cancelled
-                                {h.open > 1 && ` · ${h.open} open`}
-                              </div>
-                              <div className="hist-note mono">
-                                {h.level === 'risk'
-                                  ? 'Refused before — worth confirming by phone before it ships.'
-                                  : h.level === 'watch'
-                                    ? 'One refusal on record.'
-                                    : `${taka(h.collected)} collected from this customer.`}
-                              </div>
-                            </>
-                          )
-                        })()}
-                      </div>
-                      <div className="tdetail-col">
-                        <div className="dlabel mono">DELIVERY</div>
-                        <div className="daddr">{o.customer_address}</div>
-                        <div className="daddr mono dim">{o.customer_area}</div>
-                        {o.customer_note && (
-                          <>
-                            <div className="dlabel mono" style={{ marginTop: '14px' }}>NOTE</div>
-                            <div className="daddr">{o.customer_note}</div>
-                          </>
-                        )}
-
-                        {/* What the rider actually collects — the advance, if
-                            there was one, is already in hand. */}
-                        <div className="dlabel mono" style={{ marginTop: '14px' }}>PAYMENT</div>
-                        <div className="ditem">
-                          <span>Items</span>
-                          <span className="mono">{taka(o.subtotal)}</span>
-                        </div>
-                        {/* Keyed off the zone, not the fee: the fee column was
-                            added with a default of 0, so orders taken before
-                            delivery charges existed carry a 0 rather than a
-                            null and would show a free delivery line. */}
-                        {Number(o.discount_amount) > 0 && (
-                          <div className="ditem">
-                            <span>Discount · <span className="mono">{o.coupon_code}</span></span>
-                            <span className="mono">− {taka(o.discount_amount)}</span>
-                          </div>
-                        )}
-                        {o.delivery_zone && (
-                          <div className="ditem">
-                            <span>
-                              Delivery · {o.delivery_zone === 'inside' ? 'Inside' : 'Outside'} Dhaka
-                            </span>
-                            <span className="mono">{taka(o.delivery_fee ?? 0)}</span>
-                          </div>
-                        )}
-                        {Number(o.advance_amount) > 0 && (
-                          <div className="ditem">
-                            <span>Advance · bKash <span className="mono trx">{o.advance_trx_id}</span></span>
-                            <span className="mono">− {taka(o.advance_amount)}</span>
-                          </div>
-                        )}
-                        <div className="ditem collect">
-                          <span>{Number(o.advance_amount) > 0 ? 'Cash to collect' : 'Total (COD)'}</span>
-                          <span className="mono">
-                            {taka((o.total ?? o.subtotal) - (Number(o.advance_amount) || 0))}
-                          </span>
-                        </div>
-
-                        <div className="dlabel mono" style={{ marginTop: '16px' }}>COURIER</div>
-                        {o.consignment_id ? (
-                          <>
-                            <div className="ditem">
-                              <span>{courierLabel(o.courier)}</span>
-                              <span className="mono">{o.consignment_id}</span>
-                            </div>
-                            <div className="courier-row">
-                              <span className="mono dim">
-                                {o.courier_status || 'booked'}
-                                {o.courier_synced_at && ` · synced ${shortDate(o.courier_synced_at)}`}
-                              </span>
-                              <button
-                                className="courier-btn ghost mono"
-                                disabled={courierBusy === o.id}
-                                onClick={() => handleCourierSync(o)}
-                              >
-                                {courierBusy === o.id ? 'Checking…' : 'Sync status'}
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="courier-row">
-                            <select
-                              className="courier-select mono"
-                              value={courierPick[o.id] || COURIERS[0].key}
-                              onChange={(e) =>
-                                setCourierPick({ ...courierPick, [o.id]: e.target.value })
-                              }
-                            >
-                              {COURIERS.map((c) => (
-                                <option key={c.key} value={c.key}>{c.label}</option>
-                              ))}
-                            </select>
-                            <button
-                              className="courier-btn mono"
-                              disabled={courierBusy === o.id}
-                              onClick={() => handleCourierSend(o)}
-                            >
-                              {courierBusy === o.id ? 'Sending…' : 'Send to courier'}
-                            </button>
-                          </div>
-                        )}
-
+                    <div className="ocard-bottom">
+                      <span className="mono ocard-phone">
+                        {o.customer_phone}
                         <a
-                          className="wa-btn"
+                          className="wa-mini"
                           href={whatsappLink(o.customer_phone, shopToCustomerMessage(o))}
                           target="_blank"
                           rel="noreferrer"
+                          title="Message on WhatsApp"
+                          aria-label={`Message ${o.customer_name} on WhatsApp`}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <IconChat width="15" height="15" />
-                          WhatsApp customer
+                          <IconChat width="14" height="14" />
                         </a>
-
-                        <button className="courier-btn ghost mono slip-btn" onClick={() => setSlipOrder(o)}>
-                          Print packing slip
-                        </button>
-                      </div>
+                      </span>
+                      <span className="ocard-total mono">
+                        {Number(o.advance_amount) > 0 && <span className="adv-tag">ADV</span>}
+                        {taka(o.total ?? o.subtotal)}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
+
+            {expandedOrder && (
+              <OrderSheetFrame onClose={() => setExpanded(null)}>
+                {renderOrderSheet(expandedOrder)}
+              </OrderSheetFrame>
+            )}
           </section>
           )}
 
