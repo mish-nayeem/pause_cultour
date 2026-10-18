@@ -156,12 +156,12 @@
   min-width: 34px;
   text-align: center;
   padding: 2px 8px;
-  border: 1.5px solid var(--steel-line);
+  border: 1px solid var(--steel-line);
   border-radius: 999px;
 }
 
-.dr-pnums.lv-ok strong { border-color: #1FB57A; }
-.dr-pnums.lv-low strong { border-color: #F2A516; }
-.dr-pnums.lv-out strong { border-color: #F0457A; }
+.dr-pnums.lv-ok strong { border-color: color-mix(in srgb, #1FB57A 45%, transparent); }
+.dr-pnums.lv-low strong { border-color: color-mix(in srgb, #F2A516 45%, transparent); }
+.dr-pnums.lv-out strong { border-color: color-mix(in srgb, #F0457A 45%, transparent); }
 
 .dr-items-solo { border: 1.5px solid #1FB57A; }
