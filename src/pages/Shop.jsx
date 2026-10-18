@@ -9,6 +9,7 @@ import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import Pager from '../components/Pager.jsx'
 import { CardPhoto } from '../components/CardPhotos.jsx'
+import ColourSwatches from '../components/ColourSwatches.jsx'
 import ShopFilter, { sortSizes } from '../components/ShopFilter.jsx'
 import QuickAdd from '../components/QuickAdd.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
@@ -226,6 +227,7 @@ export default function Shop() {
                   <div className="sname">{p.name}</div>
                   {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
                 </div>
+                <ColourSwatches product={p} all={products} />
                 <div className="smeta mono">
                   <span>{p.variant}</span>
                   <CardPrice product={p} />

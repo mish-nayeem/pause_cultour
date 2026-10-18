@@ -1,0 +1,33 @@
+/* A card's colour swatches (ColourSwatches.jsx): small round photos of each
+   colour, the one on the card ringed. */
+.cswatches {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 0 8px;
+  min-height: 22px;
+}
+
+.cswatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--paper-dim);
+  box-shadow: 0 0 0 1px var(--steel-line);
+  cursor: pointer;
+  flex: none;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cswatch img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cswatch.on { box-shadow: 0 0 0 1.5px var(--paper), 0 0 0 2.5px var(--ink); }
+.cswatch:hover { transform: scale(1.12); }
+
+.cswatch-more { font-size: 11px; color: var(--steel); }
+.cswatch-count { font-size: 11px; color: var(--steel); margin-left: 4px; letter-spacing: 0.02em; }
+
+@media (max-width: 760px) {
+  .cswatch { width: 18px; height: 18px; }
+  .cswatch-count { display: none; }
+}

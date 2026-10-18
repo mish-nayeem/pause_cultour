@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import QuickAdd from './QuickAdd.jsx'
 import { CardPhoto } from './CardPhotos.jsx'
+import ColourSwatches from './ColourSwatches.jsx'
 import { fetchProducts, cardPhotos } from '../lib/products.js'
 import { recentIds } from '../lib/recent.js'
 import { CardPrice, SaleBadge } from './SalePrice.jsx'
@@ -54,6 +55,7 @@ export default function RecentlyViewed({ currentId }) {
                 <div className="yml-name">{p.name}</div>
                 {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
               </div>
+              <ColourSwatches product={p} all={all} />
               <div className="yml-meta mono">
                 <span>{p.variant}</span>
                 <CardPrice product={p} />
