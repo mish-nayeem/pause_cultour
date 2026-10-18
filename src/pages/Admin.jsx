@@ -1429,13 +1429,18 @@ export default function Admin() {
                     onClick={() => setExpanded(o.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter') setExpanded(o.id) }}
                   >
-                    <div className="ocard-top">
-                      <div className="ocard-name">
-                        <span className="ocard-name-text">{o.customer_name}</span>
-                        {risk.level === 'risk' && (
-                          <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
-                        )}
-                      </div>
+                    <div className="ocard-name">
+                      <span className="ocard-name-text">{o.customer_name}</span>
+                      {risk.level === 'risk' && (
+                        <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
+                      )}
+                    </div>
+
+                    <div className="ocard-meta">
+                      <span className="mono ocard-when">
+                        <span>{o.id}</span>
+                        <span>{orderWhen(o.created_at)}</span>
+                      </span>
                       <select
                         className={`status-select ${o.status} mono`}
                         value={o.status}
@@ -1447,11 +1452,6 @@ export default function Admin() {
                           <option key={st} value={st}>{st}</option>
                         ))}
                       </select>
-                    </div>
-
-                    <div className="ocard-meta mono">
-                      <span>{o.id}</span>
-                      <span>{orderWhen(o.created_at)}</span>
                     </div>
 
                     <div className="ocard-items">
