@@ -137,7 +137,7 @@ const PRODUCTS_SUBS = [
   { key: 'catalog', label: 'Product catalog' },
   { key: 'stock', label: 'Stock levels' },
   { key: 'best', label: 'Best sellers' },
-  { key: 'drops', label: 'Drop sales' },
+  { key: 'drops', label: 'Stock & sales' },
   { key: 'margin', label: 'Cost & margin' },
   { key: 'collections', label: 'Collections' },
 ]

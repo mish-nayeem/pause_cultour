@@ -1,3 +1,42 @@
+/* The totals over everything. */
+.dr-totals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dr-total {
+  border: 1px solid var(--steel-line);
+  border-radius: var(--r-card, 14px);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.dr-total span { font-size: 10.5px; letter-spacing: 0.06em; color: var(--steel); }
+.dr-total strong { font-size: 24px; line-height: 1.15; }
+.dr-total em { font-style: normal; font-size: 11px; color: var(--steel); }
+
+.dr-total-btn { cursor: pointer; }
+.dr-total-btn em { color: var(--cobalt); }
+.dr-total-btn:hover,
+.dr-total-btn.on { border-color: var(--cobalt); }
+
+.dr-items-solo {
+  border: 1px solid var(--steel-line);
+  border-radius: var(--r-card, 14px);
+  margin-bottom: 18px;
+}
+
+.dr-label { font-size: 11px; letter-spacing: 0.07em; color: var(--steel); margin: 6px 0 10px; }
+.dr-more { font-size: 11px; color: var(--cobalt); margin-top: 10px; }
+
 .dr-list { display: flex; flex-direction: column; gap: 12px; }
 
 .dr-card {
@@ -50,7 +89,7 @@
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: start;
+  align-items: center;
   padding: 12px 0;
 }
 
@@ -73,9 +112,12 @@
 .dr-size.out { color: var(--signal); border-color: var(--signal); }
 
 .dr-pnums { text-align: right; font-size: 12.5px; white-space: nowrap; }
-.dr-pnums strong { font-size: 15px; }
+.dr-pnums strong { font-size: 18px; display: block; line-height: 1.1; }
 
 @media (max-width: 760px) {
+  .dr-totals { grid-template-columns: 1fr 1fr; }
+  .dr-total { padding: 12px 14px; }
+  .dr-total strong { font-size: 20px; }
   .dr-head { padding: 14px; }
   .dr-items { padding: 4px 14px; }
   .dr-num strong { font-size: 20px; }
