@@ -119,9 +119,12 @@ button {
    the slide is the hover effect here. */
 .card-track > img { transform: none !important; }
 .card-track-wait { background: var(--paper-dim); }
+/* Following a finger: no easing, or the strip lags behind it. */
+.card-track.dragging { transition: none; }
 
-/* Dots — one per photo, the showing one solid — only while pointing at the
-   card, so a phone sees just the main photo. */
+/* Dots — one per photo, the showing one solid. With a mouse only while
+   pointing at the card; on a phone always, so it's clear there's more to
+   swipe through. */
 .card-dots {
   position: absolute;
   left: 50%;
@@ -137,6 +140,10 @@ button {
 
 @media (hover: hover) {
   :hover > .card-dots { opacity: 1; }
+}
+
+@media (hover: none) {
+  .card-dots { opacity: 1; }
 }
 
 .card-dots i {
