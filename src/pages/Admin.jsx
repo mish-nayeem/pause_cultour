@@ -182,6 +182,26 @@ const THEMES = [
 
 const THEME_KEY = 'pause_admin_theme'
 
+// When the admin last looked at the order list, in this browser — orders
+// placed after it show as "new" on the Overview.
+const ORDERS_SEEN_KEY = 'pause_admin_orders_seen'
+// How often the Overview checks for orders placed since the panel loaded.
+const ORDER_POLL_MS = 60000
+
+function ordersSeenAt() {
+  try {
+    const saved = localStorage.getItem(ORDERS_SEEN_KEY)
+    if (saved) return saved
+    // First visit on this browser: start from now rather than calling every
+    // order ever placed "new".
+    const now = new Date().toISOString()
+    localStorage.setItem(ORDERS_SEEN_KEY, now)
+    return now
+  } catch {
+    return new Date().toISOString()
+  }
+}
+
 function savedTheme() {
   try {
     const saved = localStorage.getItem(THEME_KEY)
@@ -428,6 +448,9 @@ export default function Admin() {
   const [overviewSub, setOverviewSub] = useState('stats')
   const [ordersSub, setOrdersSub] = useState('list')
   const [returns, setReturns] = useState([])
+  const [seenOrdersAt, setSeenOrdersAt] = useState(ordersSeenAt)
+  // Orders placed since the panel last loaded its list, found by the poll.
+  const [laterOrders, setLaterOrders] = useState(0)
   const [abandonedCarts, setAbandonedCarts] = useState([])
   const [blockedAttempts, setBlockedAttempts] = useState([])
   const [returnForm, setReturnForm] = useState({ orderId: '', reason: '' })
@@ -526,6 +549,7 @@ export default function Admin() {
     setSocialStats(ss.rows)
     setPageViews(pv.views)
     setBlockedAttempts(ba.attempts)
+    setLaterOrders(0)
     setLoading(false)
   }, [])
 
@@ -533,6 +557,31 @@ export default function Admin() {
     if (!session) return
     reload()
   }, [session, reload])
+
+  // A light check every minute while the panel is open: how many orders were
+  // placed after the newest one already loaded. Only counts — the list
+  // itself reloads when the admin opens it from the notice.
+  const newestOrderAt = orders[0]?.created_at || null
+  useEffect(() => {
+    if (!session || !newestOrderAt) return
+    const id = setInterval(async () => {
+      if (document.hidden) return
+      const { count, error } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .gt('created_at', newestOrderAt)
+      if (!error) setLaterOrders(count || 0)
+    }, ORDER_POLL_MS)
+    return () => clearInterval(id)
+  }, [session, newestOrderAt])
+
+  // Looking at the order list counts as having seen the orders on it.
+  useEffect(() => {
+    if (loading || tab !== 'orders' || ordersSub !== 'list' || laterOrders > 0) return
+    const now = new Date().toISOString()
+    setSeenOrdersAt(now)
+    try { localStorage.setItem(ORDERS_SEEN_KEY, now) } catch { /* not remembered */ }
+  }, [loading, tab, ordersSub, laterOrders])
 
   const stats = useMemo(() => computeStats(orders), [orders])
   const series = useMemo(() => dailySeries(orders, 14), [orders])
@@ -648,6 +697,7 @@ export default function Admin() {
   // Every counter on the overview is a way into the orders behind it — the
   // click lands on the orders tab with that status already filtered.
   function openOrders(status) {
+    setOrdersSub('list')
     setStatusFilter(status)
     setSearch('')
     setExpanded(null)
@@ -826,6 +876,15 @@ export default function Admin() {
   // admin hasn't opened yet — the Support badge and the Overview notice.
   const newRequests = returns.filter(isNewRequest).length
 
+  // Orders placed since the admin last opened the order list, plus any the
+  // poll has found since this page loaded.
+  const newOrders = orders.filter((o) => o.created_at > seenOrdersAt).length + laterOrders
+
+  function openNewOrders() {
+    if (laterOrders > 0) reload()
+    openOrders('all')
+  }
+
   function openRequests() {
     setSupportSub('requests')
     goTab('support')
@@ -957,14 +1016,23 @@ export default function Admin() {
 
         {!loading && tab === 'overview' && (
           <div>
-            {newRequests > 0 && (
-              <button type="button" className="sm-notice" onClick={openRequests}>
-                <span className="sm-notice-count mono">{newRequests}</span>
-                <span>
-                  New refund / exchange {newRequests === 1 ? 'request' : 'requests'} from the Support page
-                </span>
-                <span className="sm-notice-cta mono">VIEW →</span>
-              </button>
+            {(newOrders > 0 || newRequests > 0) && (
+              <div className="sm-notices">
+                {newOrders > 0 && (
+                  <button type="button" className="sm-notice order" onClick={openNewOrders}>
+                    <span className="sm-notice-count mono">{newOrders}</span>
+                    <span>New {newOrders === 1 ? 'order' : 'orders'}</span>
+                    <span className="sm-notice-cta mono">VIEW →</span>
+                  </button>
+                )}
+                {newRequests > 0 && (
+                  <button type="button" className="sm-notice" onClick={openRequests}>
+                    <span className="sm-notice-count mono">{newRequests}</span>
+                    <span>Refund / exchange {newRequests === 1 ? 'request' : 'requests'}</span>
+                    <span className="sm-notice-cta mono">VIEW →</span>
+                  </button>
+                )}
+              </div>
             )}
             <div className="subtabs mono">
               {OVERVIEW_SUBS.map((s) => (
