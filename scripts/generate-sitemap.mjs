@@ -74,15 +74,28 @@ async function warmShareImages(products) {
   // Each body is read to the end: an unread response keeps its connection
   // open, and Node then sat for minutes waiting on those before the build
   // could move on to vite.
-  const results = await Promise.allSettled(
-    urls.map(async (u) => {
-      const res = await fetch(u)
-      await res.arrayBuffer()
-      return res
-    })
-  )
-  const warmed = results.filter((r) => r.status === 'fulfilled' && r.value.ok).length
+  //
+  // Each fetch gets 20 seconds and the whole step 60: warming only saves a
+  // crawler a wait, so a slow or stuck image service must never hold the
+  // deploy up — with no limit, one hung request left the build running until
+  // Cloudflare's own time limit failed it.
+  const results = await Promise.race([
+    Promise.allSettled(
+      urls.map(async (u) => {
+        const res = await fetch(u, { signal: AbortSignal.timeout(20_000) })
+        await res.arrayBuffer()
+        return res
+      })
+    ),
+    new Promise((resolve) => setTimeout(() => resolve(null), 60_000).unref()),
+  ])
 
+  if (!results) {
+    console.warn(`[sitemap] Stopped warming share images after 60s (${urls.length} queued) — carrying on with the build.`)
+    return
+  }
+
+  const warmed = results.filter((r) => r.status === 'fulfilled' && r.value.ok).length
   console.log(`[sitemap] Warmed ${warmed}/${urls.length} product share images.`)
 }
 
@@ -105,4 +118,9 @@ async function main() {
   await warmShareImages(products)
 }
 
+// Never fail the build over the sitemap or the warm-up; exit as soon as
+// they're done so a lingering connection can't keep Node (and the deploy)
+// waiting.
 main()
+  .catch((err) => console.error('[sitemap] Skipped:', err?.message || err))
+  .finally(() => process.exit(0))
