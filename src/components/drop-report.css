@@ -126,9 +126,9 @@
 
 
 /* ---------- Colour ----------
-   Important numbers, so each gets its own colour: the four totals, one
-   colour per drop, and green / amber / red for how much of a product is
-   left. Tints are mixed from the colour so they sit on every admin theme. */
+   Only the borders carry colour — one per total, one per drop, and green /
+   amber / red on a product by how much is left. Text stays the theme's own
+   (black, or white on the dark theme). */
 
 .dr-total { --acc: #2F8CFF; }
 .dr-total.t-blue { --acc: #2F8CFF; }
@@ -136,38 +136,32 @@
 .dr-total.t-amber { --acc: #F2A516; }
 .dr-total.t-pink { --acc: #F0457A; }
 
-.dr-total {
-  border-color: color-mix(in srgb, var(--acc) 45%, transparent);
-  background: color-mix(in srgb, var(--acc) 12%, transparent);
-}
-
-.dr-total span { color: var(--acc); font-weight: 700; }
-.dr-total strong { color: var(--acc); }
-.dr-total-btn em { color: var(--acc); }
+.dr-total { border: 1.5px solid var(--acc); }
+.dr-total span { color: var(--ink); opacity: 0.7; }
+.dr-total-btn em { color: var(--ink); opacity: 0.7; }
 .dr-total-btn:hover,
-.dr-total-btn.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 20%, transparent); }
+.dr-total-btn.on { border-width: 2px; border-color: var(--acc); }
 
 .dr-card {
   --acc: #2F8CFF;
-  border-color: color-mix(in srgb, var(--acc) 40%, transparent);
-  border-left: 4px solid var(--acc);
-  background: color-mix(in srgb, var(--acc) 6%, transparent);
+  border: 1.5px solid var(--acc);
+  border-left-width: 4px;
 }
 
-.dr-card .dr-name { color: var(--acc); }
-.dr-card .dr-more { color: var(--acc); }
-.dr-card .dr-bar { background: color-mix(in srgb, var(--acc) 18%, transparent); }
+.dr-card .dr-more { color: var(--ink); opacity: 0.7; }
 .dr-card .dr-bar i { background: var(--acc); }
 
-.dr-num.n-sold strong { color: #1FB57A; }
-.dr-num.n-left strong { color: #F2A516; }
-.dr-num.n-pct strong { color: var(--acc); }
-
-.dr-pnums.lv-ok strong { color: #1FB57A; }
-.dr-pnums.lv-low strong { color: #F2A516; }
-.dr-pnums.lv-out strong { color: #F0457A; }
-
-.dr-items-solo {
-  border-color: color-mix(in srgb, #1FB57A 40%, transparent);
-  border-left: 4px solid #1FB57A;
+.dr-pnums strong {
+  display: inline-block;
+  min-width: 34px;
+  text-align: center;
+  padding: 2px 8px;
+  border: 1.5px solid var(--steel-line);
+  border-radius: 999px;
 }
+
+.dr-pnums.lv-ok strong { border-color: #1FB57A; }
+.dr-pnums.lv-low strong { border-color: #F2A516; }
+.dr-pnums.lv-out strong { border-color: #F0457A; }
+
+.dr-items-solo { border: 1.5px solid #1FB57A; }
