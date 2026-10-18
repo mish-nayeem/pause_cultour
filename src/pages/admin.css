@@ -1317,8 +1317,15 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
    blue theme, green on the green one, white on the dark one — so they read
    apart at a glance. Tapping one opens its details over the list. */
 
-.admin { --order-edge: var(--cobalt); }
-.admin[data-theme='dark'] { --order-edge: rgba(255, 255, 255, 0.75); }
+.admin {
+  /* Soft by default, the full colour on hover and on the open order. */
+  --order-edge: color-mix(in srgb, var(--cobalt) 38%, transparent);
+  --order-edge-strong: var(--cobalt);
+}
+.admin[data-theme='dark'] {
+  --order-edge: rgba(255, 255, 255, 0.22);
+  --order-edge-strong: rgba(255, 255, 255, 0.7);
+}
 
 .olist {
   display: grid;
@@ -1329,7 +1336,7 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 }
 
 .ocard {
-  border: 1.5px solid var(--order-edge);
+  border: 1px solid var(--order-edge);
   border-radius: var(--r-card, 14px);
   padding: 12px 14px;
   display: flex;
@@ -1342,9 +1349,9 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
   max-width: 100%;
 }
 
-.ocard:hover { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); transform: translateY(-1px); }
+.ocard:hover { border-color: var(--order-edge-strong); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1); transform: translateY(-1px); }
 .ocard:focus-visible { outline: 2px solid var(--order-edge); outline-offset: 2px; }
-.ocard.on { border-width: 2.5px; padding: 11px 13px; }
+.ocard.on { border-color: var(--order-edge-strong); border-width: 2px; padding: 11px 13px; }
 .ocard.cancelled { opacity: 0.7; }
 
 /* The name gets its own line, in full; a risk tag beside it. */
@@ -1427,7 +1434,7 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
   overscroll-behavior: contain;
   background: var(--paper-dim);
   color: var(--ink);
-  border-left: 2px solid var(--order-edge);
+  border-left: 2px solid var(--order-edge-strong);
   padding: 0 0 24px;
   animation: osheet-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1445,7 +1452,7 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
   gap: 12px;
   padding: 16px 18px 14px;
   background: var(--paper);
-  border-bottom: 1.5px solid var(--order-edge);
+  border-bottom: 1px solid var(--order-edge);
 }
 
 .osheet-id { font-size: 11.5px; color: var(--steel); }
@@ -1524,7 +1531,7 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
     height: 92vh;
     height: 92dvh;
     border-left: none;
-    border-top: 2px solid var(--order-edge);
+    border-top: 2px solid var(--order-edge-strong);
     border-radius: 20px 20px 0 0;
     animation-name: osheet-up;
   }

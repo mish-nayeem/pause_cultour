@@ -552,15 +552,20 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
   .wish-group,
   .low-row
 ) {
-  border: 1.5px solid var(--order-edge);
+  border: 1px solid var(--order-edge);
   border-radius: 12px;
   padding-left: 12px;
+  transition: border-color 0.15s ease;
   padding-right: 12px;
   margin-bottom: 8px;
 }
 
 .admin .main :is(.mini-row, .trow.prow, .cp-row:not(.cp-th), .bk-row:not(.bk-th), .cm-row, .am-row, .hm-row, .au-row:not(.au-head), .low-row):last-child {
-  border-bottom: 1.5px solid var(--order-edge);
+  border-bottom: 1px solid var(--order-edge);
+}
+
+.admin .main :is(.mini-row, .trow.prow, .cp-row:not(.cp-th), .cm-row, .am-row, .hm-row, .lk-item, .au-row:not(.au-head)):hover {
+  border-color: var(--order-edge-strong);
 }
 
 .admin .main .bk-th,
