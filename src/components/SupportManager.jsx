@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import { INFO_PAGES, SUPPORT_TABS } from '../content/info-pages.js'
@@ -6,165 +6,12 @@ import {
   DEFAULT_PORTAL,
   fetchPortal,
   fetchSupportPages,
-  isNewRequest,
-  markRequestsSeen,
   savePortal,
   saveSupportPages,
-  updateRequest,
 } from '../lib/support.js'
 import './support-manager.css'
 
 const MIGRATION = 'has supabase-migration-support.sql been run?'
-
-function when(iso) {
-  return new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-// ---------------------------------------------------------------------------
-// Admin → Support → Requests
-// ---------------------------------------------------------------------------
-// Every refund / exchange request — the ones customers send from the portal
-// and the ones logged by hand under Orders. Opening this list marks the new
-// ones seen, which clears the sidebar badge and the Overview notice; they
-// keep their NEW tag until the page is left.
-
-const FILTERS = [
-  { key: 'open', label: 'Open' },
-  { key: 'all', label: 'All' },
-  { key: 'done', label: 'Closed' },
-]
-
-const STATUS_PILL = {
-  open: 'pending',
-  approved: 'shipped',
-  resolved: 'delivered',
-  rejected: 'cancelled',
-}
-
-export function SupportRequests({ requests, onSeen, onReload }) {
-  const [freshIds] = useState(() => new Set(requests.filter(isNewRequest).map((r) => r.id)))
-  const [filter, setFilter] = useState('open')
-  const [notes, setNotes] = useState({})
-  const [busy, setBusy] = useState(null)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    const ids = [...freshIds]
-    if (!ids.length) return
-    markRequestsSeen(ids).then(({ error }) => {
-      if (!error) onSeen(ids)
-    })
-    // Once, for the ones that were new when the list opened.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const shown = useMemo(() => {
-    if (filter === 'all') return requests
-    if (filter === 'done') return requests.filter((r) => r.status === 'resolved' || r.status === 'rejected')
-    return requests.filter((r) => r.status === 'open' || r.status === 'approved')
-  }, [requests, filter])
-
-  async function setStatus(r, status) {
-    setBusy(r.id)
-    setError('')
-    const note = notes[r.id] ?? r.admin_note ?? ''
-    const { error } = await updateRequest(r.id, status, note.trim())
-    setBusy(null)
-    if (error) return setError(`Couldn't update that request — ${MIGRATION}`)
-    onReload()
-  }
-
-  return (
-    <section className="panel sm-panel">
-      <div className="sm-head">
-        <div className="panel-label mono">REFUND &amp; EXCHANGE REQUESTS</div>
-        <div className="sm-filter mono">
-          {FILTERS.map((f) => (
-            <button key={f.key} className={filter === f.key ? 'on' : ''} onClick={() => setFilter(f.key)}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && <div className="err-banner mono">{error}</div>}
-      {shown.length === 0 && <div className="empty mono">Nothing here.</div>}
-
-      <div className="sm-list">
-        {shown.map((r) => (
-          <article className={`sm-req ${freshIds.has(r.id) ? 'fresh' : ''}`} key={r.id}>
-            <div className="sm-req-top">
-              <div>
-                <div className="mini-id mono">
-                  #{r.id} · {r.order_id} · {when(r.created_at)}
-                  {freshIds.has(r.id) && <span className="sm-new">NEW</span>}
-                </div>
-                <div className="sm-req-title">
-                  <span className={`sm-kind ${r.kind}`}>{r.kind === 'refund' ? 'Refund' : r.kind === 'exchange' ? 'Exchange' : 'Return'}</span>
-                  {r.reason}
-                </div>
-                <div className="mono dim sm-who">
-                  {r.orders?.customer_name || '—'}
-                  {r.orders?.customer_phone && <> · <a href={`tel:${r.orders.customer_phone}`}>{r.orders.customer_phone}</a></>}
-                  {r.contact && r.contact !== r.orders?.customer_phone && <> · {r.contact}</>}
-                  {' · '}{r.source === 'customer' ? 'from the portal' : 'logged by admin'}
-                </div>
-              </div>
-              <span className={`pill ${STATUS_PILL[r.status] || 'pending'} mono`}>{r.status}</span>
-            </div>
-
-            {Array.isArray(r.items) && r.items.length > 0 && (
-              <ul className="sm-items">
-                {r.items.map((it, i) => (
-                  <li key={i}>
-                    {it.product_name} · <span className="mono">{it.size} × {it.qty}</span>
-                    {it.exchange_size && <span className="mono sm-swap"> → wants {it.exchange_size}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {r.details && <p className="sm-details">“{r.details}”</p>}
-            {r.note && <p className="sm-details dim">{r.note}</p>}
-
-            <div className="sm-actions">
-              <input
-                className="sm-note"
-                placeholder="Note for yourself (optional)"
-                value={notes[r.id] ?? r.admin_note ?? ''}
-                onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
-              />
-              {r.status === 'open' && (
-                <>
-                  <button className="courier-btn mono" disabled={busy === r.id} onClick={() => setStatus(r, 'approved')}>
-                    Approve
-                  </button>
-                  <button className="courier-btn ghost mono" disabled={busy === r.id} onClick={() => setStatus(r, 'rejected')}>
-                    Reject
-                  </button>
-                </>
-              )}
-              {(r.status === 'open' || r.status === 'approved') && (
-                <button className="courier-btn mono" disabled={busy === r.id} onClick={() => setStatus(r, 'resolved')}>
-                  {busy === r.id ? 'Saving…' : 'Mark done'}
-                </button>
-              )}
-              {(r.status === 'resolved' || r.status === 'rejected') && (
-                <button className="courier-btn ghost mono" disabled={busy === r.id} onClick={() => setStatus(r, 'open')}>
-                  Reopen
-                </button>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Admin → Support → Support pages

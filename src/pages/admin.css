@@ -1012,6 +1012,12 @@
   white-space: nowrap;
 }
 
+/* An order's details: pieces sent back, money refunded and exchanges done
+   from Support → Returns & exchanges. */
+.ditem-back { color: var(--signal); font-size: 11.5px; }
+.ditem-refund { color: var(--signal); }
+.ditem-history { font-size: 11.5px; color: var(--steel); margin-top: 6px; line-height: 1.5; }
+
 /* ---------- Wishlist ---------- */
 
 .wish-group {
@@ -1305,3 +1311,193 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 
 .queue-note strong { color: var(--ink); }
 .queue-grip-inline { color: var(--ink); font-size: 14px; }
+
+/* ---------- Orders → Order list: one card per order ---------- */
+/* Each order is its own bordered card in the theme's colour — blue on the
+   blue theme, green on the green one, white on the dark one — so they read
+   apart at a glance. Tapping one opens its details over the list. */
+
+.admin { --order-edge: var(--cobalt); }
+.admin[data-theme='dark'] { --order-edge: rgba(255, 255, 255, 0.75); }
+
+.olist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.ocard {
+  border: 1.5px solid var(--order-edge);
+  border-radius: var(--r-card, 14px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  background: var(--paper);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.ocard:hover { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); transform: translateY(-1px); }
+.ocard:focus-visible { outline: 2px solid var(--order-edge); outline-offset: 2px; }
+.ocard.on { border-width: 2.5px; padding: 11px 13px; }
+.ocard.cancelled { opacity: 0.7; }
+
+.ocard-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ocard-name { flex: 1; font-size: 15px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin .ocard-top .status-select,
+.admin .osheet-head .status-select { flex: none; width: auto; min-width: 0; padding: 5px 28px 5px 10px; font-size: 11px; }
+
+.ocard-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; color: var(--steel); }
+
+.ocard-items { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ocard-thumbs { display: flex; flex: none; }
+
+.ocard-thumb {
+  width: 30px;
+  height: 38px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--paper-dim);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+.ocard-thumb + .ocard-thumb { margin-left: -8px; }
+.ocard-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ocard-what { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ocard-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--steel-line);
+  padding-top: 8px;
+}
+
+.ocard-phone { font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; }
+.ocard-total { font-size: 16px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- An order's details, over the list ---------- */
+
+.osheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: flex-end;
+  animation: osheet-fade 0.18s ease-out;
+}
+
+.osheet {
+  width: min(480px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--paper-dim);
+  color: var(--ink);
+  border-left: 2px solid var(--order-edge);
+  padding: 0 0 24px;
+  animation: osheet-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes osheet-fade { from { opacity: 0; } }
+@keyframes osheet-in { from { transform: translateX(40px); opacity: 0; } }
+
+.osheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  background: var(--paper);
+  border-bottom: 1.5px solid var(--order-edge);
+}
+
+.osheet-id { font-size: 11.5px; color: var(--steel); }
+.osheet-name { font-size: 19px; font-weight: 800; margin: 2px 0; }
+.osheet-when { font-size: 11.5px; color: var(--steel); }
+.osheet-head-right { display: flex; align-items: center; gap: 8px; flex: none; }
+
+.osheet-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.osec {
+  margin: 12px 14px 0;
+  background: var(--paper);
+  border: 1px solid var(--steel-line);
+  border-radius: var(--r-card, 14px);
+  padding: 12px 14px;
+}
+
+.osec-label { font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); font-weight: 700; margin-bottom: 8px; }
+
+.oitem {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13.5px;
+}
+
+.oitem + .oitem { border-top: 1px solid var(--steel-line); }
+.oitem-thumb { width: 36px; height: 44px; border-radius: 6px; overflow: hidden; background: var(--paper-dim); }
+.oitem-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.oitem-name .mono { font-size: 12px; }
+
+.orow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13.5px;
+}
+
+.orow > :last-child { text-align: right; }
+.orow a { color: var(--cobalt); }
+.oemail { word-break: break-all; }
+
+.ototal {
+  border-top: 1px solid var(--steel-line);
+  margin-top: 6px;
+  padding-top: 8px;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.oaddr { display: flex; flex-direction: column; gap: 2px; padding: 6px 0 2px; font-size: 13.5px; line-height: 1.5; }
+.oaddr > .dim:first-child { font-size: 12px; }
+
+.osheet-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 14px 0; }
+.osheet-actions .wa-btn { margin: 0; flex: 1; justify-content: center; }
+.osheet-actions .courier-btn.ghost { margin-left: 0; flex: 1; }
+
+/* A phone: the details come up from the bottom instead. */
+@media (max-width: 860px) {
+  .olist { grid-template-columns: 1fr; gap: 10px; }
+  .osheet-overlay { align-items: flex-end; }
+  .osheet {
+    width: 100%;
+    height: 92vh;
+    height: 92dvh;
+    border-left: none;
+    border-top: 2px solid var(--order-edge);
+    border-radius: 20px 20px 0 0;
+    animation-name: osheet-up;
+  }
+  .osheet-head { border-radius: 20px 20px 0 0; }
+  @keyframes osheet-up { from { transform: translateY(40px); opacity: 0; } }
+}

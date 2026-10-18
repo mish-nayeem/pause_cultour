@@ -36,55 +36,8 @@
 
 .sm-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cobalt); }
 
-/* ---------- Requests ---------- */
+/* ---------- Page editor ---------- */
 
-.sm-list { display: flex; flex-direction: column; gap: 10px; }
-
-.sm-req {
-  border: 1px solid var(--steel-line);
-  border-radius: 12px;
-  padding: 14px 16px;
-}
-
-.sm-req.fresh { border-color: var(--cobalt); box-shadow: inset 3px 0 0 var(--cobalt); }
-
-.sm-req-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-
-.sm-new {
-  margin-left: 8px;
-  background: var(--cobalt);
-  color: #fff;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.06em;
-}
-
-.sm-req-title { font-size: 14.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-.sm-kind {
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--steel-line);
-}
-
-.sm-kind.refund { border-color: var(--signal); color: var(--signal); }
-.sm-kind.exchange { border-color: var(--cobalt); color: var(--cobalt); }
-
-.sm-who { font-size: 11.5px; margin-top: 4px; }
-
-.sm-items { margin: 10px 0 0; padding-left: 18px; font-size: 13.5px; line-height: 1.7; }
-.sm-swap { color: var(--cobalt); }
-
-.sm-details { font-size: 13px; line-height: 1.6; margin-top: 8px; white-space: pre-line; }
-
-.sm-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
-.sm-actions .courier-btn.ghost { margin-left: 0; }
-
-.sm-note,
 .sm-input,
 .sm-table input,
 .sm-contact input {
@@ -97,14 +50,11 @@
   font-family: inherit;
 }
 
-.sm-note { flex: 1 1 200px; }
-
-.sm-note:focus, .sm-input:focus, .sm-table input:focus, .sm-contact input:focus {
+.sm-input:focus, .sm-table input:focus, .sm-contact input:focus {
   outline: none;
   border-color: var(--cobalt);
 }
 
-/* ---------- Page editor ---------- */
 
 .sm-editor { margin-top: 6px; }
 
