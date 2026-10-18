@@ -13,8 +13,16 @@
   backdrop-filter: blur(10px);
   border-radius: 22px;
   overflow: hidden;
-  animation: cat-in 0.16s ease-out;
   color: var(--paper);
+  /* Height is set from the content (SearchBar.jsx) and eased, so opening,
+     the photos arriving and typing all grow or shrink it smoothly. */
+  transition: height 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+  will-change: height;
+}
+
+/* Fades in as it drops. */
+@starting-style {
+  .sb { opacity: 0; }
 }
 
 .sb-bar {
@@ -125,6 +133,10 @@
 .sb-tile-img { aspect-ratio: 4 / 5; background: rgba(237, 234, 225, 0.08); border-radius: 4px; overflow: hidden; }
 .sb-tile-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
 .sb-tile:hover .sb-tile-img img { transform: scale(1.04); }
+.sb-ghost { cursor: default; }
+.sb-ghost .sb-tile-img { animation: sb-pulse 1.2s ease-in-out infinite alternate; }
+@keyframes sb-pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
 .sb-tile-name { font-size: 11.5px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 860px) {

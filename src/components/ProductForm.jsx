@@ -504,9 +504,16 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               ? otherColours.map((c) => c.variant || c.id).join(' · ')
               : 'None yet — use "+ Add another colour", or give another product the same name.'}
           </div>
+          {/* Here as well as up by the title, where it's easy to miss once
+              the form's scrolled — on a phone especially. */}
+          {!isNewRecord && onAddColour && (
+            <button type="button" className="pf-add-colour pf-add-colour-inline mono" onClick={() => onAddColour(existing)}>
+              + Add another colour
+            </button>
+          )}
           <em className="pf-hint mono">
-            Products with the same name are shown as colours of one piece: one card in the shop,
-            and a colour picker on the product page.
+            Products with the same name are shown as colours of one piece: each colour its own
+            card in the shop, and a colour picker on the product page.
           </em>
         </div>
 
