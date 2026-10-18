@@ -51,6 +51,7 @@ import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
 import ManualOrderForm from '../components/ManualOrderForm.jsx'
 import useDragList from '../lib/useDragList.js'
+import useAdminHistory from '../lib/useAdminHistory.js'
 import { queueOrder, saveQueueOrder } from '../lib/products.js'
 import { fetchAllNavCategories, DROPS_MENU } from '../lib/navCategories.js'
 import { dropKey } from '../lib/lookbook.js'
@@ -430,6 +431,37 @@ export default function Admin() {
   const [emailCampaigns, setEmailCampaigns] = useState([])
   const [socialStats, setSocialStats] = useState([])
 
+  // Every section, sub-tab and open form is a step in the browser history, so
+  // the phone's Back button walks back through the panel instead of leaving it.
+  const panelHistory = useAdminHistory(
+    {
+      tab,
+      overviewSub,
+      ordersSub,
+      productsSub,
+      customersSub,
+      marketingSub,
+      analyticsSub,
+      editing: editing === 'new' ? 'new' : editing?.id ?? null,
+      addingOrder,
+      openCollection,
+    },
+    (v) => {
+      setTab(v.tab)
+      setOverviewSub(v.overviewSub)
+      setOrdersSub(v.ordersSub)
+      setProductsSub(v.productsSub)
+      setCustomersSub(v.customersSub)
+      setMarketingSub(v.marketingSub)
+      setAnalyticsSub(v.analyticsSub)
+      setEditing(v.editing === 'new' ? 'new' : v.editing ? products.find((p) => p.id === v.editing) || null : null)
+      setAddingOrder(v.addingOrder)
+      setOpenCollection(v.openCollection)
+      // The drawer isn't a step of its own; going back just closes it.
+      setMobileMenuOpen(false)
+    }
+  )
+
   useEffect(() => {
     getSession().then((s) => {
       setSession(s)
@@ -766,6 +798,14 @@ export default function Admin() {
   return (
     <div className="admin" data-theme={theme} data-tab={tab}>
       <div className="admin-topbar">
+        {/* Phones: one step back inside the panel, like the phone's own Back. */}
+        {panelHistory.depth > 0 && (
+          <button type="button" className="admin-back" onClick={panelHistory.back} aria-label="Back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+        )}
         <button
           type="button"
           className="admin-burger"
