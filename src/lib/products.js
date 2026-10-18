@@ -49,15 +49,6 @@ function pieceKey(p) {
   return (p.colourGroup || '').trim().toUpperCase() || 'NAME:' + (p.name || '').trim().toLowerCase()
 }
 
-// Every colour of the piece a product belongs to (itself included), oldest
-// first — the order the product page lists them.
-export function colourSiblings(product, all) {
-  const key = pieceKey(product)
-  return all
-    .filter((p) => pieceKey(p) === key)
-    .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
-}
-
 // One card per piece: colours of the same piece (same colour group) show as
 // a single card — the first in the list's order that still has something
 // to buy, else the first. The others are picked on the product page.

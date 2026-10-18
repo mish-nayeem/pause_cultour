@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
-import { fetchProducts, queueOrder, oneColourEach, cardPhotos } from '../lib/products.js'
+import { fetchProducts, queueOrder, cardPhotos } from '../lib/products.js'
 import { CardPrice, SaleBadge } from '../components/SalePrice.jsx'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import Pager from '../components/Pager.jsx'
 import { CardPhoto } from '../components/CardPhotos.jsx'
-import ColourSwatches from '../components/ColourSwatches.jsx'
 import ShopFilter, { sortSizes } from '../components/ShopFilter.jsx'
 import QuickAdd from '../components/QuickAdd.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
@@ -72,21 +71,18 @@ export default function Shop() {
   )
 
   // A size picked: products cut in that size. With sold-out hidden as well,
-  // only the ones that still have that size to buy. Then one card per piece:
-  // its other colours are on its product page.
+  // only the ones that still have that size to buy. Every colour is its own
+  // card; the product page links the colours of one piece together.
   const shown = useMemo(
     () =>
-      oneColourEach(
-        inView.filter((p) => {
-          if (sizeFilter) {
-            if (!(p.sizes || []).includes(sizeFilter)) return false
-            if (hideSoldOut && isSoldOut(p, sizeFilter)) return false
-            return true
-          }
-          return !(hideSoldOut && isAllSoldOut(p))
-        }),
-        (p) => (sizeFilter ? !isSoldOut(p, sizeFilter) : !isAllSoldOut(p))
-      ),
+      inView.filter((p) => {
+        if (sizeFilter) {
+          if (!(p.sizes || []).includes(sizeFilter)) return false
+          if (hideSoldOut && isSoldOut(p, sizeFilter)) return false
+          return true
+        }
+        return !(hideSoldOut && isAllSoldOut(p))
+      }),
     [inView, sizeFilter, hideSoldOut]
   )
 
@@ -227,7 +223,6 @@ export default function Shop() {
                   <div className="sname">{p.name}</div>
                   {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
                 </div>
-                <ColourSwatches product={p} all={products} />
                 <div className="smeta mono">
                   <span>{p.variant}</span>
                   <CardPrice product={p} />

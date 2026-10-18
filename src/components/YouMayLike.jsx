@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Pager from './Pager.jsx'
 import { CardPhoto } from './CardPhotos.jsx'
-import ColourSwatches from './ColourSwatches.jsx'
 import QuickAdd from './QuickAdd.jsx'
 import { fetchProducts, oneColourEach, cardPhotos } from '../lib/products.js'
 import { CardPrice, SaleBadge } from './SalePrice.jsx'
@@ -72,7 +71,6 @@ export default function YouMayLike({ currentId }) {
                 <div className="yml-name">{p.name}</div>
                 {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
               </div>
-              <ColourSwatches product={p} all={products} />
               <div className="yml-meta mono">
                 <span>{p.variant}</span>
                 <CardPrice product={p} />
