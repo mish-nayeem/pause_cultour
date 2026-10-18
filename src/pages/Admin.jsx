@@ -1791,9 +1791,14 @@ export default function Admin() {
               const map = stockMap(p)
               return (
                 <div className="mini-row" key={p.id}>
-                  <div>
-                    <div className="mini-name">{p.name}</div>
-                    <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.id} · {p.variant}</div>
+                  <div className="sl-who">
+                    <span className="sl-thumb">
+                      {p.images?.[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" loading="lazy" />}
+                    </span>
+                    <div>
+                      <div className="mini-name">{p.name}</div>
+                      <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.id} · {p.variant}</div>
+                    </div>
                   </div>
                   <span className="stock-chips">
                     {(p.sizes || []).map((s) => {
