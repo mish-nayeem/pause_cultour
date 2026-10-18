@@ -574,3 +574,21 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
 
 .admin .main .wish-group .low-row { border: none; margin-bottom: 0; padding-left: 0; padding-right: 0; }
 .admin .main .trow.prow:hover { background: color-mix(in srgb, var(--order-edge) 6%, transparent); }
+
+/* ---------- Pills: a whisper of a border ----------
+   Size chips, status pills, filters and tags all keep their colour, but at a
+   fraction of the strength, so a row of them reads light. */
+.admin .main :is(.chip, .chip-stock, .status-select, .risk-tag, .adv-tag, .rm-filter button, .sm-filter button, .sm-pages button, .nc-bell, .nc-tools button, .sl-total) {
+  border-width: 1px;
+}
+
+.admin .main .chip-stock:not(.sl-panel .chip-stock) {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.admin .main .status-select:not(.delivered) {
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+
+.admin .main .risk-tag { border-color: color-mix(in srgb, var(--signal) 45%, transparent); border-radius: 999px; padding: 1px 7px; }
+.admin .main .chip { border-color: color-mix(in srgb, var(--ink) 14%, transparent); }
