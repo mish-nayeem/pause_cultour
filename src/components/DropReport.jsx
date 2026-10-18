@@ -10,6 +10,17 @@ function taka(n) {
 
 const NO_DROP = 'No drop'
 
+// One colour per drop, round and round, so each reads as its own block.
+const DROP_COLOURS = ['#2F8CFF', '#F0457A', '#1FB57A', '#F2A516', '#7C6CFF', '#13B5C8']
+
+// How full a product still is: plenty, running low, or gone.
+function levelOf(left) {
+  if (left == null) return ''
+  if (left === 0) return 'out'
+  if (left <= 5) return 'low'
+  return 'ok'
+}
+
 // Products → Stock & sales. Everything in one place: how many products, how
 // many pieces are left and what they're worth, and what has sold — then the
 // same drop by drop. Tap "pieces in stock" or a drop to see which products
@@ -88,7 +99,7 @@ export default function DropReport({ products, orders }) {
   const allItems = drops.flatMap((d) => d.items)
 
   return (
-    <section className="panel">
+    <section className="panel dr-panel">
       <div className="panel-label mono" style={{ marginBottom: '6px' }}>STOCK &amp; SALES</div>
       <div className="panel-note" style={{ marginBottom: '16px' }}>
         Everything at a glance, then drop by drop. Tap <b>Pieces in stock</b> or a drop to see which
@@ -96,25 +107,25 @@ export default function DropReport({ products, orders }) {
       </div>
 
       <div className="dr-totals">
-        <div className="dr-total">
+        <div className="dr-total t-blue">
           <span className="mono">PRODUCTS</span>
           <strong>{totals.products}</strong>
         </div>
         <button
           type="button"
-          className={`dr-total dr-total-btn ${open === 'all' ? 'on' : ''}`}
+          className={`dr-total dr-total-btn t-green ${open === 'all' ? 'on' : ''}`}
           onClick={() => setOpen(open === 'all' ? null : 'all')}
         >
           <span className="mono">PIECES IN STOCK</span>
           <strong>{totals.left}</strong>
           <em className="mono">{open === 'all' ? 'Hide list ↑' : 'See which ↓'}</em>
         </button>
-        <div className="dr-total">
+        <div className="dr-total t-amber">
           <span className="mono">STOCK VALUE</span>
           <strong>{taka(totals.stockValue)}</strong>
           <em className="mono">at full price</em>
         </div>
-        <div className="dr-total">
+        <div className="dr-total t-pink">
           <span className="mono">SOLD</span>
           <strong>{taka(totals.soldValue)}</strong>
           <em className="mono">{totals.soldUnits} pieces</em>
@@ -135,10 +146,14 @@ export default function DropReport({ products, orders }) {
       {drops.length === 0 && <div className="empty mono">No products yet.</div>}
 
       <div className="dr-list">
-        {drops.map((d) => {
+        {drops.map((d, i) => {
           const isOpen = open === d.name
           return (
-            <div className={`dr-card ${isOpen ? 'open' : ''}`} key={d.name}>
+            <div
+              className={`dr-card ${isOpen ? 'open' : ''}`}
+              key={d.name}
+              style={{ '--acc': d.name === NO_DROP ? '#8B8A82' : DROP_COLOURS[i % DROP_COLOURS.length] }}
+            >
               <button type="button" className="dr-head" onClick={() => setOpen(isOpen ? null : d.name)}>
                 <div className="dr-title">
                   <span className="dr-name">{d.name}</span>
@@ -147,15 +162,15 @@ export default function DropReport({ products, orders }) {
                   </span>
                 </div>
                 <div className="dr-nums">
-                  <div className="dr-num">
+                  <div className="dr-num n-sold">
                     <strong>{d.sold}</strong>
                     <span className="mono">SOLD</span>
                   </div>
-                  <div className="dr-num">
+                  <div className="dr-num n-left">
                     <strong>{d.left}</strong>
                     <span className="mono">LEFT</span>
                   </div>
-                  <div className="dr-num">
+                  <div className="dr-num n-pct">
                     <strong>{d.pct}%</strong>
                     <span className="mono">SOLD THROUGH</span>
                   </div>
@@ -189,7 +204,7 @@ function LeftList({ items, inCard = false }) {
               {p.variant ? `${p.variant} · ` : ''}{sold} sold
             </div>
           </div>
-          <div className="dr-pnums mono">
+          <div className={`dr-pnums mono lv-${levelOf(left)}`}>
             {left == null ? (
               <div className="dim">not counted</div>
             ) : (

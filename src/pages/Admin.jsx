@@ -1784,8 +1784,13 @@ export default function Admin() {
           )}
 
           {productsSub === 'stock' && (
-          <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '18px' }}>STOCK LEVELS</div>
+          <section className="panel sl-panel">
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>STOCK LEVELS</div>
+            <div className="sl-legend mono">
+              <span className="sl-key ok">Plenty</span>
+              <span className="sl-key low">Low ({LOW_STOCK_AT} or fewer)</span>
+              <span className="sl-key out">Sold out</span>
+            </div>
             {trackedProducts.length === 0 && <div className="empty mono">No tracked stock yet.</div>}
             {trackedProducts.map((p) => {
               const map = stockMap(p)
@@ -1806,12 +1811,20 @@ export default function Admin() {
                       return (
                         <span
                           key={s}
-                          className={`chip-stock ${n === 0 ? 'out' : n <= LOW_STOCK_AT ? 'low' : ''}`}
+                          className={`chip-stock ${n === 0 ? 'out' : n <= LOW_STOCK_AT ? 'low' : 'ok'}`}
                         >
                           {s} {n}
                         </span>
                       )
                     })}
+                    {(() => {
+                      const total = (p.sizes || []).reduce((sum, s) => sum + (map[s] ?? 0), 0)
+                      return (
+                        <span className={`sl-total mono ${total === 0 ? 'out' : total <= LOW_STOCK_AT * 2 ? 'low' : 'ok'}`}>
+                          {total} total
+                        </span>
+                      )
+                    })()}
                   </span>
                 </div>
               )

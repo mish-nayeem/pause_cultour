@@ -955,6 +955,50 @@
 .chip-stock.low { border-color: var(--cobalt); color: var(--cobalt); }
 .chip-stock.out { border-color: var(--signal); color: var(--signal); }
 
+/* Products → Stock levels in colour: green plenty, amber low, red sold out,
+   each with a total. Scoped here so the catalog rows keep their plain chips. */
+.sl-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; font-size: 10.5px; }
+
+.sl-key::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background: currentColor;
+}
+
+.sl-key.ok, .sl-panel .chip-stock.ok, .sl-total.ok { --lv: #1FB57A; }
+.sl-key.low, .sl-panel .chip-stock.low, .sl-total.low { --lv: #F2A516; }
+.sl-key.out, .sl-panel .chip-stock.out, .sl-total.out { --lv: #F0457A; }
+
+.sl-key { color: var(--lv); font-weight: 700; }
+
+.sl-panel .chip-stock {
+  color: var(--lv);
+  border-color: color-mix(in srgb, var(--lv) 55%, transparent);
+  background: color-mix(in srgb, var(--lv) 14%, transparent);
+  font-weight: 700;
+}
+
+.sl-panel .chip-stock.out { background: var(--lv); color: #fff; border-color: var(--lv); }
+
+.sl-total {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--lv);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.sl-panel .mini-row { border-left: 3px solid transparent; padding-left: 10px; }
+.sl-panel .mini-row:has(.sl-total.ok) { border-left-color: #1FB57A; }
+.sl-panel .mini-row:has(.sl-total.low) { border-left-color: #F2A516; }
+.sl-panel .mini-row:has(.sl-total.out) { border-left-color: #F0457A; }
+
 /* ---------- Wishlist ---------- */
 
 .wish-group {
