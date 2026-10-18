@@ -123,3 +123,45 @@
   .dr-num strong { font-size: 20px; }
   .dr-num span { font-size: 9.5px; }
 }
+
+
+/* ---------- Colour ----------
+   Only the borders carry colour — one per total, one per drop, and green /
+   amber / red on a product by how much is left. Text stays the theme's own
+   (black, or white on the dark theme). */
+
+.dr-total { --acc: #2F8CFF; }
+.dr-total.t-blue { --acc: #2F8CFF; }
+.dr-total.t-green { --acc: #1FB57A; }
+.dr-total.t-amber { --acc: #F2A516; }
+.dr-total.t-pink { --acc: #F0457A; }
+
+.dr-total { border: 1.5px solid var(--acc); }
+.dr-total span { color: var(--ink); opacity: 0.7; }
+.dr-total-btn em { color: var(--ink); opacity: 0.7; }
+.dr-total-btn:hover,
+.dr-total-btn.on { border-width: 2px; border-color: var(--acc); }
+
+.dr-card {
+  --acc: #2F8CFF;
+  border: 1.5px solid var(--acc);
+  border-left-width: 4px;
+}
+
+.dr-card .dr-more { color: var(--ink); opacity: 0.7; }
+.dr-card .dr-bar i { background: var(--acc); }
+
+.dr-pnums strong {
+  display: inline-block;
+  min-width: 34px;
+  text-align: center;
+  padding: 2px 8px;
+  border: 1.5px solid var(--steel-line);
+  border-radius: 999px;
+}
+
+.dr-pnums.lv-ok strong { border-color: #1FB57A; }
+.dr-pnums.lv-low strong { border-color: #F2A516; }
+.dr-pnums.lv-out strong { border-color: #F0457A; }
+
+.dr-items-solo { border: 1.5px solid #1FB57A; }

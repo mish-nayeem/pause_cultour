@@ -955,6 +955,43 @@
 .chip-stock.low { border-color: var(--cobalt); color: var(--cobalt); }
 .chip-stock.out { border-color: var(--signal); color: var(--signal); }
 
+/* Products → Stock levels: the chip borders say how much is left — green
+   plenty, amber low, red sold out — with a total per product. Text stays the
+   theme's own. Scoped here so the catalog rows keep their plain chips. */
+.sl-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; font-size: 10.5px; }
+
+.sl-key { color: var(--ink); }
+
+.sl-key::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+  border: 2px solid var(--lv);
+  vertical-align: -1px;
+}
+
+.sl-key.ok, .sl-panel .chip-stock.ok, .sl-total.ok { --lv: #1FB57A; }
+.sl-key.low, .sl-panel .chip-stock.low, .sl-total.low { --lv: #F2A516; }
+.sl-key.out, .sl-panel .chip-stock.out, .sl-total.out { --lv: #F0457A; }
+
+.sl-panel .chip-stock {
+  color: var(--ink);
+  border: 1.5px solid var(--lv);
+}
+
+.sl-total {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--lv);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
 /* ---------- Wishlist ---------- */
 
 .wish-group {
