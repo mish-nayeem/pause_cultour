@@ -1429,13 +1429,25 @@ export default function Admin() {
                     onClick={() => setExpanded(o.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter') setExpanded(o.id) }}
                   >
-                    <div className="ocard-top">
-                      <div className="ocard-name">
-                        <span className="ocard-name-text">{o.customer_name}</span>
-                        {risk.level === 'risk' && (
-                          <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
-                        )}
-                      </div>
+                    <div className="ocard-name">
+                      {/* A long name steps down a size so it still fits in a line or two. */}
+                      <span
+                        className={`ocard-name-text ${
+                          (o.customer_name || '').length > 30 ? 'xlong' : (o.customer_name || '').length > 20 ? 'long' : ''
+                        }`}
+                      >
+                        {o.customer_name}
+                      </span>
+                      {risk.level === 'risk' && (
+                        <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
+                      )}
+                    </div>
+
+                    <div className="ocard-meta">
+                      <span className="mono ocard-when">
+                        <span>{o.id}</span>
+                        <span>{orderWhen(o.created_at)}</span>
+                      </span>
                       <select
                         className={`status-select ${o.status} mono`}
                         value={o.status}
@@ -1447,11 +1459,6 @@ export default function Admin() {
                           <option key={st} value={st}>{st}</option>
                         ))}
                       </select>
-                    </div>
-
-                    <div className="ocard-meta mono">
-                      <span>{o.id}</span>
-                      <span>{orderWhen(o.created_at)}</span>
                     </div>
 
                     <div className="ocard-items">
