@@ -142,14 +142,11 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   const [newCategory, setNewCategory] = useState('')
   const fileRef = useRef(null)
 
-  // The other colours this product will be shown with (same group, or same
-  // name), for the OTHER COLOURS line.
-  const otherColours = allProducts.filter((r) => {
-    if (String(r.id) === String(p.id)) return false
-    const g = (p.colourGroup || '').trim()
-    if (g && r.colour_group === g) return true
-    return p.name.trim() && (r.name || '').trim().toLowerCase() === p.name.trim().toLowerCase()
-  })
+  // The other colours this product will be shown with (same name), for the
+  // OTHER COLOURS line.
+  const otherColours = allProducts.filter((r) =>
+    String(r.id) !== String(p.id) && p.name.trim() && (r.name || '').trim().toLowerCase() === p.name.trim().toLowerCase()
+  )
 
   const knownLabels = mergeLabels(detailLabels, rememberedLabels())
   const [detailRows, setDetailRows] = useState(() => {

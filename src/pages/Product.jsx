@@ -137,23 +137,21 @@ export default function Product() {
     return () => { active = false }
   }, [id])
 
-  // Its other colours: the same colour group, or — for products never given
-  // one — the same name.
-  const colourGroup = product?.colourGroup
+  // Its other colours: every product with the same name.
   const productName = product?.name
 
   useEffect(() => {
-    if (!colourGroup && !productName) {
+    if (!productName) {
       setColours([])
       return
     }
 
     let active = true
-    fetchColourOptions(colourGroup, productName).then(({ options }) => {
+    fetchColourOptions(productName).then(({ options }) => {
       if (active) setColours(options)
     })
     return () => { active = false }
-  }, [colourGroup, productName])
+  }, [productName])
 
   useEffect(() => {
     let active = true
