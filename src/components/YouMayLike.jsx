@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Pager from './Pager.jsx'
 import { CardPhoto } from './CardPhotos.jsx'
 import QuickAdd from './QuickAdd.jsx'
-import { fetchProducts, oneColourEach, cardPhotos } from '../lib/products.js'
+import { fetchProducts, oneColourEach, cardPhotos, samePiece } from '../lib/products.js'
 import { CardPrice, SaleBadge } from './SalePrice.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import { isAllSoldOut } from '../lib/stock.js'
@@ -31,11 +31,8 @@ export default function YouMayLike({ currentId }) {
 
   // Not this piece in any colour, and one card for each other piece.
   const viewing = products.find((p) => String(p.id) === String(currentId))
-  const group = (viewing?.colourGroup || '').trim().toUpperCase()
-  const name = (viewing?.name || '').trim().toLowerCase()
-  const samePiece = (p) => (group && (p.colourGroup || '').trim().toUpperCase() === group) || (name && (p.name || '').trim().toLowerCase() === name)
   const others = oneColourEach(
-    products.filter((p) => String(p.id) !== String(currentId) && !samePiece(p)),
+    products.filter((p) => String(p.id) !== String(currentId) && !(viewing && samePiece(viewing, p))),
     (p) => !isAllSoldOut(p)
   )
   const totalPages = Math.max(1, Math.ceil(others.length / PAGE_SIZE))

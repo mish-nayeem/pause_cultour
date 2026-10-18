@@ -43,23 +43,24 @@ export function queueOrder(list) {
   })
 }
 
-// Which piece a product is a colour of: its colour group, or its name when
-// it has none — same name, same piece.
-function pieceKey(p) {
-  return (p.colourGroup || '').trim().toUpperCase() || 'NAME:' + (p.name || '').trim().toLowerCase()
+// Whether two products are colours of the same piece: the same name, any
+// case — same name, same piece.
+export function samePiece(a, b) {
+  const na = (a.name || '').trim().toLowerCase()
+  return Boolean(na) && na === (b.name || '').trim().toLowerCase()
 }
 
 // One card per piece: colours of the same piece (same colour group) show as
 // a single card — the first in the list's order that still has something
 // to buy, else the first. The others are picked on the product page.
 export function oneColourEach(list, inStock = () => true) {
-  const groups = new Map()
+  const chosen = []
   for (const p of list) {
-    const g = pieceKey(p)
-    const chosen = groups.get(g)
-    if (!chosen || (!inStock(chosen) && inStock(p))) groups.set(g, p)
+    const i = chosen.findIndex((c) => samePiece(c, p))
+    if (i === -1) chosen.push(p)
+    else if (!inStock(chosen[i]) && inStock(p)) chosen[i] = p
   }
-  return list.filter((p) => groups.get(pieceKey(p)) === p)
+  return list.filter((p) => chosen.includes(p))
 }
 
 // The photos a card slides through on hover: the product's own photos, then
@@ -67,9 +68,8 @@ export function oneColourEach(list, inStock = () => true) {
 // whole range shows without opening the product.
 export function cardPhotos(product, all) {
   const own = (product.images || []).filter(Boolean)
-  const g = pieceKey(product)
   const others = all
-    .filter((p) => p.id !== product.id && pieceKey(p) === g)
+    .filter((p) => p.id !== product.id && samePiece(product, p))
     .flatMap((p) => p.images || [])
     .filter((src) => src && !own.includes(src))
   return [...own, ...new Set(others)]
@@ -82,18 +82,18 @@ export async function saveQueueOrder(ids) {
   return { error }
 }
 
-// The same piece in its other colours. Each colour is its own product row, so
-// this is a lookup by the shared group rather than a field on the product.
-export async function fetchColourOptions(colourGroup, name) {
-  if (!colourGroup && !name) return { options: [], error: null }
+// The same piece in its other colours. Each colour is its own product row;
+// the colours of a piece are every product with the same name (any case).
+// The old hand-typed colour group isn't used: a placeholder typed into it
+// (e.g. XXX) could tie unrelated products together.
+export async function fetchColourOptions(name) {
+  if (!name || !name.trim()) return { options: [], error: null }
 
-  // A product with no colour group finds its colours by name instead —
-  // same name, same piece.
-  let query = supabase.from('products').select('id, name, variant, images')
-  query = colourGroup
-    ? query.eq('colour_group', colourGroup)
-    : query.ilike('name', name.trim().replace(/[\\%_]/g, (m) => '\\' + m))
-  const { data, error } = await query.order('created_at', { ascending: true })
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, variant, images')
+    .ilike('name', name.trim().replace(/[\\%_]/g, (m) => '\\' + m))
+    .order('created_at', { ascending: true })
 
   if (error) {
     console.error('[Supabase] fetchColourOptions failed:', error.message)
