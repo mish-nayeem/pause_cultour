@@ -372,7 +372,7 @@ export default function Product() {
             {product.images.map((img, i) => (
               <div className="shot" key={img} onClick={() => setZoom(i)} role="button" tabIndex={0} aria-label={`View photo ${i + 1} full screen`} onKeyDown={(e) => { if (e.key === 'Enter') setZoom(i) }}>
                 <ShimmerImage
-                  src={imgUrl(img, { w: 1000 })}
+                  src={imgUrl(img, { w: 1400, q: 82 })}
                   alt={`${product.name} — view ${i + 1}`}
                   loading={i > 1 ? 'lazy' : undefined}
                 />
