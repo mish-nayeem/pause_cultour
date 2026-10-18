@@ -1430,7 +1430,14 @@ export default function Admin() {
                     onKeyDown={(e) => { if (e.key === 'Enter') setExpanded(o.id) }}
                   >
                     <div className="ocard-name">
-                      <span className="ocard-name-text">{o.customer_name}</span>
+                      {/* A long name steps down a size so it still fits in a line or two. */}
+                      <span
+                        className={`ocard-name-text ${
+                          (o.customer_name || '').length > 30 ? 'xlong' : (o.customer_name || '').length > 20 ? 'long' : ''
+                        }`}
+                      >
+                        {o.customer_name}
+                      </span>
                       {risk.level === 'risk' && (
                         <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
                       )}

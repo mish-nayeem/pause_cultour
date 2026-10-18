@@ -1350,6 +1350,8 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 /* The name gets its own line, in full; a risk tag beside it. */
 .ocard-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 15px; font-weight: 700; min-width: 0; }
 .ocard-name-text { overflow-wrap: anywhere; line-height: 1.3; }
+.ocard-name-text.long { font-size: 13.5px; }
+.ocard-name-text.xlong { font-size: 12.5px; }
 .admin .ocard-name .risk-tag { margin-left: 0; }
 .admin .osheet-head .status-select { flex: none; width: auto; min-width: 0; padding: 5px 28px 5px 10px; font-size: 11px; }
 
