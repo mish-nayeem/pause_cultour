@@ -90,14 +90,13 @@ export default function Footer() {
             <Link to="/shop">All products</Link>
             <Link to="/shop?c=NEW">New arrivals</Link>
             <Link to="/cart">Your cart</Link>
+            <Link to="/track">Track order</Link>
           </div>
 
           <div className="foot-col">
             <div className="foot-label mono">SUPPORT</div>
-            <Link to="/track">Track order</Link>
-            <Link to="/support/portal">Return &amp; exchange portal</Link>
+            <Link to="/support/portal">Return &amp; exchange</Link>
             <Link to="/support/delivery">Delivery info</Link>
-            <Link to="/support/size-guide">Size guide</Link>
             <Link to="/support/contact">Contact us</Link>
           </div>
 
