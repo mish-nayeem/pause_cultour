@@ -48,7 +48,6 @@
 .about-shot img {
   width: 100%;
   display: block;
-  filter: grayscale(20%) contrast(1.03);
 }
 
 .about-copy {

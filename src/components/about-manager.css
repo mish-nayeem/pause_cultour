@@ -80,7 +80,6 @@
 .am-thumb img {
   width: 100%;
   display: block;
-  filter: grayscale(25%);
 }
 
 .am-text {
