@@ -10,6 +10,7 @@ import { BKASH_NUMBER, DISTRICTS, quote, isTrxId, cleanTrxId } from '../lib/deli
 import { checkCoupon, couponMessage } from '../lib/coupons.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import { imgUrl } from '../lib/images.js'
+import { watchUser } from '../lib/auth.js'
 import { Sentry } from '../lib/sentry.js'
 import './checkout.css'
 
@@ -64,19 +65,43 @@ function orderMessage(error) {
   return 'Could not place your order — please check your connection and try again.'
 }
 
+// "Save this information for next time": the delivery details, kept in this
+// browser only, filled back in on the next checkout.
+const SAVED_INFO_KEY = 'pause_checkout_info'
+
+function readSavedInfo() {
+  try {
+    const raw = localStorage.getItem(SAVED_INFO_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 export default function Checkout() {
   const { items, subtotal, clearCart, refreshPrices } = useCart()
   const navigate = useNavigate()
   usePageMeta('Checkout')
+  const [saved] = useState(readSavedInfo)
   const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    district: '',
+    name: saved?.name || '',
+    phone: saved?.phone || '',
+    email: saved?.email || '',
+    address: saved?.address || '',
+    district: saved?.district || '',
     note: '',
     trxId: '',
   })
+  const [newsOptIn, setNewsOptIn] = useState(false)
+  const [saveInfo, setSaveInfo] = useState(Boolean(saved))
+  const [user, setUser] = useState(null)
+
+  // Signed in: no need to offer the sign-in link, and their email fills the
+  // box if it's still empty.
+  useEffect(() => watchUser((u) => {
+    setUser(u)
+    if (u?.email) setForm((prev) => (prev.email ? prev : { ...prev, email: u.email }))
+  }), [])
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -295,6 +320,22 @@ export default function Checkout() {
     await sendOrderConfirmation(orderId)
     await markCartConverted(orderId)
 
+    // Ticked "Email me with news and offers": onto the mailing list. Already
+    // on it, or a failure — either way the order has gone through.
+    if (newsOptIn && form.email.trim()) {
+      const { error } = await supabase.from('subscribers').insert({ email: form.email.trim().toLowerCase() })
+      if (error && error.code !== '23505') console.error('[Supabase] subscribe failed:', error.message)
+    }
+
+    try {
+      if (saveInfo) {
+        const { name, phone, email, address, district } = form
+        localStorage.setItem(SAVED_INFO_KEY, JSON.stringify({ name, phone, email, address, district }))
+      } else {
+        localStorage.removeItem(SAVED_INFO_KEY)
+      }
+    } catch { /* this browser doesn't keep it — fine */ }
+
     setSubmitting(false)
     clearCart()
     navigate('/order-confirmed', { state: { order } })
@@ -310,6 +351,11 @@ export default function Checkout() {
             <div className="label mono">FINAL STEP</div>
             <h2 className="display">Checkout</h2>
           </div>
+          {!user && (
+            <Link to="/login?next=/checkout" className="co-signin mono">
+              Have an account? <strong>Sign in</strong>
+            </Link>
+          )}
         </div>
 
         <div className="checkout-body">
@@ -337,9 +383,21 @@ export default function Checkout() {
                 onChange={handleChange}
                 placeholder="you@example.com"
               />
-              <em className="hint mono">We'll email your order confirmation here.</em>
               {errors.email && <em className="err mono">{errors.email}</em>}
             </label>
+
+            {/* Outside the email's label, so ticking a box doesn't put the
+                cursor in the email field. */}
+            <div className="co-checks">
+              <label className="co-check">
+                <input type="checkbox" checked={newsOptIn} onChange={(e) => setNewsOptIn(e.target.checked)} />
+                <span>Email me with news and offers</span>
+              </label>
+              <label className="co-check">
+                <input type="checkbox" checked={saveInfo} onChange={(e) => setSaveInfo(e.target.checked)} />
+                <span>Save this information for next time</span>
+              </label>
+            </div>
 
             {/* District sits above the address because it sets the delivery
                 charge — the customer settles where before they write out

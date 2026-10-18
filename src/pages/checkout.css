@@ -1,5 +1,47 @@
 .checkout-page .section-head {
   padding: 44px 40px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+}
+
+/* Blue, the same as SHARE on the product page. */
+.co-signin {
+  font-size: 12.5px;
+  color: var(--cobalt);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.co-signin strong { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.co-signin:hover { opacity: 0.75; }
+
+.co-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: -6px 0 22px;
+}
+
+.co-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+.co-check input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--ink);
+  cursor: pointer;
 }
 
 .checkout-body {
