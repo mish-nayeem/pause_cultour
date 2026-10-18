@@ -1,9 +1,14 @@
 /* Search: a bar that drops down under the nav pill, same dark glass as the
-   menus, with results listed beneath it. The page stays put behind it. */
+   menus, with results listed beneath it. It floats over the page rather than
+   sitting in the nav's flow, so nothing on the page moves down when it opens. */
 .sb {
   pointer-events: auto;
-  margin-top: 10px;
-  width: min(640px, 100%);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: min(640px, calc(100% - 24px));
   background: rgba(22, 22, 15, 0.94);
   backdrop-filter: blur(10px);
   border-radius: 22px;
