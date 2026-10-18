@@ -124,6 +124,18 @@ function colourLink(p, all) {
   return { group, relink: same.filter((r) => !r.colour_group).map((r) => r.id) }
 }
 
+// The size chart a product in this category starts with: the one on the
+// most recently added product of the same category — a tee starts with the
+// last tee's chart, trousers with the last trousers' — or none.
+function lastChartFor(category, all, exceptId) {
+  const cat = (category || '').trim().toLowerCase()
+  if (!cat) return null
+  const match = all
+    .filter((r) => String(r.id) !== String(exceptId) && (r.category || '').trim().toLowerCase() === cat && r.size_chart?.rows?.length)
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0]
+  return match ? JSON.parse(JSON.stringify(match.size_chart)) : null
+}
+
 export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel, onAddColour }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
@@ -132,7 +144,13 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       ? fromRow(existing)
       : copyFrom
         ? asNewColour(copyFrom, existingIds)
-        : { ...BLANK, drop: initialDrop, publishAt: toLocalInput(initialPublishAt), id: nextProductId(existingIds) }
+        : {
+            ...BLANK,
+            drop: initialDrop,
+            publishAt: toLocalInput(initialPublishAt),
+            id: nextProductId(existingIds),
+            sizeChart: lastChartFor(BLANK.category, allProducts, null),
+          }
   ))
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -167,6 +185,16 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
 
   function set(field, value) {
     setP((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Picking a category brings in that category's latest size chart (edit it
+  // if this one differs); a category with no chart yet leaves it empty, so a
+  // tee's chart never follows the product into trousers.
+  function pickCategory(category) {
+    setP((prev) => {
+      if ((prev.category || '').trim().toLowerCase() === (category || '').trim().toLowerCase()) return { ...prev, category }
+      return { ...prev, category, sizeChart: lastChartFor(category, allProducts, prev.id) }
+    })
   }
 
   // Stock is keyed by size, so editing the size list has to carry the counts
@@ -542,7 +570,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
                 type="button"
                 key={c}
                 className={`pf-cat ${p.category === c ? 'on' : ''}`}
-                onClick={() => set('category', c)}
+                onClick={() => pickCategory(c)}
               >
                 <span className="pf-box" />
                 {c}
@@ -574,7 +602,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
                 className="pf-newcat-add mono"
                 onClick={() => {
                   if (!newCategory.trim()) return
-                  set('category', newCategory.trim())
+                  pickCategory(newCategory.trim())
                   setNewCategory('')
                   setAddingCategory(false)
                 }}
@@ -741,7 +769,9 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       <div className="pf-label mono">SIZE CHART</div>
       <div className="pf-note mono">
         Each product carries its own chart — a jacket and a tee don't measure the
-        same way. Without one, the SIZE CHART button stays hidden on the page.
+        same way. Picking a category fills in the chart from the last product in that
+        category ({p.category || 'none picked'}); change it if this one differs. Without
+        a chart, the SIZE CHART button stays hidden on the page.
       </div>
 
       {!p.sizeChart ? (
