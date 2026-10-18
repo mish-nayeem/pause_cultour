@@ -420,6 +420,28 @@ export default function Product() {
           <ProductPrice product={product} />
           <p className="desc">{product.description}</p>
 
+          {/* The colours first, above size and add to cart, so a shopper
+              picks the colour before anything else. On a phone it moves up
+              under the photo rail. */}
+          {colours.length > 1 && (
+            <div className="colours">
+              <div className="field-label mono">COLOUR</div>
+              <div className="colour-row">
+                {colours.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/product/${c.id}`}
+                    className={`colour-chip ${c.id === product.id ? 'on' : ''}`}
+                    title={c.variant}
+                  >
+                    {c.images?.[0] && <ShimmerImage src={imgUrl(c.images[0], { w: 160 })} alt={c.variant} />}
+                  </Link>
+                ))}
+              </div>
+              <div className="colour-name mono">{product.variant}</div>
+            </div>
+          )}
+
           <div className="field-label mono">SIZE</div>
           <div className="sizes">
             {product.sizes.map((s) => {
@@ -525,27 +547,6 @@ export default function Product() {
               {hasChart && (
                 <button onClick={() => setSheet('sizes')}>SIZE CHART <span>›</span></button>
               )}
-            </div>
-          )}
-
-          {/* On a phone this jumps above everything else in the column, which
-              puts it directly under the photo rail. */}
-          {colours.length > 1 && (
-            <div className="colours">
-              <div className="field-label mono">COLOUR</div>
-              <div className="colour-row">
-                {colours.map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`/product/${c.id}`}
-                    className={`colour-chip ${c.id === product.id ? 'on' : ''}`}
-                    title={c.variant}
-                  >
-                    {c.images?.[0] && <ShimmerImage src={imgUrl(c.images[0], { w: 160 })} alt={c.variant} />}
-                  </Link>
-                ))}
-              </div>
-              <div className="colour-name mono">{product.variant}</div>
             </div>
           )}
 

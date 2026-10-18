@@ -445,7 +445,7 @@
 
 /* ---------- Colour options ---------- */
 
-.colours { margin-top: 28px; }
+.colours { margin: 4px 0 24px; }
 
 .colour-row {
   display: flex;
