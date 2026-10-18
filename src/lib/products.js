@@ -61,7 +61,7 @@ export function oneColourEach(list, inStock = () => true) {
 }
 
 // The photos a card slides through on hover: the product's own photos, then
-// the main photo of each of its other colours (same colour group), so the
+// every photo of each of its other colours (same colour group), so the
 // whole range shows without opening the product.
 export function cardPhotos(product, all) {
   const own = (product.images || []).filter(Boolean)
@@ -69,9 +69,9 @@ export function cardPhotos(product, all) {
   if (!g) return own
   const others = all
     .filter((p) => p.id !== product.id && (p.colourGroup || '').trim().toUpperCase() === g)
-    .map((p) => p.images?.[0])
+    .flatMap((p) => p.images || [])
     .filter((src) => src && !own.includes(src))
-  return [...own, ...others]
+  return [...own, ...new Set(others)]
 }
 
 // Admin: saves the ALL page order — ids top to bottom.
