@@ -88,10 +88,34 @@ function initialDetailRows(existing, labels) {
     : [{ label: '', value: '' }]
 }
 
-export default function ProductForm({ existing, existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel }) {
+// Another colour of an existing piece: everything copied over — name, price,
+// cost, drop, category, description, details, sizes, size chart, colour
+// group, launch — except what differs per colour: its own id, colour name,
+// photos and stock (every size back to 0).
+function asNewColour(row, ids) {
+  const base = fromRow(row)
+  const counts = stockMap({ stock: row.stock ?? null })
+  return {
+    ...base,
+    id: nextProductId(ids),
+    sku: undefined,
+    variant: '',
+    images: [],
+    sizesOut: [],
+    stock: counts ? Object.fromEntries((base.sizes || []).map((s) => [s, 0])) : null,
+  }
+}
+
+export default function ProductForm({ existing, copyFrom = null, existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel, onAddColour }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
-  const [p, setP] = useState(() => (existing ? fromRow(existing) : { ...BLANK, drop: initialDrop, publishAt: toLocalInput(initialPublishAt), id: nextProductId(existingIds) }))
+  const [p, setP] = useState(() => (
+    existing
+      ? fromRow(existing)
+      : copyFrom
+        ? asNewColour(copyFrom, existingIds)
+        : { ...BLANK, drop: initialDrop, publishAt: toLocalInput(initialPublishAt), id: nextProductId(existingIds) }
+  ))
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -103,7 +127,7 @@ export default function ProductForm({ existing, existingIds = [], categories = [
   const knownLabels = mergeLabels(detailLabels, rememberedLabels())
   const [detailRows, setDetailRows] = useState(() => {
     const last = rememberedLabels()
-    return initialDetailRows(existing, last.length ? last : startLabels)
+    return initialDetailRows(existing || copyFrom, last.length ? last : startLabels)
   })
 
   // A product either keeps counts or it doesn't; the form shows one of two
@@ -244,7 +268,10 @@ export default function ProductForm({ existing, existingIds = [], categories = [
   function validate() {
     if (!p.id.trim()) return 'Product ID is missing — reload the page and try again'
     if (!p.name.trim()) return 'Name is required'
-    if (!p.variant.trim()) return 'Variant (colour) is required'
+    if (!p.variant.trim()) return copyFrom ? "Give this colour a name (Variant / colour), e.g. Blue" : 'Variant (colour) is required'
+    if (copyFrom && p.variant.trim().toLowerCase() === (copyFrom.variant || '').trim().toLowerCase()) {
+      return `${copyFrom.name} already comes in ${copyFrom.variant} — give this colour its own name`
+    }
     if (!p.price || Number(p.price) <= 0) return 'Enter a price above 0'
     if (p.images.length === 0) return 'Add at least one image'
     if (p.sizes.length === 0) return 'Add at least one size'
@@ -323,9 +350,29 @@ export default function ProductForm({ existing, existingIds = [], categories = [
   return (
     <div className="pform">
       <div className="pform-head">
-        <h3 className="display">{isNewRecord ? 'New product' : `Edit ${p.name}`}</h3>
-        <button className="pf-ghost mono" onClick={onCancel}>Cancel</button>
+        <h3 className="display">
+          {copyFrom ? `New colour — ${copyFrom.name}` : isNewRecord ? 'New product' : `Edit ${p.name}`}
+        </h3>
+        <div className="pf-head-actions">
+          {/* Same piece, another colour: a new product with all of this one's
+              details already filled in, linked to it on the product page. */}
+          {!isNewRecord && onAddColour && (
+            <button type="button" className="pf-add-colour mono" onClick={() => onAddColour(existing)}>
+              + Add another colour
+            </button>
+          )}
+          <button className="pf-ghost mono" onClick={onCancel}>Cancel</button>
+        </div>
       </div>
+
+      {copyFrom && (
+        <div className="pf-copy-note mono">
+          Everything is copied from <strong>{copyFrom.name}{copyFrom.variant ? ` — ${copyFrom.variant}` : ''}</strong>.
+          Just add this colour's <strong>name</strong> (Variant / colour), its <strong>photos</strong> and
+          its <strong>stock</strong>. Both colours show each other on the product page
+          (colour group {p.colourGroup || '—'}).
+        </div>
+      )}
 
       {error && <div className="pf-error mono">{error}</div>}
 

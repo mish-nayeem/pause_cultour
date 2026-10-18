@@ -53,6 +53,7 @@ import AudienceManager from '../components/AudienceManager.jsx'
 import ManualOrderForm from '../components/ManualOrderForm.jsx'
 import useDragList from '../lib/useDragList.js'
 import useAdminHistory from '../lib/useAdminHistory.js'
+import { supabase } from '../lib/supabaseClient.js'
 import { queueOrder, saveQueueOrder } from '../lib/products.js'
 import { fetchAllNavCategories, DROPS_MENU } from '../lib/navCategories.js'
 import { dropKey } from '../lib/lookbook.js'
@@ -403,6 +404,8 @@ export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [monthMetric, setMonthMetric] = useState('units')
   const [editing, setEditing] = useState(null) // null | 'new' | product row
+  // "+ Add another colour": the product the new colour is copied from.
+  const [copyFrom, setCopyFrom] = useState(null)
   // Products → Collections: the collection open, and the one a new product
   // is being added to (prefills its Drop).
   const [openCollection, setOpenCollection] = useState(null)
@@ -605,6 +608,28 @@ export default function Admin() {
   function goTab(key) {
     setTab(key)
     setMobileMenuOpen(false)
+  }
+
+  // "+ Add another colour" on a product: a new product form with everything
+  // but the colour's name, photos and stock copied in. The two need the same
+  // colour group to show each other on the product page — a product that has
+  // none yet gets one (its name as a tag) saved first.
+  async function addColour(row) {
+    let source = row
+    if (!row.colour_group) {
+      const group = (row.name || row.id).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '') || row.id.toUpperCase()
+      const { error } = await supabase.from('products').update({ colour_group: group }).eq('id', row.id)
+      if (error) {
+        window.alert("Couldn't link the colours — try again.")
+        return
+      }
+      source = { ...row, colour_group: group }
+      setProducts((prev) => prev.map((p) => (p.id === row.id ? source : p)))
+    }
+    setCopyFrom(source)
+    setNewProductDrop('')
+    setNewProductLaunch('')
+    setEditing('new')
   }
 
   // Every counter on the overview is a way into the orders behind it — the
@@ -1577,7 +1602,10 @@ export default function Admin() {
 
         {!loading && tab === 'products' && editing && (
           <ProductForm
+            key={copyFrom ? `copy-${copyFrom.id}` : editing === 'new' ? 'new' : editing.id}
             existing={editing === 'new' ? null : editing}
+            copyFrom={editing === 'new' ? copyFrom : null}
+            onAddColour={addColour}
             existingIds={products.map((p) => p.id)}
             categories={productCategories}
             drops={collectionNames}
@@ -1585,9 +1613,10 @@ export default function Admin() {
             initialPublishAt={newProductLaunch}
             detailLabels={collectLabels(products)}
             startLabels={lastLabels(products)}
-            onCancel={() => setEditing(null)}
+            onCancel={() => { setEditing(null); setCopyFrom(null) }}
             onDone={() => {
               setEditing(null)
+              setCopyFrom(null)
               reload()
             }}
           />
@@ -1613,7 +1642,7 @@ export default function Admin() {
               <div className="panel-note mono">
                 Click a product to edit it. Images upload straight to Supabase Storage.
               </div>
-              <button className="add-product mono" onClick={() => { setNewProductDrop(''); setNewProductLaunch(''); setEditing('new') }}>
+              <button className="add-product mono" onClick={() => { setCopyFrom(null); setNewProductDrop(''); setNewProductLaunch(''); setEditing('new') }}>
                 + Add product
               </button>
             </div>
@@ -1702,7 +1731,7 @@ export default function Admin() {
               products={products}
               open={openCollection}
               onOpen={setOpenCollection}
-              onAddProduct={(drop, launch) => { setNewProductDrop(drop); setNewProductLaunch(launch || ''); setEditing('new') }}
+              onAddProduct={(drop, launch) => { setCopyFrom(null); setNewProductDrop(drop); setNewProductLaunch(launch || ''); setEditing('new') }}
               onEditProduct={(p) => setEditing(p)}
               onChanged={reload}
             />
