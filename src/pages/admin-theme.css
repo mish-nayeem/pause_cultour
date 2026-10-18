@@ -168,7 +168,13 @@
 .admin .side-brand .display { font-size: 26px; color: var(--side-text); }
 .admin .side-sub { color: var(--side-muted); letter-spacing: 0.16em; font-weight: 600; }
 
-.admin .side-nav { gap: 2px; }
+.admin .side-nav {
+  gap: 2px;
+  /* Room inside the scroll area for the picked item's curves (26px above and
+     below it), taken back with the margin so the spacing doesn't change. */
+  padding: 26px 0;
+  margin: -26px 0;
+}
 
 /* The picked item is cut out of the sidebar in the page's own colour and runs
    into the content, with a concave curve above and below where it joins. */
@@ -231,7 +237,7 @@
   font-weight: 700;
 }
 
-.admin .side-foot { padding: 0 26px; font-size: 13px; }
+.admin .side-foot { padding: 16px 26px 0; font-size: 13px; }
 .admin .side-foot a,
 .admin .signout { color: var(--side-muted); font-weight: 600; }
 .admin .side-foot a:hover,

@@ -32,6 +32,7 @@
 }
 
 .side-brand {
+  flex: none;
   padding: 0 22px 30px;
   display: flex;
   flex-direction: column;
@@ -49,7 +50,19 @@
 .side-nav {
   display: flex;
   flex-direction: column;
+  /* A short window can't fit every section: the list scrolls on its own,
+     so the brand stays on top and Sign out stays on the bottom. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(237, 234, 225, 0.25) transparent;
 }
+
+.side-nav::-webkit-scrollbar { width: 6px; }
+.side-nav::-webkit-scrollbar-thumb { background: rgba(237, 234, 225, 0.25); border-radius: 3px; }
 
 .side-nav button {
   background: none;
@@ -97,6 +110,7 @@
 
 .side-foot {
   margin-top: auto;
+  flex: none;
   padding: 0 22px;
   display: flex;
   flex-direction: column;
