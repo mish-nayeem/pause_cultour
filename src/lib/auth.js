@@ -6,48 +6,35 @@ import { clearRemember } from './sessionPolicy.js'
 // same email allowlist the admin panel uses — the caller sends admins to
 // /admin and everyone else back to the storefront.
 
-export async function signInUser(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.trim(),
-    password,
-  })
-
-  if (error) {
-    console.error('[Supabase] signInUser failed:', error.message)
-    return { session: null, isAdmin: false, error }
-  }
-
-  return {
-    session: data.session,
-    isAdmin: isAdminEmail(data.session?.user?.email),
-    error: null,
-  }
-}
-
-// `session` comes back null when the project requires email confirmation —
-// the account exists, but can't sign in until the link in the inbox is opened.
-export async function signUpUser({ name, email, password }) {
-  const { data, error } = await supabase.auth.signUp({
-    email: email.trim(),
-    password,
+// Log in with a one-time code — no password to remember. The same call
+// creates the account the first time an address is used. Supabase emails a
+// code (through the send-auth-email hook, see supabase/functions), which
+// verifyLoginCode then trades for a session.
+export async function sendLoginCode(email) {
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim().toLowerCase(),
     options: {
-      data: { full_name: name.trim() },
-      // Where the link in the confirmation mail lands. Has to be on the
-      // project's allowed Redirect URLs list in Supabase.
+      shouldCreateUser: true,
+      // The link in the same mail, for anyone who taps it instead of typing
+      // the code. Has to be on the project's allowed Redirect URLs list.
       emailRedirectTo: `${window.location.origin}/account`,
     },
   })
 
-  if (error) {
-    console.error('[Supabase] signUpUser failed:', error.message)
-    return { session: null, isAdmin: false, error }
-  }
+  if (error) console.error('[Supabase] sendLoginCode failed:', error.message)
+  return { error }
+}
 
-  // Supabase answers a sign-up for an address that already has an account with
-  // a user that has no identities, instead of an error, so a repeat sign-up
-  // can't be used to find out who is registered.
-  if (data.user && data.user.identities?.length === 0) {
-    return { session: null, isAdmin: false, error: { message: 'already_registered' } }
+export async function verifyLoginCode(email, code) {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim().toLowerCase(),
+    token: code.trim(),
+    type: 'email',
+  })
+
+  if (error) {
+    console.error('[Supabase] verifyLoginCode failed:', error.message)
+    return { session: null, isAdmin: false, error }
   }
 
   return {
@@ -91,18 +78,8 @@ export async function signInWithGoogle() {
   return { error }
 }
 
-// The mail is sent whether or not the address has an account, and the caller
-// shows the same message either way — so this can't be used to find out who is
-// registered.
-export async function sendPasswordReset(email) {
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: `${window.location.origin}/reset-password`,
-  })
-
-  if (error) console.error('[Supabase] sendPasswordReset failed:', error.message)
-  return { error }
-}
-
+// Only the /reset-password page still uses this, for a reset link mailed
+// before logins moved to one-time codes.
 export async function updatePassword(password) {
   const { error } = await supabase.auth.updateUser({ password })
 

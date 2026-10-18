@@ -179,6 +179,34 @@
 }
 
 .auth-link:hover { opacity: 0.75; }
+.auth-link:disabled { opacity: 0.5; border-bottom-color: transparent; cursor: default; }
+
+/* "OR WITH YOUR EMAIL" between the Google button and the email field. */
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -6px 0 18px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: rgba(237, 234, 225, 0.55);
+}
+
+.auth-or::before,
+.auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(237, 234, 225, 0.2);
+}
+
+/* The one-time code: big, spaced digits. */
+.auth-field input.auth-code {
+  font-size: 24px;
+  letter-spacing: 0.5em;
+  text-align: center;
+  padding: 14px 14px 14px calc(14px + 0.5em);
+}
 
 /* "I'm new here. Create an account" under a rule. */
 .auth-switch {
