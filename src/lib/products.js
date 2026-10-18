@@ -60,6 +60,20 @@ export function oneColourEach(list, inStock = () => true) {
   })
 }
 
+// The photos a card slides through on hover: the product's own photos, then
+// the main photo of each of its other colours (same colour group), so the
+// whole range shows without opening the product.
+export function cardPhotos(product, all) {
+  const own = (product.images || []).filter(Boolean)
+  const g = (product.colourGroup || '').trim().toUpperCase()
+  if (!g) return own
+  const others = all
+    .filter((p) => p.id !== product.id && (p.colourGroup || '').trim().toUpperCase() === g)
+    .map((p) => p.images?.[0])
+    .filter((src) => src && !own.includes(src))
+  return [...own, ...others]
+}
+
 // Admin: saves the ALL page order — ids top to bottom.
 export async function saveQueueOrder(ids) {
   const { error } = await supabase.rpc('reorder_products', { ids })

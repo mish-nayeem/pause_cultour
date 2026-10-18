@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import QuickAdd from './QuickAdd.jsx'
 import { CardPhoto } from './CardPhotos.jsx'
-import { fetchProducts } from '../lib/products.js'
+import { fetchProducts, cardPhotos } from '../lib/products.js'
 import { recentIds } from '../lib/recent.js'
 import { CardPrice, SaleBadge } from './SalePrice.jsx'
 import { isAllSoldOut } from '../lib/stock.js'
@@ -12,6 +12,7 @@ import './you-may-like.css'
 // newest first — kept in this browser only. Laid out like You may like.
 export default function RecentlyViewed({ currentId }) {
   const [products, setProducts] = useState([])
+  const [all, setAll] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -23,6 +24,7 @@ export default function RecentlyViewed({ currentId }) {
     fetchProducts().then(({ products: all }) => {
       if (cancelled) return
       const byId = new Map(all.map((p) => [String(p.id), p]))
+      setAll(all)
       setProducts(ids.map((id) => byId.get(id)).filter(Boolean))
     })
     return () => { cancelled = true }
@@ -38,7 +40,7 @@ export default function RecentlyViewed({ currentId }) {
         {products.map((p) => (
           <Link to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`} className="yml-card" key={p.id}>
             <div className="yml-thumb">
-              <CardPhoto images={p.images} alt={p.name} loading="lazy" />
+              <CardPhoto images={cardPhotos(p, all)} alt={p.name} loading="lazy" />
               {isAllSoldOut(p) ? (
                 <span className="snew out mono"><i className="rec" />SOLD OUT</span>
               ) : (

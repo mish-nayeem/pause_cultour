@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Pager from './Pager.jsx'
 import { CardPhoto } from './CardPhotos.jsx'
 import QuickAdd from './QuickAdd.jsx'
-import { fetchProducts, oneColourEach } from '../lib/products.js'
+import { fetchProducts, oneColourEach, cardPhotos } from '../lib/products.js'
 import { CardPrice, SaleBadge } from './SalePrice.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import { isAllSoldOut } from '../lib/stock.js'
@@ -55,7 +55,7 @@ export default function YouMayLike({ currentId }) {
         {visible.map((p) => (
           <Link to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`} className="yml-card" key={p.id}>
             <div className="yml-thumb">
-              <CardPhoto images={p.images} alt={p.name} loading="lazy" />
+              <CardPhoto images={cardPhotos(p, products)} alt={p.name} loading="lazy" />
               {isAllSoldOut(p) ? (
                 <span className="snew out mono"><i className="rec" />SOLD OUT</span>
               ) : (
