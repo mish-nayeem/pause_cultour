@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
-import { fetchProducts, queueOrder, oneColourEach } from '../lib/products.js'
+import { fetchProducts, queueOrder, oneColourEach, cardPhotos } from '../lib/products.js'
 import { CardPrice, SaleBadge } from '../components/SalePrice.jsx'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
@@ -208,8 +208,8 @@ export default function Shop() {
               key={p.id}
             >
               <div className="sthumb">
-                {/* Phones: tap the photo for the product's next photo. */}
-                <CardPhoto images={p.images} alt={p.name} />
+                {/* Mouse resting on it: slides through its photos, then its other colours. */}
+                <CardPhoto images={cardPhotos(p, products)} alt={p.name} />
                 {/* Sold out takes the corner over NEW: green dot for new,
                     red for sold out. */}
                 {isAllSoldOut(p) ? (

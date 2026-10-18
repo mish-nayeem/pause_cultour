@@ -3,6 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import YouMayLike from '../components/YouMayLike.jsx'
+import RecentlyViewed from '../components/RecentlyViewed.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import Lightbox from '../components/Lightbox.jsx'
 import { IconShare, IconChat, IconPen } from '../components/Icons.jsx'
@@ -642,6 +643,7 @@ export default function Product() {
       </div>
 
       <YouMayLike currentId={product.id} />
+      <RecentlyViewed currentId={product.id} />
 
       {zoom !== null && (
         <Lightbox images={product.images} start={zoom} alt={product.name} onClose={closeZoom} />
