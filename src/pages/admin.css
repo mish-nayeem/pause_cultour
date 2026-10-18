@@ -924,6 +924,20 @@
 
 /* ---------- Stock per size, in the products table ---------- */
 
+/* Products → Stock levels: a small photo beside each product's name. */
+.sl-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.sl-thumb {
+  flex: none;
+  width: 40px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--paper-dim);
+}
+
+.sl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .stock-chips {
   display: flex;
   flex-wrap: wrap;
