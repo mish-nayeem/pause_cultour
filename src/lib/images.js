@@ -59,9 +59,57 @@ export function imgUrl(url, { w, h } = {}) {
 
 // ---------- Upload ----------
 
+// Photos are shrunk in the browser before they go up: a camera original can
+// be 20–50 MB and 8000 px wide, which the bucket refuses (20 MB a file) and
+// Supabase's resizer won't take as a source either. 2560 px on the long side
+// is still sharper than any screen shows a product photo, at a few hundred
+// KB to ~1.5 MB. Small photos that already fit go up untouched.
+const MAX_SIDE = 2560
+const QUALITY = 0.86
+const KEEP_UNDER = 1.5 * 1024 * 1024
+
+async function shrink(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || typeof createImageBitmap !== 'function') return file
+
+  let bitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    return file // a format this browser can't open — let the bucket judge it
+  }
+
+  const { width, height } = bitmap
+  const scale = Math.min(1, MAX_SIDE / Math.max(width, height))
+  if (scale === 1 && file.size <= KEEP_UNDER) {
+    bitmap.close?.()
+    return file
+  }
+
+  const w = Math.round(width * scale)
+  const h = Math.round(height * scale)
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(bitmap, 0, 0, w, h)
+  bitmap.close?.()
+
+  // PNGs may be see-through: WebP keeps that. Everything else becomes JPEG.
+  const wanted = file.type === 'image/png' ? 'image/webp' : 'image/jpeg'
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, wanted, QUALITY))
+  if (!blob || blob.size >= file.size) return file
+
+  const type = blob.type || wanted
+  const ext = type === 'image/webp' ? 'webp' : type === 'image/png' ? 'png' : 'jpg'
+  const name = file.name.replace(/\.[^.]+$/, '') + '.' + ext
+  return new File([blob], name, { type })
+}
+
 // `folder` only keeps the bucket tidy (products/, hero/, about/). A random
 // name means two photos called IMG_0001.jpg never overwrite each other.
-export async function uploadImage(file, supabase, folder = 'uploads') {
+export async function uploadImage(original, supabase, folder = 'uploads') {
+  const file = await shrink(original)
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
   const path = `${folder}/${crypto.randomUUID()}.${ext}`
 
