@@ -40,12 +40,14 @@ const SITE = 'https://pause-cultour.vercel.app'
 const STATIC_PAGES = [
   { path: '/', priority: '1.0' },
   { path: '/shop', priority: '0.9' },
-  { path: '/size-guide', priority: '0.6' },
-  { path: '/delivery', priority: '0.6' },
-  { path: '/contact', priority: '0.6' },
-  { path: '/privacy', priority: '0.3' },
-  { path: '/terms', priority: '0.3' },
-  { path: '/refunds', priority: '0.3' },
+  { path: '/support/size-guide', priority: '0.6' },
+  { path: '/support/delivery', priority: '0.6' },
+  { path: '/support/contact', priority: '0.6' },
+  { path: '/support/privacy', priority: '0.3' },
+  { path: '/support/terms', priority: '0.3' },
+  { path: '/support/refunds', priority: '0.3' },
+  { path: '/support/exchange', priority: '0.3' },
+  { path: '/support/portal', priority: '0.4' },
 ]
 
 async function fetchProducts() {

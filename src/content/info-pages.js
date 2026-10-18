@@ -14,7 +14,7 @@ export const TIKTOK = 'https://www.instagram.com/pause.cultour'
 
 export const INFO_PAGES = {
   contact: {
-    title: 'Contact us',
+    title: 'Contact info',
     eyebrow: 'SUPPORT',
     intro:
       "Questions about an order, a size, or a drop? Message us and we'll get back within one working day.",
@@ -80,7 +80,7 @@ export const INFO_PAGES = {
   },
 
   delivery: {
-    title: 'Delivery information',
+    title: 'Delivery info',
     eyebrow: 'SUPPORT',
     intro:
       'Everything is cash on delivery. You pay the rider when the parcel reaches you — nothing is charged before that.',
@@ -117,7 +117,7 @@ export const INFO_PAGES = {
 
   privacy: {
     title: 'Privacy policy',
-    eyebrow: 'LEGAL',
+    eyebrow: 'SUPPORT',
     intro:
       'We collect the minimum needed to get a parcel to your door, and we do not sell it to anyone.',
     blocks: [
@@ -154,8 +154,8 @@ export const INFO_PAGES = {
   },
 
   terms: {
-    title: 'Terms',
-    eyebrow: 'LEGAL',
+    title: 'Terms of service',
+    eyebrow: 'SUPPORT',
     intro: 'The short version of how ordering from us works.',
     blocks: [
       {
@@ -192,20 +192,14 @@ export const INFO_PAGES = {
   },
 
   refunds: {
-    title: 'Refund policy',
-    eyebrow: 'LEGAL',
+    title: 'Return & refund',
+    eyebrow: 'SUPPORT',
     intro:
-      'We want you in something that fits. If it is wrong, tell us within 3 days of delivery.',
+      'We want you in something that fits. If something is wrong, tell us within 3 days of delivery.',
     blocks: [
       {
         type: 'text',
-        heading: 'Exchanges',
-        body:
-          'Wrong size? We will exchange it for another size in the same product, subject to stock, within 3 days of delivery. The item must be unworn and unwashed, with tags on and in its original packaging. Delivery charges for the exchange are paid by the customer.',
-      },
-      {
-        type: 'text',
-        heading: 'Refunds',
+        heading: 'When we refund',
         body:
           'If we sent the wrong item, or it arrived with a manufacturing fault, we refund the full amount including delivery. Send us photos within 3 days of delivery and we will arrange a pickup.',
       },
@@ -224,8 +218,47 @@ export const INFO_PAGES = {
       {
         type: 'text',
         heading: 'How to start',
-        body: `Email ${CONTACT_EMAIL} or message us on Instagram with your order number and a photo of the item. We reply within one working day.`,
+        body: `Open the Return & Exchange Portal on this page, enter your order number with the email or phone you ordered with, and send the request. You can also email ${CONTACT_EMAIL} or message us on Instagram. We reply within one working day.`,
+      },
+    ],
+  },
+
+  exchange: {
+    title: 'Exchange policy',
+    eyebrow: 'SUPPORT',
+    intro: 'Wrong size? Swap it for another size of the same piece within 3 days of delivery.',
+    blocks: [
+      {
+        type: 'text',
+        heading: 'What can be exchanged',
+        body:
+          'Any piece for another size of the same product, subject to stock. The item must be unworn and unwashed, with tags on and in its original packaging.',
+      },
+      {
+        type: 'text',
+        heading: 'Delivery charges',
+        body:
+          'Delivery charges for a size exchange are paid by the customer. If we sent the wrong size or a faulty piece, the exchange is free.',
+      },
+      {
+        type: 'text',
+        heading: 'How it works',
+        body:
+          'Send an exchange request from the Return & Exchange Portal with the size you want. We confirm stock, the rider brings the new size and takes the old one back in the same trip.',
       },
     ],
   },
 }
+
+// The tab row on /support, left to right. `portal` isn't a page of copy —
+// it's the refund / exchange request form (src/components/ReturnPortal.jsx).
+export const SUPPORT_TABS = [
+  { slug: 'refunds', label: 'Return & Refund' },
+  { slug: 'exchange', label: 'Exchange Policy' },
+  { slug: 'delivery', label: 'Delivery Info' },
+  { slug: 'size-guide', label: 'Size Guide' },
+  { slug: 'contact', label: 'Contact Info' },
+  { slug: 'privacy', label: 'Privacy Policy' },
+  { slug: 'terms', label: 'Terms of Service' },
+  { slug: 'portal', label: 'Return & Exchange Portal' },
+]

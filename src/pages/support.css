@@ -1,0 +1,47 @@
+/* /support — the tab row over every policy page and the portal. The page
+   copy below it keeps info.css's look. */
+
+.support-tabs-wrap {
+  border-bottom: 1px solid var(--steel-line);
+  padding: 0 40px;
+}
+
+.support-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.support-tabs::-webkit-scrollbar { display: none; }
+
+.support-tabs a {
+  flex: none;
+  padding: 18px 0 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--steel);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.support-tabs a:hover { color: var(--ink); }
+
+.support-tabs a.on {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.support-page .info-block p { white-space: pre-line; }
+
+@media (max-width: 860px) {
+  .support-tabs-wrap { padding: 0 20px; }
+  .support-tabs { justify-content: flex-start; gap: 22px; }
+  .support-tabs a { font-size: 11px; padding: 15px 0 12px; }
+}
