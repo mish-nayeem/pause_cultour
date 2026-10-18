@@ -10,7 +10,11 @@ export function useCardPhotos(images, width = 500) {
   const list = Array.isArray(images) ? images.filter(Boolean) : []
   const count = list.length
   const [index, setIndex] = useState(0)
-  const byFinger = useRef(false)
+  // Where and when a finger went down, to tell a tap from a scroll.
+  const touch = useRef(null)
+  // A tap already moved the photo on; the click the browser sends after it
+  // must not open the product.
+  const swallowClick = useRef(false)
 
   // The next photo starts loading as soon as this one shows, so a tap
   // swaps straight away instead of waiting on the network.
@@ -21,13 +25,30 @@ export function useCardPhotos(images, width = 500) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, count])
 
+  // The tap is read when the finger lifts, not from the click: iPhone
+  // Safari can spend a first tap on hover and never send a click at all.
   const thumbProps = count > 1
     ? {
-        onPointerDown: (e) => { byFinger.current = e.pointerType !== 'mouse' },
-        onClick: (e) => {
-          if (!byFinger.current) return
-          e.preventDefault()
+        onPointerDown: (e) => {
+          touch.current = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY, t: Date.now() }
+        },
+        onPointerUp: (e) => {
+          const t = touch.current
+          touch.current = null
+          if (!t) return
+          const moved = Math.hypot(e.clientX - t.x, e.clientY - t.y)
+          if (moved > 10 || Date.now() - t.t > 600) return
+          swallowClick.current = true
+          setTimeout(() => { swallowClick.current = false }, 800)
           setIndex((i) => (i + 1) % count)
+        },
+        // Scrolling took over the touch: not a tap.
+        onPointerCancel: () => { touch.current = null },
+        onClick: (e) => {
+          if (!swallowClick.current) return
+          swallowClick.current = false
+          e.preventDefault()
+          e.stopPropagation()
         },
       }
     : {}
