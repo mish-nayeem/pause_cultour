@@ -1,85 +1,138 @@
 import { useMemo, useState } from 'react'
 import { imgUrl } from '../lib/images.js'
 import { dropKey } from '../lib/lookbook.js'
-import { stockMap } from '../lib/stock.js'
+import { totalStock } from '../lib/stock.js'
 import './drop-report.css'
 
 function taka(n) {
-  return '৳ ' + Number(n || 0).toLocaleString()
+  return '৳ ' + Math.round(Number(n || 0)).toLocaleString()
 }
 
-// Products → Drop sales. One card per drop: pieces sold, pieces still in
-// stock, and how much of the drop has sold. Open a drop to see each
-// product, size by size. Cancelled orders don't count; every other order
-// does, since its pieces have already left the stock.
-export default function DropReport({ products, orders }) {
-  const [open, setOpen] = useState(null)
+const NO_DROP = 'No drop'
 
-  const drops = useMemo(() => {
-    // Sold per product and size, from every order that wasn't cancelled.
+// Products → Stock & sales. Everything in one place: how many products, how
+// many pieces are left and what they're worth, and what has sold — then the
+// same drop by drop. Tap "pieces in stock" or a drop to see which products
+// still have pieces, each with its total left (all sizes together) and a
+// small photo. Cancelled orders don't count; every other order does, since
+// its pieces have already left the stock.
+export default function DropReport({ products, orders }) {
+  const [open, setOpen] = useState(null) // a drop's name | 'all' | null
+
+  const { totals, drops } = useMemo(() => {
+    // Sold per product, from every order that wasn't cancelled.
     const sold = new Map()
+    let soldUnits = 0
+    let soldValue = 0
     for (const o of orders) {
       if (o.status === 'cancelled') continue
       for (const it of o.order_items || []) {
         const id = String(it.product_id)
-        const row = sold.get(id) || { units: 0, value: 0, sizes: {} }
+        const row = sold.get(id) || { units: 0, value: 0 }
         const qty = Number(it.qty) || 0
+        const value = qty * Number(it.price || 0)
         row.units += qty
-        row.value += qty * Number(it.price || 0)
-        if (it.size) row.sizes[it.size] = (row.sizes[it.size] || 0) + qty
+        row.value += value
+        soldUnits += qty
+        soldValue += value
         sold.set(id, row)
       }
     }
 
-    // Grouped by drop however it's spelt; products without one are left out.
+    const totals = { products: products.length, left: 0, stockValue: 0, soldUnits, soldValue, untracked: 0 }
     const groups = new Map()
+
     for (const p of products) {
-      if (!p.drop_name || !p.drop_name.trim()) continue
-      const key = dropKey(p.drop_name)
-      const g = groups.get(key) || { name: p.drop_name.trim(), items: [], sold: 0, value: 0, left: 0, countedSold: 0, untracked: 0 }
-      const s = sold.get(String(p.id)) || { units: 0, value: 0, sizes: {} }
-      const stock = stockMap(p)
-      const sizes = Array.isArray(p.sizes) ? p.sizes : []
-      const left = stock ? sizes.reduce((sum, z) => sum + (stock[z] ?? 0), 0) : null
-      g.items.push({
-        product: p,
-        sold: s.units,
-        value: s.value,
-        left,
-        sizes: sizes.map((z) => ({ size: z, sold: s.sizes[z] || 0, left: stock ? stock[z] ?? 0 : null })),
-      })
+      const name = p.drop_name && p.drop_name.trim() ? p.drop_name.trim() : NO_DROP
+      const key = name === NO_DROP ? '' : dropKey(name)
+      const g = groups.get(key) || { name, items: [], sold: 0, value: 0, left: 0, countedSold: 0, untracked: 0 }
+      const s = sold.get(String(p.id)) || { units: 0, value: 0 }
+      const left = totalStock(p)
+
+      g.items.push({ product: p, sold: s.units, value: s.value, left })
       g.sold += s.units
       g.value += s.value
-      if (left == null) g.untracked += 1
-      else {
+      if (left == null) {
+        g.untracked += 1
+        totals.untracked += 1
+      } else {
         g.left += left
         g.countedSold += s.units
+        totals.left += left
+        totals.stockValue += left * Number(p.price || 0)
       }
       groups.set(key, g)
     }
 
-    return [...groups.values()]
+    const drops = [...groups.values()]
       .map((g) => ({
         ...g,
-        items: g.items.sort((a, b) => b.sold - a.sold),
         // Share that's gone, from products with a stock count only — one
         // without a count has no "left" to compare its sales against.
         pct: g.countedSold + g.left > 0 ? Math.round((g.countedSold / (g.countedSold + g.left)) * 100) : 0,
       }))
-      .sort((a, b) => b.sold - a.sold)
+      // Real drops by sales; the products without one at the end.
+      .sort((a, b) => (a.name === NO_DROP) - (b.name === NO_DROP) || b.sold - a.sold)
+
+    return { totals, drops }
   }, [products, orders])
+
+  // Which products still have pieces: most left first. One without a stock
+  // count is listed too, marked as such, since it's still for sale.
+  function remaining(items) {
+    return items
+      .filter((i) => i.left == null || i.left > 0)
+      .sort((a, b) => (b.left ?? -1) - (a.left ?? -1))
+  }
+
+  const allItems = drops.flatMap((d) => d.items)
 
   return (
     <section className="panel">
-      <div className="panel-label mono" style={{ marginBottom: '6px' }}>DROP SALES</div>
-      <div className="panel-note" style={{ marginBottom: '18px' }}>
-        Every drop: pieces sold, pieces still in stock and how much of it has sold. Tap a drop
-        to see each product, size by size. Cancelled orders don't count.
+      <div className="panel-label mono" style={{ marginBottom: '6px' }}>STOCK &amp; SALES</div>
+      <div className="panel-note" style={{ marginBottom: '16px' }}>
+        Everything at a glance, then drop by drop. Tap <b>Pieces in stock</b> or a drop to see which
+        products are left. Cancelled orders don't count.
       </div>
 
-      {drops.length === 0 && (
-        <div className="empty mono">No drops yet — give products a collection / drop first.</div>
+      <div className="dr-totals">
+        <div className="dr-total">
+          <span className="mono">PRODUCTS</span>
+          <strong>{totals.products}</strong>
+        </div>
+        <button
+          type="button"
+          className={`dr-total dr-total-btn ${open === 'all' ? 'on' : ''}`}
+          onClick={() => setOpen(open === 'all' ? null : 'all')}
+        >
+          <span className="mono">PIECES IN STOCK</span>
+          <strong>{totals.left}</strong>
+          <em className="mono">{open === 'all' ? 'Hide list ↑' : 'See which ↓'}</em>
+        </button>
+        <div className="dr-total">
+          <span className="mono">STOCK VALUE</span>
+          <strong>{taka(totals.stockValue)}</strong>
+          <em className="mono">at full price</em>
+        </div>
+        <div className="dr-total">
+          <span className="mono">SOLD</span>
+          <strong>{taka(totals.soldValue)}</strong>
+          <em className="mono">{totals.soldUnits} pieces</em>
+        </div>
+      </div>
+
+      {totals.untracked > 0 && (
+        <div className="dr-warn mono" style={{ marginBottom: '12px' }}>
+          {totals.untracked} product{totals.untracked === 1 ? ' has' : 's have'} no stock count, so
+          {totals.untracked === 1 ? ' it isn’t' : ' they aren’t'} in pieces in stock or stock value
+        </div>
       )}
+
+      {open === 'all' && <LeftList items={remaining(allItems)} />}
+
+      <div className="dr-label mono">BY DROP</div>
+
+      {drops.length === 0 && <div className="empty mono">No products yet.</div>}
 
       <div className="dr-list">
         {drops.map((d) => {
@@ -100,7 +153,7 @@ export default function DropReport({ products, orders }) {
                   </div>
                   <div className="dr-num">
                     <strong>{d.left}</strong>
-                    <span className="mono">IN STOCK</span>
+                    <span className="mono">LEFT</span>
                   </div>
                   <div className="dr-num">
                     <strong>{d.pct}%</strong>
@@ -108,43 +161,46 @@ export default function DropReport({ products, orders }) {
                   </div>
                 </div>
                 <div className="dr-bar" aria-hidden="true"><i style={{ width: `${d.pct}%` }} /></div>
-                {d.untracked > 0 && (
-                  <div className="dr-warn mono">
-                    {d.untracked} product{d.untracked === 1 ? ' has' : 's have'} no stock count, so it isn't in IN STOCK or SOLD THROUGH
-                  </div>
-                )}
+                <div className="dr-more mono">{isOpen ? 'Hide products ↑' : 'See what’s left ↓'}</div>
               </button>
 
-              {isOpen && (
-                <div className="dr-items">
-                  {d.items.map(({ product: p, sold, left, sizes, value }) => (
-                    <div className="dr-item" key={p.id}>
-                      <div className="dr-thumb">
-                        {p.images?.[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" />}
-                      </div>
-                      <div className="dr-info">
-                        <div className="dr-pname">{p.name}</div>
-                        <div className="dr-sub mono">{p.variant ? `${p.variant} · ` : ''}{taka(value)}</div>
-                        <div className="dr-sizes">
-                          {sizes.map((z) => (
-                            <span key={z.size} className={`dr-size mono ${z.left === 0 ? 'out' : ''}`}>
-                              <b>{z.size}</b> {z.sold} sold{z.left != null ? ` · ${z.left} left` : ''}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="dr-pnums mono">
-                        <div><strong>{sold}</strong> sold</div>
-                        <div className="dim">{left == null ? 'not counted' : `${left} left`}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {isOpen && <LeftList items={remaining(d.items)} inCard />}
             </div>
           )
         })}
       </div>
     </section>
+  )
+}
+
+// Products with pieces left: small photo, name and colour, total left.
+function LeftList({ items, inCard = false }) {
+  return (
+    <div className={`dr-items ${inCard ? '' : 'dr-items-solo'}`}>
+      {items.length === 0 && <div className="empty mono" style={{ padding: '12px 0' }}>Everything here has sold out.</div>}
+      {items.map(({ product: p, sold, left }) => (
+        <div className="dr-item" key={p.id}>
+          <div className="dr-thumb">
+            {p.images?.[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" loading="lazy" />}
+          </div>
+          <div className="dr-info">
+            <div className="dr-pname">{p.name}</div>
+            <div className="dr-sub mono">
+              {p.variant ? `${p.variant} · ` : ''}{sold} sold
+            </div>
+          </div>
+          <div className="dr-pnums mono">
+            {left == null ? (
+              <div className="dim">not counted</div>
+            ) : (
+              <>
+                <strong>{left}</strong>
+                <div className="dim">left</div>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
