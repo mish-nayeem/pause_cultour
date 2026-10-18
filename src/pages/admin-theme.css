@@ -555,7 +555,9 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
   border: 1px solid var(--order-edge);
   border-radius: 12px;
   padding-left: 12px;
-  transition: border-color 0.15s ease;
+  background: var(--glass);
+  box-shadow: var(--glass-shine);
+  transition: border-color 0.15s ease, background 0.15s ease;
   padding-right: 12px;
   margin-bottom: 8px;
 }
@@ -566,14 +568,15 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
 
 .admin .main :is(.mini-row, .trow.prow, .cp-row:not(.cp-th), .cm-row, .am-row, .hm-row, .lk-item, .au-row:not(.au-head)):hover {
   border-color: var(--order-edge-strong);
+  background: var(--glass-hover);
 }
 
 .admin .main .bk-th,
 .admin .main .cp-th,
 .admin .main .au-head { border: none; padding-left: 12px; padding-right: 12px; }
 
-.admin .main .wish-group .low-row { border: none; margin-bottom: 0; padding-left: 0; padding-right: 0; }
-.admin .main .trow.prow:hover { background: color-mix(in srgb, var(--order-edge) 6%, transparent); }
+.admin .main .wish-group .low-row { border: none; margin-bottom: 0; padding-left: 0; padding-right: 0; background: none; box-shadow: none; }
+
 
 /* ---------- Pills: a whisper of a border ----------
    Size chips, status pills, filters and tags all keep their colour, but at a
@@ -592,3 +595,11 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
 
 .admin .main .risk-tag { border-color: color-mix(in srgb, var(--signal) 45%, transparent); border-radius: 999px; padding: 1px 7px; }
 .admin .main .chip { border-color: color-mix(in srgb, var(--ink) 14%, transparent); }
+
+/* The other bordered boxes get the same frosted glass: Stock & sales totals
+   and drop cards, return requests and their parts, notifications, the
+   order details' sections. */
+.admin .main :is(.dr-total, .dr-card, .dr-items-solo, .rm-card, .rm-order, .rm-line, .rm-done, .rm-log, .nc-panel) {
+  background: var(--glass);
+  box-shadow: var(--glass-shine);
+}

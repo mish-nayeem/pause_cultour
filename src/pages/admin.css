@@ -513,21 +513,18 @@
   position: relative;
 }
 
-/* A size down to its last piece: a red star in the photo's corner — on the
-   catalog, Stock levels and Stock & sales. */
+/* A size down to its last piece: a small red dot in the photo's corner — on
+   the catalog, Stock levels and Stock & sales. */
 .restock-star {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 17px;
-  height: 17px;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #E5262B;
-  color: #fff;
-  font-size: 11px;
-  line-height: 17px;
-  text-align: center;
   box-shadow: 0 0 0 1.5px #fff;
+  font-size: 0;
   pointer-events: auto;
 }
 
@@ -1321,10 +1318,18 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
   /* Soft by default, the full colour on hover and on the open order. */
   --order-edge: color-mix(in srgb, var(--cobalt) 38%, transparent);
   --order-edge-strong: var(--cobalt);
+  /* Frosted glass inside every bordered box: a faint wash of the theme's
+     colour over a blur — shaded blue, green, or grey on the dark theme. */
+  --glass: linear-gradient(135deg, color-mix(in srgb, var(--cobalt) 9%, rgba(255, 255, 255, 0.55)), color-mix(in srgb, var(--cobalt) 4%, rgba(255, 255, 255, 0.35)));
+  --glass-hover: color-mix(in srgb, var(--cobalt) 12%, rgba(255, 255, 255, 0.5));
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .admin[data-theme='dark'] {
   --order-edge: rgba(255, 255, 255, 0.22);
   --order-edge-strong: rgba(255, 255, 255, 0.7);
+  --glass: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  --glass-hover: rgba(255, 255, 255, 0.09);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .olist {
@@ -1343,13 +1348,16 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
   flex-direction: column;
   gap: 8px;
   cursor: pointer;
-  background: var(--paper);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--glass-shine);
+  transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
   min-width: 0;
   max-width: 100%;
 }
 
-.ocard:hover { border-color: var(--order-edge-strong); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1); transform: translateY(-1px); }
+.ocard:hover { border-color: var(--order-edge-strong); background: var(--glass-hover); box-shadow: var(--glass-shine), 0 6px 18px rgba(0, 0, 0, 0.1); transform: translateY(-1px); }
 .ocard:focus-visible { outline: 2px solid var(--order-edge); outline-offset: 2px; }
 .ocard.on { border-color: var(--order-edge-strong); border-width: 2px; padding: 11px 13px; }
 .ocard.cancelled { opacity: 0.7; }
@@ -1473,8 +1481,9 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 
 .osec {
   margin: 12px 14px 0;
-  background: var(--paper);
-  border: 1px solid var(--steel-line);
+  background: var(--glass);
+  box-shadow: var(--glass-shine);
+  border: 1px solid var(--order-edge);
   border-radius: var(--r-card, 14px);
   padding: 12px 14px;
 }
