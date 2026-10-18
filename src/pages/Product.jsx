@@ -137,20 +137,23 @@ export default function Product() {
     return () => { active = false }
   }, [id])
 
+  // Its other colours: the same colour group, or — for products never given
+  // one — the same name.
   const colourGroup = product?.colourGroup
+  const productName = product?.name
 
   useEffect(() => {
-    if (!colourGroup) {
+    if (!colourGroup && !productName) {
       setColours([])
       return
     }
 
     let active = true
-    fetchColourOptions(colourGroup).then(({ options }) => {
+    fetchColourOptions(colourGroup, productName).then(({ options }) => {
       if (active) setColours(options)
     })
     return () => { active = false }
-  }, [colourGroup])
+  }, [colourGroup, productName])
 
   useEffect(() => {
     let active = true
@@ -372,7 +375,7 @@ export default function Product() {
             {product.images.map((img, i) => (
               <div className="shot" key={img} onClick={() => setZoom(i)} role="button" tabIndex={0} aria-label={`View photo ${i + 1} full screen`} onKeyDown={(e) => { if (e.key === 'Enter') setZoom(i) }}>
                 <ShimmerImage
-                  src={imgUrl(img, { w: 1000 })}
+                  src={imgUrl(img, { w: 1400, q: 82 })}
                   alt={`${product.name} — view ${i + 1}`}
                   loading={i > 1 ? 'lazy' : undefined}
                 />

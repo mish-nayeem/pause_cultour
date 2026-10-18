@@ -1605,6 +1605,7 @@ export default function Admin() {
             key={copyFrom ? `copy-${copyFrom.id}` : editing === 'new' ? 'new' : editing.id}
             existing={editing === 'new' ? null : editing}
             copyFrom={editing === 'new' ? copyFrom : null}
+            allProducts={products}
             onAddColour={addColour}
             existingIds={products.map((p) => p.id)}
             categories={productCategories}

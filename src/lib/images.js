@@ -21,8 +21,12 @@ const SUPABASE_OBJECT = '/storage/v1/object/public/'
 const SUPABASE_RENDER = '/storage/v1/render/image/public/'
 const CLOUDINARY_MARKER = '/image/upload/'
 
-export function imgUrl(url, { w, h, q } = {}) {
+export function imgUrl(url, { w, h, q, original = false } = {}) {
   if (typeof url !== 'string') return url
+
+  // The stored file itself, untouched — for the full-screen view, where a
+  // second resize and re-encode would soften what was uploaded.
+  if (original) return url
 
   if (url.includes(SUPABASE_OBJECT)) {
     // A URL that already carries its own query was set up by hand — leave it.
