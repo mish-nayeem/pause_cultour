@@ -26,6 +26,8 @@
 
 .pf-add-colour:hover { background: var(--cobalt); color: #fff; }
 
+.pf-add-colour-inline { align-self: flex-start; margin-top: 10px; border-radius: 10px; }
+
 .pf-copy-note {
   border-left: 2px solid var(--cobalt);
   background: rgba(47, 107, 255, 0.08);

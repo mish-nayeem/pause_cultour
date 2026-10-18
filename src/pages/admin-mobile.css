@@ -177,7 +177,10 @@
     box-shadow: var(--card-shadow);
   }
 
-  .admin .pform-head { margin-bottom: 16px; }
+  /* Title on its own line, the buttons (Add another colour, Cancel) under
+     it, instead of squeezed beside a long product name. */
+  .admin .pform-head { margin-bottom: 16px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .admin .pf-head-actions { justify-content: flex-start; }
   .admin .pform-head h3 { font-size: 20px; }
 
   /* Order status filters on one swipeable line too. */
