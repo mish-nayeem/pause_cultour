@@ -749,7 +749,7 @@ function toRow(p) {
   return {
     id: p.id,
     sku: p.sku,
-    name: p.name,
+    name: (p.name || '').trim(),
     variant: p.variant,
     price: Number(p.price),
     cost: p.cost === '' || p.cost == null ? null : Number(p.cost),

@@ -579,3 +579,12 @@
 .pf-launch { margin-top: 18px; }
 .pf-launch-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .pf-launch-row input { max-width: 260px; }
+
+.pf-colours {
+  padding: 10px 12px;
+  border: 1px dashed var(--steel-line);
+  font-size: 12.5px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+}

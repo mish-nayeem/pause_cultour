@@ -32,8 +32,10 @@ export default function YouMayLike({ currentId }) {
   // Not this piece in any colour, and one card for each other piece.
   const viewing = products.find((p) => String(p.id) === String(currentId))
   const group = (viewing?.colourGroup || '').trim().toUpperCase()
+  const name = (viewing?.name || '').trim().toLowerCase()
+  const samePiece = (p) => (group && (p.colourGroup || '').trim().toUpperCase() === group) || (name && (p.name || '').trim().toLowerCase() === name)
   const others = oneColourEach(
-    products.filter((p) => String(p.id) !== String(currentId) && !(group && (p.colourGroup || '').trim().toUpperCase() === group)),
+    products.filter((p) => String(p.id) !== String(currentId) && !samePiece(p)),
     (p) => !isAllSoldOut(p)
   )
   const totalPages = Math.max(1, Math.ceil(others.length / PAGE_SIZE))

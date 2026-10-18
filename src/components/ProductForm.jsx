@@ -106,7 +106,25 @@ function asNewColour(row, ids) {
   }
 }
 
-export default function ProductForm({ existing, copyFrom = null, existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel, onAddColour }) {
+// Same name = same piece. The colour group a product should carry: the one
+// it already has, else the group a same-named product already uses, else a
+// tag made from the name when another product shares it. `relink` lists
+// same-named products with no group yet, to be given this one.
+function tagOf(name) {
+  return name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+function colourLink(p, all) {
+  const key = p.name.trim().toLowerCase()
+  const same = all.filter((r) => String(r.id) !== String(p.id) && (r.name || '').trim().toLowerCase() === key)
+  const own = (p.colourGroup || '').trim()
+  if (own) return { group: own, relink: same.filter((r) => !r.colour_group).map((r) => r.id) }
+  if (!same.length) return { group: '', relink: [] }
+  const group = same.find((r) => r.colour_group)?.colour_group || tagOf(p.name)
+  return { group, relink: same.filter((r) => !r.colour_group).map((r) => r.id) }
+}
+
+export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel, onAddColour }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
   const [p, setP] = useState(() => (
@@ -123,6 +141,15 @@ export default function ProductForm({ existing, copyFrom = null, existingIds = [
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
   const fileRef = useRef(null)
+
+  // The other colours this product will be shown with (same group, or same
+  // name), for the OTHER COLOURS line.
+  const otherColours = allProducts.filter((r) => {
+    if (String(r.id) === String(p.id)) return false
+    const g = (p.colourGroup || '').trim()
+    if (g && r.colour_group === g) return true
+    return p.name.trim() && (r.name || '').trim().toLowerCase() === p.name.trim().toLowerCase()
+  })
 
   const knownLabels = mergeLabels(detailLabels, rememberedLabels())
   const [detailRows, setDetailRows] = useState(() => {
@@ -295,10 +322,16 @@ export default function ProductForm({ existing, copyFrom = null, existingIds = [
     // (PC240), which is what the product page and cart print as its code.
     // An older product keeps whatever SKU it already had.
     const id = p.id.trim()
+    const link = colourLink({ ...p, id }, allProducts)
     const { error: saveError } = await saveProduct(
-      { ...p, id, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) },
+      { ...p, id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) },
       isNewRecord
     )
+
+    // The same-named products that weren't linked yet join this one's group.
+    if (!saveError && link.group && link.relink.length) {
+      await supabase.from('products').update({ colour_group: link.group }).in('id', link.relink)
+    }
 
     if (saveError) {
       setSaving(false)
@@ -369,8 +402,7 @@ export default function ProductForm({ existing, copyFrom = null, existingIds = [
         <div className="pf-copy-note mono">
           Everything is copied from <strong>{copyFrom.name}{copyFrom.variant ? ` — ${copyFrom.variant}` : ''}</strong>.
           Just add this colour's <strong>name</strong> (Variant / colour), its <strong>photos</strong> and
-          its <strong>stock</strong>. Both colours show each other on the product page
-          (colour group {p.colourGroup || '—'}).
+          its <strong>stock</strong>. Both colours show each other on the product page.
         </div>
       )}
 
@@ -438,18 +470,20 @@ export default function ProductForm({ existing, copyFrom = null, existingIds = [
           <input value={p.variant} onChange={(e) => set('variant', e.target.value)} placeholder="Bone White" />
         </label>
 
-        <label className="pf-field">
-          <span className="mono">COLOUR GROUP</span>
-          <input
-            value={p.colourGroup}
-            onChange={(e) => set('colourGroup', e.target.value.toUpperCase())}
-            placeholder="VARSITY-JACKET"
-          />
+        {/* No colour-group box to fill in: products with the same name are
+            colours of one piece and link up by themselves when saved. */}
+        <div className="pf-field">
+          <span className="mono">OTHER COLOURS</span>
+          <div className="pf-colours mono">
+            {otherColours.length
+              ? otherColours.map((c) => c.variant || c.id).join(' · ')
+              : 'None yet — use "+ Add another colour", or give another product the same name.'}
+          </div>
           <em className="pf-hint mono">
-            Give every colour of the same piece this exact tag and they'll list
-            each other on the product page. Leave empty if it comes in one colour.
+            Products with the same name are shown as colours of one piece: one card in the shop,
+            and a colour picker on the product page.
           </em>
-        </label>
+        </div>
 
         <label className="pf-field">
           <span className="mono">PRICE (৳)</span>
