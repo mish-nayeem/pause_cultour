@@ -510,6 +510,25 @@
   height: 52px;
   overflow: hidden;
   background: var(--paper-dim);
+  position: relative;
+}
+
+/* A size down to its last piece: a red star in the photo's corner — on the
+   catalog, Stock levels and Stock & sales. */
+.restock-star {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #E5262B;
+  color: #fff;
+  font-size: 11px;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 1.5px #fff;
+  pointer-events: auto;
 }
 
 .pthumb img {
@@ -928,6 +947,7 @@
 .sl-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
 .sl-thumb {
+  position: relative;
   flex: none;
   width: 40px;
   height: 50px;

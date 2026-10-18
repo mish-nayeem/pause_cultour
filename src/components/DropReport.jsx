@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { imgUrl } from '../lib/images.js'
 import { dropKey } from '../lib/lookbook.js'
-import { totalStock } from '../lib/stock.js'
+import { totalStock, starSizes } from '../lib/stock.js'
+import RestockStar from './RestockStar.jsx'
 import './drop-report.css'
 
 function taka(n) {
@@ -197,6 +198,7 @@ function LeftList({ items, inCard = false }) {
         <div className="dr-item" key={p.id}>
           <div className="dr-thumb">
             {p.images?.[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" loading="lazy" />}
+            <RestockStar sizes={starSizes(p)} />
           </div>
           <div className="dr-info">
             <div className="dr-pname">{p.name}</div>

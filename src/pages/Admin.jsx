@@ -55,7 +55,8 @@ import { queueOrder, saveQueueOrder } from '../lib/products.js'
 import { fetchAllNavCategories, DROPS_MENU } from '../lib/navCategories.js'
 import { dropKey } from '../lib/lookbook.js'
 import { isScheduled, launchLabel } from '../lib/schedule.js'
-import { stockMap, totalStock, LOW_STOCK_AT } from '../lib/stock.js'
+import { stockMap, totalStock, LOW_STOCK_AT, starSizes } from '../lib/stock.js'
+import RestockStar from '../components/RestockStar.jsx'
 import { fetchWishlist, groupDemand } from '../lib/wishlist.js'
 import { COURIERS, courierLabel, sendToCourier, syncCourierStatus } from '../lib/courier.js'
 import { whatsappLink, shopToCustomerMessage } from '../lib/whatsapp.js'
@@ -1657,6 +1658,7 @@ export default function Admin() {
                 >
                   <div className="pthumb">
                     {Array.isArray(p.images) && p.images[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" />}
+                    <RestockStar sizes={starSizes(p)} />
                   </div>
                   <div className="tc name">
                     {p.name}
@@ -1739,6 +1741,7 @@ export default function Admin() {
                   <div className="sl-who">
                     <span className="sl-thumb">
                       {p.images?.[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" loading="lazy" />}
+                      <RestockStar sizes={starSizes(p)} />
                     </span>
                     <div>
                       <div className="mini-name">{p.name}</div>
