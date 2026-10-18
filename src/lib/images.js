@@ -21,14 +21,15 @@ const SUPABASE_OBJECT = '/storage/v1/object/public/'
 const SUPABASE_RENDER = '/storage/v1/render/image/public/'
 const CLOUDINARY_MARKER = '/image/upload/'
 
-export function imgUrl(url, { w, h } = {}) {
+export function imgUrl(url, { w, h, q } = {}) {
   if (typeof url !== 'string') return url
 
   if (url.includes(SUPABASE_OBJECT)) {
     // A URL that already carries its own query was set up by hand — leave it.
     if (url.includes('?')) return url
 
-    const params = new URLSearchParams({ quality: '75' })
+    // 75 keeps grid tiles light; a full-screen view asks for more (q).
+    const params = new URLSearchParams({ quality: String(q || 75) })
     if (w) params.set('width', String(w))
     if (h) params.set('height', String(h))
     // With both sides set, fill the box and crop the overflow — the same
@@ -61,12 +62,13 @@ export function imgUrl(url, { w, h } = {}) {
 
 // Photos are shrunk in the browser before they go up: a camera original can
 // be 20–50 MB and 8000 px wide, which the bucket refuses (20 MB a file) and
-// Supabase's resizer won't take as a source either. 2560 px on the long side
-// is still sharper than any screen shows a product photo, at a few hundred
-// KB to ~1.5 MB. Small photos that already fit go up untouched.
-const MAX_SIDE = 2560
-const QUALITY = 0.86
-const KEEP_UNDER = 1.5 * 1024 * 1024
+// Supabase's resizer won't take as a source either. 3600 px on the long side
+// at 92% leaves headroom over the largest view the site serves (2500 px,
+// Supabase's own maximum, full screen), so zooming in stays crisp — a few
+// MB at most. Small photos that already fit go up untouched.
+const MAX_SIDE = 3600
+const QUALITY = 0.92
+const KEEP_UNDER = 2.5 * 1024 * 1024
 
 async function shrink(file) {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type) || typeof createImageBitmap !== 'function') return file

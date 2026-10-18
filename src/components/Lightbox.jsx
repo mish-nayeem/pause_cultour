@@ -44,7 +44,7 @@ export default function Lightbox({ images, start = 0, alt = '', onClose }) {
     >
       <img
         className="lbx-img"
-        src={imgUrl(images[i], { w: 2000 })}
+        src={imgUrl(images[i], { w: 2500, q: 90 })}
         alt={alt ? `${alt} — view ${i + 1}` : ''}
         draggable="false"
       />
