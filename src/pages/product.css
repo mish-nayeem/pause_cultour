@@ -623,19 +623,24 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   min-width: 340px;
+  /* Every size column the same width (the label column takes a fixed
+     share), so S, M, L and XL sit evenly apart however wide each name is. */
+  table-layout: fixed;
 }
 
+.sheet-table th:first-child { width: 32%; }
+
 .sheet-table th {
-  text-align: right;
+  text-align: center;
   font-weight: 400;
   color: #fff;
-  padding: 0 0 10px 14px;
+  padding: 0 4px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .sheet-table td {
-  text-align: right;
-  padding: 10px 0 10px 14px;
+  text-align: center;
+  padding: 10px 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   color: #fff;
 }
