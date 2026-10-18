@@ -9,11 +9,8 @@ import {
   computeStats,
   dailySeries,
   monthlySeries,
-  salesByDrop,
-  salesByCategory,
   salesByAttribution,
   topProducts,
-  lowStockSizes,
   customerIndex,
   lookupCustomer,
   fetchReturns,
@@ -122,7 +119,6 @@ const SECTION_COLORS = {
 const OVERVIEW_SUBS = [
   { key: 'stats', label: 'Key stats' },
   { key: 'trend', label: 'Sales trend' },
-  { key: 'catalog', label: 'Catalog' },
   { key: 'recent', label: 'Recent orders' },
 ]
 
@@ -170,7 +166,6 @@ const ANALYTICS_SUBS = [
   { key: 'traffic', label: 'Visitor traffic' },
   { key: 'conversion', label: 'Conversion rate' },
   { key: 'location', label: 'Location map' },
-  { key: 'category', label: 'Sold by category' },
 ]
 
 // The three looks the panel can wear — see admin-theme.css. The pick is kept in
@@ -539,11 +534,8 @@ export default function Admin() {
   const stats = useMemo(() => computeStats(orders), [orders])
   const series = useMemo(() => dailySeries(orders, 14), [orders])
   const months = useMemo(() => monthlySeries(orders, 6), [orders])
-  const byDrop = useMemo(() => salesByDrop(orders, products), [orders, products])
-  const byCategory = useMemo(() => salesByCategory(orders, products), [orders, products])
   const byAttribution = useMemo(() => salesByAttribution(orders), [orders])
   const top = useMemo(() => topProducts(orders, 5), [orders])
-  const lowStock = useMemo(() => lowStockSizes(products), [products])
   const demand = useMemo(() => groupDemand(wishRows), [wishRows])
   const customers = useMemo(() => customerIndex(orders), [orders])
   const custList = useMemo(() => customerList(orders), [orders])
@@ -1081,58 +1073,6 @@ export default function Admin() {
               />
             </section>
               </>
-            )}
-
-            {overviewSub === 'catalog' && lowStock.length > 0 && (
-              <section className="panel">
-                <div className="panel-head">
-                  <div>
-                    <div className="panel-label mono"><IconBox width="13" height="13" />LOW STOCK</div>
-                    <div className="panel-note" style={{ marginTop: '6px' }}>
-                      Sizes with {LOW_STOCK_AT} pieces or fewer left. A size at 0 is
-                      already sold out on the product page.
-                    </div>
-                  </div>
-                  <button className="add-product mono" onClick={() => setTab('products')}>
-                    Open products
-                  </button>
-                </div>
-
-                <div className="low-rows">
-                  {lowStock.map((r) => (
-                    <div className={`low-row ${r.left === 0 ? 'out' : ''}`} key={`${r.id}-${r.size}`}>
-                      <div>
-                        <div className="mini-name">{r.name}</div>
-                        <div className="mini-id mono" style={{ marginTop: '3px' }}>{r.variant}</div>
-                      </div>
-                      <div className="low-right mono">
-                        <span className="low-size">{r.size}</span>
-                        <span className="low-left">
-                          {r.left === 0 ? 'SOLD OUT' : `${r.left} left`}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {overviewSub === 'catalog' && (
-            <div className="two-col">
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
-                  <IconStar width="13" height="13" />SOLD BY DROP
-                </div>
-                <RankBars rows={byDrop} empty="No drop has sold anything yet." />
-              </section>
-
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
-                  <IconTag width="13" height="13" />SOLD BY CATEGORY
-                </div>
-                <RankBars rows={byCategory} empty="No category has sold anything yet." accent="cobalt" />
-              </section>
-            </div>
             )}
 
             {overviewSub === 'recent' && (
@@ -2214,12 +2154,6 @@ export default function Admin() {
           </section>
           )}
 
-          {analyticsSub === 'category' && (
-          <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '18px' }}>SOLD BY CATEGORY</div>
-            <RankBars rows={byCategory} empty="No category has sold anything yet." accent="cobalt" />
-          </section>
-          )}
           </>
         )}
         {!loading && tab === 'lookbook' && <LookbookManager products={products} />}
