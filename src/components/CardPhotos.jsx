@@ -2,77 +2,62 @@ import { useEffect, useRef, useState } from 'react'
 import { imgUrl } from '../lib/images.js'
 import ShimmerImage from './ShimmerImage.jsx'
 
-// A product card's photos on a phone: tap the photo for the next one, tap
-// again for the one after (back to the first at the end). Tapping the name
-// or price still opens the product; with a mouse, clicking the photo opens
-// it as before. Spread `thumbProps` on the photo's box.
-export function useCardPhotos(images, width = 500) {
+// How long each photo shows while the pointer rests on a card.
+const STEP_MS = 1300
+
+// A shop card's photos. Resting the mouse pointer on the photo slides
+// through the product's other photos one by one; moving off slides back to
+// the first. A tap or a click opens the product as always — on a phone the
+// card just shows its main photo.
+export function CardPhoto({ images, alt, width = 500, loading }) {
   const list = Array.isArray(images) ? images.filter(Boolean) : []
   const count = list.length
   const [index, setIndex] = useState(0)
-  // Where and when a finger went down, to tell a tap from a scroll.
-  const touch = useRef(null)
-  // A tap already moved the photo on; the click the browser sends after it
-  // must not open the product.
-  const swallowClick = useRef(false)
+  // The other photos only load once someone points at the card.
+  const [woken, setWoken] = useState(false)
+  const timer = useRef(null)
+  const track = useRef(null)
 
-  // The next photo starts loading as soon as this one shows, so a tap
-  // swaps straight away instead of waiting on the network.
+  // Listens on the whole photo box (the strip's parent), so pointing at a
+  // badge or the + button over the photo doesn't stop the slideshow.
   useEffect(() => {
-    if (count < 2) return
-    const next = new Image()
-    next.src = imgUrl(list[(index + 1) % count], { w: width })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, count])
+    const box = track.current?.parentElement
+    if (!box || count < 2) return
+    function start(e) {
+      if (e.pointerType !== 'mouse') return
+      setWoken(true)
+      clearInterval(timer.current)
+      setIndex(1)
+      timer.current = setInterval(() => setIndex((i) => (i + 1) % count), STEP_MS)
+    }
+    function stop() {
+      clearInterval(timer.current)
+      setIndex(0)
+    }
+    box.addEventListener('pointerenter', start)
+    box.addEventListener('pointerleave', stop)
+    return () => {
+      clearInterval(timer.current)
+      box.removeEventListener('pointerenter', start)
+      box.removeEventListener('pointerleave', stop)
+    }
+  }, [count])
 
-  // The tap is read when the finger lifts, not from the click: iPhone
-  // Safari can spend a first tap on hover and never send a click at all.
-  const thumbProps = count > 1
-    ? {
-        onPointerDown: (e) => {
-          touch.current = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY, t: Date.now() }
-        },
-        onPointerUp: (e) => {
-          const t = touch.current
-          touch.current = null
-          if (!t) return
-          const moved = Math.hypot(e.clientX - t.x, e.clientY - t.y)
-          if (moved > 10 || Date.now() - t.t > 600) return
-          swallowClick.current = true
-          setTimeout(() => { swallowClick.current = false }, 800)
-          setIndex((i) => (i + 1) % count)
-        },
-        // Scrolling took over the touch: not a tap.
-        onPointerCancel: () => { touch.current = null },
-        onClick: (e) => {
-          if (!swallowClick.current) return
-          swallowClick.current = false
-          e.preventDefault()
-          e.stopPropagation()
-        },
-      }
-    : {}
+  if (count < 2) {
+    return <ShimmerImage src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
+  }
 
-  return { src: imgUrl(list[Math.min(index, Math.max(count - 1, 0))], { w: width }), index, count, thumbProps }
-}
-
-// Small dots along the photo's bottom edge: how many photos, which one.
-export function PhotoDots({ index, count }) {
-  if (count < 2) return null
-  return (
-    <span className="card-dots" aria-hidden="true">
-      {Array.from({ length: count }, (_, i) => <i key={i} className={i === index ? 'on' : ''} />)}
-    </span>
-  )
-}
-
-// The photo (and its dots) for a shop card — drop-in for the card's <img>.
-export function CardPhoto({ images, alt, width = 500, loading }) {
-  const { src, index, count, thumbProps } = useCardPhotos(images, width)
   return (
     <>
-      <ShimmerImage src={src} alt={alt} loading={loading} {...thumbProps} />
-      <PhotoDots index={index} count={count} />
+      <span className="card-track" ref={track} style={{ transform: `translateX(${-index * 100}%)` }}>
+        <ShimmerImage src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
+        {list.slice(1).map((src) =>
+          woken ? <img key={src} src={imgUrl(src, { w: width })} alt="" /> : <span key={src} className="card-track-wait" />
+        )}
+      </span>
+      <span className="card-dots" aria-hidden="true">
+        {list.map((src, i) => <i key={src} className={i === index ? 'on' : ''} />)}
+      </span>
     </>
   )
 }
