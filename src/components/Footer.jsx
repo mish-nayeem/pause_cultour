@@ -95,15 +95,18 @@ export default function Footer() {
           <div className="foot-col">
             <div className="foot-label mono">SUPPORT</div>
             <Link to="/track">Track order</Link>
-            <Link to="/contact">Contact us</Link>
-            <Link to="/delivery">Delivery info</Link>
+            <Link to="/support/portal">Return &amp; exchange portal</Link>
+            <Link to="/support/delivery">Delivery info</Link>
+            <Link to="/support/size-guide">Size guide</Link>
+            <Link to="/support/contact">Contact us</Link>
           </div>
 
           <div className="foot-col">
-            <div className="foot-label mono">LEGAL</div>
-            <Link to="/privacy">Privacy policy</Link>
-            <Link to="/terms">Terms</Link>
-            <Link to="/refunds">Refund policy</Link>
+            <div className="foot-label mono">POLICIES</div>
+            <Link to="/support/refunds">Return &amp; refund</Link>
+            <Link to="/support/exchange">Exchange policy</Link>
+            <Link to="/support/privacy">Privacy policy</Link>
+            <Link to="/support/terms">Terms of service</Link>
           </div>
         </div>
       </div>

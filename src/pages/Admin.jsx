@@ -79,6 +79,8 @@ import {
   IconChat,
   IconImage,
 } from '../components/Icons.jsx'
+import { SupportRequests, SupportPages, SupportPortal } from '../components/SupportManager.jsx'
+import { isNewRequest } from '../lib/support.js'
 import './admin.css'
 import './admin-theme.css'
 import './admin-mobile.css'
@@ -96,6 +98,7 @@ const TAB_LABELS = {
   lookbook: 'Lookbook',
   menu: 'Nav menus',
   about: 'About us page',
+  support: 'Support',
 }
 
 // One accent per section in the dark theme, so the sidebar reads as a set of
@@ -112,6 +115,7 @@ const SECTION_COLORS = {
   lookbook: '#7C6CFF',
   menu: '#FFC14D',
   about: '#FF5E7E',
+  support: '#3FC1FF',
 }
 
 const OVERVIEW_SUBS = [
@@ -153,6 +157,12 @@ const MARKETING_SUBS = [
   { key: 'sales', label: 'Sales' },
   { key: 'coupons', label: 'Coupons' },
   { key: 'links', label: 'Tracked links' },
+]
+
+const SUPPORT_SUBS = [
+  { key: 'requests', label: 'Refund & exchange requests' },
+  { key: 'pages', label: 'Support pages' },
+  { key: 'portal', label: 'Return portal' },
 ]
 
 const ANALYTICS_SUBS = [
@@ -427,6 +437,7 @@ export default function Admin() {
   const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
   const [marketingBusy, setMarketingBusy] = useState(null)
   const [analyticsSub, setAnalyticsSub] = useState('traffic')
+  const [supportSub, setSupportSub] = useState('requests')
   const [pageViews, setPageViews] = useState([])
   const [productsSub, setProductsSub] = useState('catalog')
   const [customersSub, setCustomersSub] = useState('list')
@@ -447,6 +458,7 @@ export default function Admin() {
       customersSub,
       marketingSub,
       analyticsSub,
+      supportSub,
       editing: editing === 'new' ? 'new' : editing?.id ?? null,
       addingOrder,
       openCollection,
@@ -459,6 +471,7 @@ export default function Admin() {
       setCustomersSub(v.customersSub)
       setMarketingSub(v.marketingSub)
       setAnalyticsSub(v.analyticsSub)
+      setSupportSub(v.supportSub)
       setEditing(v.editing === 'new' ? 'new' : v.editing ? products.find((p) => p.id === v.editing) || null : null)
       setAddingOrder(v.addingOrder)
       setOpenCollection(v.openCollection)
@@ -809,6 +822,15 @@ export default function Admin() {
     cancelled: stats.cancelled,
   }
 
+  // Refund / exchange requests customers sent from the Support page that the
+  // admin hasn't opened yet — the Support badge and the Overview notice.
+  const newRequests = returns.filter(isNewRequest).length
+
+  function openRequests() {
+    setSupportSub('requests')
+    goTab('support')
+  }
+
   const navItems = [
     { key: 'overview', label: 'Overview', badge: null },
     { key: 'orders', label: 'Orders', badge: stats.open > 0 ? stats.open : null },
@@ -820,6 +842,7 @@ export default function Admin() {
     { key: 'lookbook', label: 'Lookbook', badge: null },
     { key: 'menu', label: 'Nav menus', badge: null },
     { key: 'about', label: 'About us', badge: null },
+    { key: 'support', label: 'Support', badge: newRequests > 0 ? newRequests : null },
   ]
 
   return (
@@ -897,6 +920,8 @@ export default function Admin() {
                 ` / ${MARKETING_SUBS.find((s) => s.key === marketingSub).label.toUpperCase()}`}
               {tab === 'analytics' &&
                 ` / ${ANALYTICS_SUBS.find((s) => s.key === analyticsSub).label.toUpperCase()}`}
+              {tab === 'support' &&
+                ` / ${SUPPORT_SUBS.find((s) => s.key === supportSub).label.toUpperCase()}`}
             </div>
             <h1 className="display">{TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
@@ -932,6 +957,15 @@ export default function Admin() {
 
         {!loading && tab === 'overview' && (
           <div>
+            {newRequests > 0 && (
+              <button type="button" className="sm-notice" onClick={openRequests}>
+                <span className="sm-notice-count mono">{newRequests}</span>
+                <span>
+                  New refund / exchange {newRequests === 1 ? 'request' : 'requests'} from the Support page
+                </span>
+                <span className="sm-notice-cta mono">VIEW →</span>
+              </button>
+            )}
             <div className="subtabs mono">
               {OVERVIEW_SUBS.map((s) => (
                 <button
@@ -2161,6 +2195,34 @@ export default function Admin() {
         )}
         {!loading && tab === 'lookbook' && <LookbookManager products={products} />}
         {tab === 'about' && <AboutManager />}
+        {!loading && tab === 'support' && (
+          <>
+            <div className="subtabs mono">
+              {SUPPORT_SUBS.map((s) => (
+                <button
+                  key={s.key}
+                  className={`subtab ${supportSub === s.key ? 'active' : ''}`}
+                  onClick={() => setSupportSub(s.key)}
+                >
+                  {s.label}
+                  {s.key === 'requests' && newRequests > 0 && <span className="badge">{newRequests}</span>}
+                </button>
+              ))}
+            </div>
+            {supportSub === 'requests' && (
+              <SupportRequests
+                requests={returns}
+                onReload={reload}
+                onSeen={(ids) => {
+                  const at = new Date().toISOString()
+                  setReturns((prev) => prev.map((r) => (ids.includes(r.id) ? { ...r, seen_at: at } : r)))
+                }}
+              />
+            )}
+            {supportSub === 'pages' && <SupportPages />}
+            {supportSub === 'portal' && <SupportPortal />}
+          </>
+        )}
       </div>
       </main>
 

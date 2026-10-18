@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { CartProvider } from './context/CartContext.jsx'
 import Home from './pages/Home.jsx'
 import Shop from './pages/Shop.jsx'
@@ -11,7 +11,7 @@ import OrderConfirmed from './pages/OrderConfirmed.jsx'
 import Login from './pages/Login.jsx'
 import Account from './pages/Account.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
-import Info from './pages/Info.jsx'
+import Support from './pages/Support.jsx'
 import About from './pages/About.jsx'
 import Lookbook from './pages/Lookbook.jsx'
 import Track from './pages/Track.jsx'
@@ -72,12 +72,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 read as real pages and are worth sharing. */}
             <Route path="/track" element={<Track />} />
             <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Info slug="contact" />} />
-            <Route path="/size-guide" element={<Info slug="size-guide" />} />
-            <Route path="/delivery" element={<Info slug="delivery" />} />
-            <Route path="/privacy" element={<Info slug="privacy" />} />
-            <Route path="/terms" element={<Info slug="terms" />} />
-            <Route path="/refunds" element={<Info slug="refunds" />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/support/:slug" element={<Support />} />
+            {/* The pages' old addresses, before they moved under /support. */}
+            {['contact', 'size-guide', 'delivery', 'privacy', 'terms', 'refunds', 'exchange'].map((slug) => (
+              <Route key={slug} path={`/${slug}`} element={<Navigate to={`/support/${slug}`} replace />} />
+            ))}
+            <Route path="/returns" element={<Navigate to="/support/portal" replace />} />
           </Routes>
         </CartProvider>
       </BrowserRouter>

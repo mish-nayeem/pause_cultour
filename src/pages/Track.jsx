@@ -103,7 +103,7 @@ export default function Track() {
             {cancelled ? (
               <div className="tr-cancelled mono">
                 This order was cancelled. Nothing has been charged. If that
-                wasn't expected, <Link to="/contact">get in touch</Link>.
+                wasn't expected, <Link to="/support/contact">get in touch</Link>.
               </div>
             ) : (
               <div className="timeline">
@@ -139,7 +139,7 @@ export default function Track() {
           </div>
         )}
 
-        <Link to="/contact" className="back-link mono">Need help? Contact us →</Link>
+        <Link to="/support/contact" className="back-link mono">Need help? Contact us →</Link>
       </div>
 
       <Footer />
