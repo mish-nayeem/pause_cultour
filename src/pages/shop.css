@@ -120,7 +120,10 @@
   transition: transform 0.5s ease;
 }
 
-.scard:hover .sthumb img { transform: scale(1.035); }
+/* Mouse only: on a phone a hover effect can eat the first tap. */
+@media (hover: hover) {
+  .scard:hover .sthumb img { transform: scale(1.035); }
+}
 
 .snew {
   position: absolute;

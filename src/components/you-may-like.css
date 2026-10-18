@@ -55,7 +55,10 @@
   transition: transform 0.5s ease;
 }
 
-.yml-card:hover .yml-thumb img { transform: scale(1.035); }
+/* Mouse only: on a phone a hover effect can eat the first tap. */
+@media (hover: hover) {
+  .yml-card:hover .yml-thumb img { transform: scale(1.035); }
+}
 
 /* The NEW / SOLD OUT corner tag is shared with the shop grid (.snew, shop.css). */
 
