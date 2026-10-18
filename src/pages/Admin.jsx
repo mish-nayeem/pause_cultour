@@ -14,8 +14,6 @@ import {
   customerIndex,
   lookupCustomer,
   fetchReturns,
-  createReturn,
-  resolveReturn,
   fetchAbandonedCarts,
   fetchBlockedAttempts,
   customerList,
@@ -77,7 +75,8 @@ import {
   IconChat,
   IconImage,
 } from '../components/Icons.jsx'
-import { SupportRequests, SupportPages, SupportPortal } from '../components/SupportManager.jsx'
+import { SupportPages, SupportPortal } from '../components/SupportManager.jsx'
+import ReturnsManager from '../components/ReturnsManager.jsx'
 import { isNewRequest } from '../lib/support.js'
 import NoticeCenter from '../components/NoticeCenter.jsx'
 import './admin.css'
@@ -126,7 +125,6 @@ const OVERVIEW_SUBS = [
 const ORDERS_SUBS = [
   { key: 'list', label: 'Order list' },
   { key: 'bkash', label: 'bKash check' },
-  { key: 'returns', label: 'Refunds & returns' },
   { key: 'abandoned', label: 'Abandoned cart' },
   { key: 'security', label: 'Security' },
 ]
@@ -158,7 +156,7 @@ const MARKETING_SUBS = [
 ]
 
 const SUPPORT_SUBS = [
-  { key: 'requests', label: 'Refund & exchange requests' },
+  { key: 'requests', label: 'Returns & exchanges' },
   { key: 'pages', label: 'Support pages' },
   { key: 'portal', label: 'Return portal' },
 ]
@@ -427,8 +425,6 @@ export default function Admin() {
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
   const [blockedAttempts, setBlockedAttempts] = useState([])
-  const [returnForm, setReturnForm] = useState({ orderId: '', reason: '' })
-  const [returnBusy, setReturnBusy] = useState(null)
   const [adSpendDraft, setAdSpendDraft] = useState({ channel: '', spend: '', revenue: '' })
   const [emailDraft, setEmailDraft] = useState({ campaign: '', open_rate: '', click_rate: '' })
   const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
@@ -668,39 +664,6 @@ export default function Admin() {
     await sendStatusUpdate(orderId, status)
 
     setSavingId(null)
-  }
-
-  async function handleAddReturn(e) {
-    e.preventDefault()
-    if (!returnForm.orderId || !returnForm.reason.trim()) return
-
-    setReturnBusy('new')
-    const { error } = await createReturn({
-      orderId: returnForm.orderId,
-      reason: returnForm.reason.trim(),
-    })
-    setReturnBusy(null)
-
-    if (error) {
-      setLoadError("Couldn't log that return. Try again.")
-      return
-    }
-
-    setReturnForm({ orderId: '', reason: '' })
-    reload()
-  }
-
-  async function handleResolveReturn(id) {
-    setReturnBusy(id)
-    const { error } = await resolveReturn(id)
-    setReturnBusy(null)
-
-    if (error) {
-      setLoadError("Couldn't update that return. Try again.")
-      return
-    }
-
-    reload()
   }
 
   // One handler for all four Marketing tables — same shape every time: add a
@@ -1276,15 +1239,40 @@ export default function Admin() {
                     <div className="tdetail">
                       <div className="tdetail-col">
                         <div className="dlabel mono">ITEMS</div>
-                        {(o.order_items || []).map((it) => (
-                          <div className="ditem" key={it.id}>
-                            <span>{it.product_name} · {it.size} × {it.qty}</span>
-                            <span className="mono">{taka(it.price * it.qty)}</span>
-                          </div>
-                        ))}
+                        {(o.order_items || []).map((it) => {
+                          const ordered = it.ordered_qty ?? it.qty
+                          return (
+                            <div className="ditem" key={it.id}>
+                              <span>
+                                {it.product_name} · {it.size} × {ordered}
+                                {ordered !== it.qty && (
+                                  <span className="mono ditem-back"> · {ordered - it.qty} returned</span>
+                                )}
+                              </span>
+                              <span className="mono">{taka(it.price * ordered)}</span>
+                            </div>
+                          )
+                        })}
                         {(!o.order_items || o.order_items.length === 0) && (
                           <div className="mono dim">No line items recorded.</div>
                         )}
+                        {o.refunded > 0 && (
+                          <div className="ditem ditem-refund mono">
+                            <span>Refunded</span>
+                            <span>− {taka(o.refunded)}</span>
+                          </div>
+                        )}
+                        {/* What Support → Returns & exchanges did with this order. */}
+                        {returns
+                          .filter((r) => r.order_id === o.id && r.resolution && r.resolution.action !== 'reject')
+                          .map((r) => (
+                            <div className="ditem-history mono" key={r.id}>
+                              {r.resolution.action === 'exchange'
+                                ? `Exchanged ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.from_size} → ${x.to_size} ×${x.qty}`).join(', ')}`
+                                : `Refunded ${taka(r.resolution.refund)} · ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.size} ×${x.qty}`).join(', ')} back in stock`}
+                              {' · '}{new Date(r.resolution.at || r.processed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                            </div>
+                          ))}
 
                         {o.utm_source && (
                           <>
@@ -1441,79 +1429,6 @@ export default function Admin() {
           </section>
           )}
 
-          {ordersSub === 'returns' && (
-            <>
-              <form className="pform" onSubmit={handleAddReturn}>
-                <div className="pform-head">
-                  <h3 className="display">Log a return</h3>
-                </div>
-                <div className="pf-note">
-                  For a refund or return raised over DM or a call — this doesn't
-                  touch stock or the order itself, it's just a record to track
-                  down to resolved.
-                </div>
-                <div className="pf-grid">
-                  <label className="pf-field">
-                    <span className="mono">ORDER</span>
-                    <select
-                      value={returnForm.orderId}
-                      onChange={(e) => setReturnForm({ ...returnForm, orderId: e.target.value })}
-                    >
-                      <option value="">Select order</option>
-                      {orders.map((o) => (
-                        <option key={o.id} value={o.id}>{o.id} — {o.customer_name}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">REASON</span>
-                    <input
-                      value={returnForm.reason}
-                      onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
-                      placeholder="Wrong size, changed mind, damaged…"
-                    />
-                  </label>
-                </div>
-                <button type="submit" className="mof-submit mono" disabled={returnBusy === 'new'}>
-                  {returnBusy === 'new' ? 'Logging…' : 'Log return'}
-                </button>
-              </form>
-
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
-                  REFUNDS &amp; RETURNS
-                </div>
-                {returns.length === 0 && <div className="empty mono">No returns logged.</div>}
-                {returns.map((r) => (
-                  <div className="mini-row" key={r.id}>
-                    <div>
-                      <div className="mini-id mono">{r.order_id}</div>
-                      <div className="mini-name">{r.reason}</div>
-                      {r.orders?.customer_name && (
-                        <div className="mono dim" style={{ marginTop: '3px', fontSize: '11px' }}>
-                          {r.orders.customer_name}
-                        </div>
-                      )}
-                    </div>
-                    <div className="mini-right">
-                      <span className={`pill ${r.status === 'open' ? 'pending' : 'delivered'} mono`}>
-                        {r.status}
-                      </span>
-                      {r.status === 'open' && (
-                        <button
-                          className="courier-btn ghost mono"
-                          disabled={returnBusy === r.id}
-                          onClick={() => handleResolveReturn(r.id)}
-                        >
-                          {returnBusy === r.id ? 'Saving…' : 'Mark resolved'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </section>
-            </>
-          )}
 
           {ordersSub === 'abandoned' && (
             <section className="panel">
@@ -2176,8 +2091,10 @@ export default function Admin() {
               ))}
             </div>
             {supportSub === 'requests' && (
-              <SupportRequests
+              <ReturnsManager
                 requests={returns}
+                orders={orders}
+                products={products}
                 onReload={reload}
                 onSeen={(ids) => {
                   const at = new Date().toISOString()

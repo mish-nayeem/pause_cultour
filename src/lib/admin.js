@@ -62,6 +62,32 @@ export async function getSession() {
 
 // ---------- Orders ----------
 
+// Pieces refunded from Support → Returns & exchanges no longer count as sold,
+// and the taka given back no longer counts as revenue. Every figure in the
+// panel reads an item's `qty` and an order's `subtotal` / `total`, so they're
+// netted here once; what was originally ordered and paid is kept alongside
+// (ordered_qty, paid_subtotal, paid_total) for the order's own details.
+function netOfRefunds(o) {
+  const refunded = Number(o.refunded_amount) || 0
+  let changed = refunded > 0
+  const items = (o.order_items || []).map((it) => {
+    const back = Number(it.returned_qty) || 0
+    if (!back) return it
+    changed = true
+    return { ...it, ordered_qty: it.qty, qty: Math.max(0, Number(it.qty) - back) }
+  })
+  if (!changed) return o
+  return {
+    ...o,
+    order_items: items,
+    refunded,
+    paid_subtotal: o.subtotal,
+    paid_total: o.total,
+    subtotal: Number(o.subtotal) - refunded,
+    total: o.total == null ? o.total : Number(o.total) - refunded,
+  }
+}
+
 export async function fetchOrders() {
   const { data, error } = await supabase
     .from('orders')
@@ -72,7 +98,7 @@ export async function fetchOrders() {
     console.error('[Supabase] fetchOrders failed:', error.message)
     return { orders: [], error }
   }
-  return { orders: data, error: null }
+  return { orders: data.map(netOfRefunds), error: null }
 }
 
 // Routed through update_order_status rather than a plain table update — it's
@@ -126,10 +152,15 @@ export async function fetchReturns() {
   return { returns: data, error: null }
 }
 
-export async function createReturn({ orderId, reason }) {
+// A request logged by hand, for one raised over a DM or a call — completed
+// from Support → Returns & exchanges the same way as one from the portal.
+export async function createReturn({ orderId, reason, kind = 'exchange' }) {
   const { error } = await supabase.from('order_returns').insert({
     order_id: orderId,
     reason,
+    kind,
+    source: 'admin',
+    seen_at: new Date().toISOString(),
   })
 
   if (error) {
@@ -139,17 +170,22 @@ export async function createReturn({ orderId, reason }) {
   return { error: null }
 }
 
-export async function resolveReturn(id, note) {
-  const { error } = await supabase
-    .from('order_returns')
-    .update({ status: 'resolved', note: note || null, resolved_at: new Date().toISOString() })
-    .eq('id', id)
-
+// Completes a request: an exchange swaps the sizes in stock, a refund puts
+// the pieces back and takes the money off the order's revenue, a reject
+// just closes it. See supabase-migration-returns-processing.sql.
+export async function processReturn({ id, action, items = [], refund = 0, note = '' }) {
+  const { data, error } = await supabase.rpc('admin_process_return', {
+    p_return_id: id,
+    p_action: action,
+    p_items: items,
+    p_refund: refund,
+    p_note: note,
+  })
   if (error) {
-    console.error('[Supabase] resolveReturn failed:', error.message)
-    return { error }
+    console.error('[Supabase] processReturn failed:', error.message)
+    return { result: null, error }
   }
-  return { error: null }
+  return { result: data, error: null }
 }
 
 // ---------- Abandoned carts ----------
