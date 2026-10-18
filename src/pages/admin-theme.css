@@ -533,3 +533,39 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
 }
 
 .admin .wa-btn:hover { background: #1fa855; color: #fff; }
+
+/* ---------- Lists: every row its own bordered box ----------
+   Plain rows with a hairline between them ran together. Each row in the
+   panel's lists is now a small card with a border in the theme's colour —
+   blue on the blue theme, green on the green one, white on the dark one
+   (--order-edge, the order cards' border, admin.css). */
+.admin .main :is(
+  .mini-row,
+  .trow.prow,
+  .cp-row:not(.cp-th),
+  .bk-row:not(.bk-th),
+  .cm-row,
+  .am-row,
+  .hm-row,
+  .lk-item,
+  .au-row:not(.au-head),
+  .wish-group,
+  .low-row
+) {
+  border: 1.5px solid var(--order-edge);
+  border-radius: 12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  margin-bottom: 8px;
+}
+
+.admin .main :is(.mini-row, .trow.prow, .cp-row:not(.cp-th), .bk-row:not(.bk-th), .cm-row, .am-row, .hm-row, .au-row:not(.au-head), .low-row):last-child {
+  border-bottom: 1.5px solid var(--order-edge);
+}
+
+.admin .main .bk-th,
+.admin .main .cp-th,
+.admin .main .au-head { border: none; padding-left: 12px; padding-right: 12px; }
+
+.admin .main .wish-group .low-row { border: none; margin-bottom: 0; padding-left: 0; padding-right: 0; }
+.admin .main .trow.prow:hover { background: color-mix(in srgb, var(--order-edge) 6%, transparent); }
