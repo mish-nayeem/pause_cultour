@@ -9,6 +9,7 @@ import { saveAbandonedCart, markCartConverted } from '../lib/abandonedCart.js'
 import { BKASH_NUMBER, DISTRICTS, quote, isTrxId, cleanTrxId } from '../lib/delivery.js'
 import { checkCoupon, couponMessage } from '../lib/coupons.js'
 import usePageMeta from '../lib/usePageMeta.js'
+import { imgUrl } from '../lib/images.js'
 import { Sentry } from '../lib/sentry.js'
 import './checkout.css'
 
@@ -438,9 +439,16 @@ export default function Checkout() {
 
           <div className="order-summary">
             <div className="label mono" style={{ marginBottom: '18px' }}>ORDER SUMMARY</div>
+            {/* Each piece with a small photo, so the customer can see it's the
+                one they picked before placing the order. */}
             {items.map((item) => (
               <div className="summary-line mono" key={`${item.id}-${item.size}`}>
-                <span>{item.name} × {item.qty} <span className="steel">({item.size})</span></span>
+                <span className="summary-item">
+                  <span className="summary-thumb">
+                    {item.image && <img src={imgUrl(item.image, { w: 120 })} alt="" loading="lazy" />}
+                  </span>
+                  <span>{item.name} × {item.qty} <span className="steel">({item.size})</span></span>
+                </span>
                 <span>৳ {(item.price * item.qty).toLocaleString()}</span>
               </div>
             ))}

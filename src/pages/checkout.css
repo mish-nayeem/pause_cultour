@@ -116,10 +116,26 @@
 .summary-line {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   font-size: 12px;
   padding: 8px 0;
   border-bottom: 1px solid var(--steel-line);
 }
+
+.summary-item { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.summary-line > span:last-child { flex: none; white-space: nowrap; }
+
+.summary-thumb {
+  flex: none;
+  width: 44px;
+  height: 55px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--paper-dim);
+}
+
+.summary-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .summary-line .steel { color: var(--steel); }
 
 .summary-row {
