@@ -1844,3 +1844,29 @@ create policy "Admin removes from the mailing list"
   on subscribers for delete
   to authenticated
   using (public.is_admin());
+
+
+-- ---------------------------------------------------------------------------
+-- Admin notifications
+-- ---------------------------------------------------------------------------
+-- Admin → Overview → Notifications: which new orders and refund / exchange
+-- requests the admin has checked or deleted from the list. One row per
+-- notification ('order:<id>', 'return:<id>'), plus '__since' (when the list
+-- starts) and '__seen' (when it was last opened). See
+-- supabase-migration-admin-notices.sql.
+
+create table if not exists admin_notice_state (
+  key text primary key,
+  read_at timestamptz,
+  dismissed_at timestamptz,
+  created_at timestamptz default now()
+);
+
+alter table admin_notice_state enable row level security;
+
+drop policy if exists "Signed-in admins manage notice state" on admin_notice_state;
+create policy "Signed-in admins manage notice state"
+  on admin_notice_state for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
