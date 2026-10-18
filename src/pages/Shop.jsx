@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
-import { fetchProducts, queueOrder } from '../lib/products.js'
+import { fetchProducts, queueOrder, oneColourEach } from '../lib/products.js'
 import { CardPrice, SaleBadge } from '../components/SalePrice.jsx'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
@@ -71,17 +71,21 @@ export default function Shop() {
   )
 
   // A size picked: products cut in that size. With sold-out hidden as well,
-  // only the ones that still have that size to buy.
+  // only the ones that still have that size to buy. Then one card per piece:
+  // its other colours are on its product page.
   const shown = useMemo(
     () =>
-      inView.filter((p) => {
-        if (sizeFilter) {
-          if (!(p.sizes || []).includes(sizeFilter)) return false
-          if (hideSoldOut && isSoldOut(p, sizeFilter)) return false
-          return true
-        }
-        return !(hideSoldOut && isAllSoldOut(p))
-      }),
+      oneColourEach(
+        inView.filter((p) => {
+          if (sizeFilter) {
+            if (!(p.sizes || []).includes(sizeFilter)) return false
+            if (hideSoldOut && isSoldOut(p, sizeFilter)) return false
+            return true
+          }
+          return !(hideSoldOut && isAllSoldOut(p))
+        }),
+        (p) => (sizeFilter ? !isSoldOut(p, sizeFilter) : !isAllSoldOut(p))
+      ),
     [inView, sizeFilter, hideSoldOut]
   )
 
