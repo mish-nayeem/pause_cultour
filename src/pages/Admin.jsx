@@ -1431,7 +1431,7 @@ export default function Admin() {
                   >
                     <div className="ocard-top">
                       <div className="ocard-name">
-                        {o.customer_name}
+                        <span className="ocard-name-text">{o.customer_name}</span>
                         {risk.level === 'risk' && (
                           <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
                         )}
