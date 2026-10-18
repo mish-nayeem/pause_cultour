@@ -120,3 +120,17 @@ export function roomLeft(product, size, cartItems) {
     .reduce((sum, i) => sum + i.qty, 0)
   return Math.max(0, remaining - inCart)
 }
+
+// The red star on a product's photo in the admin: a size is down to its last
+// piece or two (fewer than RESTOCK_STAR_BELOW) but not gone yet. A size at 0
+// is already shown as sold out, so it doesn't raise the star.
+export const RESTOCK_STAR_BELOW = 2
+
+export function starSizes(product) {
+  const map = stockMap(product)
+  if (!map) return []
+  return sizesOf(product).filter((s) => {
+    const n = map[s] ?? 0
+    return n > 0 && n < RESTOCK_STAR_BELOW
+  })
+}
