@@ -1,0 +1,99 @@
+.au-who { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+
+.au-who button {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  color: var(--steel);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.au-who button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.au-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.au-filters :is(select, input) {
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid var(--steel-line);
+  border-radius: var(--r-ctl, 8px);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.au-filters select { flex: 1 1 240px; }
+.au-filters input { flex: 2 1 240px; }
+
+.au-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+
+.au-count { color: var(--steel); margin-right: 4px; }
+
+.au-actions button {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  color: var(--ink);
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.au-actions button:hover { border-color: var(--ink); }
+.au-note { color: var(--cobalt); }
+
+.au-table { border-top: 1px solid var(--steel-line); }
+
+.au-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1.2fr) minmax(0, 1.4fr) 140px 100px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--steel-line);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.au-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--cobalt); cursor: pointer; }
+.au-head { font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); cursor: default; }
+.au-row.on { background: rgba(127, 127, 127, 0.06); }
+
+.au-person { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.au-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.au-tag {
+  flex: none;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--cobalt);
+  border: 1px solid var(--cobalt);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+.au-contact { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 12px; }
+.au-contact span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .au-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'box person last'
+      'box contact orders';
+    gap: 4px 10px;
+  }
+  .au-row > :nth-child(1) { grid-area: box; }
+  .au-row > :nth-child(2) { grid-area: person; }
+  .au-row > :nth-child(3) { grid-area: contact; }
+  .au-row > :nth-child(4) { grid-area: orders; text-align: right; font-size: 12px; }
+  .au-row > :nth-child(5) { grid-area: last; text-align: right; font-size: 11px; }
+  .au-head > :nth-child(n + 3) { display: none; }
+}

@@ -49,6 +49,7 @@ import DropReport from '../components/DropReport.jsx'
 import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
+import AudienceManager from '../components/AudienceManager.jsx'
 import ManualOrderForm from '../components/ManualOrderForm.jsx'
 import useDragList from '../lib/useDragList.js'
 import useAdminHistory from '../lib/useAdminHistory.js'
@@ -144,6 +145,7 @@ const CUSTOMERS_SUBS = [
 ]
 
 const MARKETING_SUBS = [
+  { key: 'audience', label: 'Customers & emails' },
   { key: 'adspend', label: 'Ad spend / ROAS' },
   { key: 'email', label: 'Email campaigns' },
   { key: 'social', label: 'Social tracking' },
@@ -426,7 +428,7 @@ export default function Admin() {
   const [productsSub, setProductsSub] = useState('catalog')
   const [customersSub, setCustomersSub] = useState('list')
   const [allReviews, setAllReviews] = useState([])
-  const [marketingSub, setMarketingSub] = useState('adspend')
+  const [marketingSub, setMarketingSub] = useState('audience')
   const [adSpend, setAdSpend] = useState([])
   const [emailCampaigns, setEmailCampaigns] = useState([])
   const [socialStats, setSocialStats] = useState([])
@@ -2065,6 +2067,8 @@ export default function Admin() {
           {marketingSub === 'coupons' && <CouponManager orders={orders} />}
 
           {marketingSub === 'links' && <LinkGenerator products={products} />}
+
+          {marketingSub === 'audience' && <AudienceManager orders={orders} products={products} />}
           </>
         )}
 
