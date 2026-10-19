@@ -38,3 +38,14 @@ export async function fetchTicker() {
   const lines = Array.isArray(value) ? value.map((l) => String(l).trim()).filter(Boolean) : []
   return lines.length ? lines : DEFAULT_TICKER
 }
+
+// The homepage hero's button and its optional drop countdown — Admin →
+// Homepage. Stored as site_settings 'hero_button' and 'hero_countdown'.
+export const DEFAULT_HERO_BUTTON = { label: 'VIEW SHOP', link: '/shop' }
+
+export async function fetchHeroExtras() {
+  const [b, c] = await Promise.all([fetchSetting('hero_button'), fetchSetting('hero_countdown')])
+  const button = b.value && typeof b.value === 'object' && b.value.label ? { ...DEFAULT_HERO_BUTTON, ...b.value } : DEFAULT_HERO_BUTTON
+  const countdown = c.value && typeof c.value === 'object' && c.value.at ? c.value : null
+  return { button, countdown, error: b.error || c.error }
+}

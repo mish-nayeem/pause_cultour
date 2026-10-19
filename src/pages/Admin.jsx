@@ -1925,12 +1925,7 @@ export default function Admin() {
           )}
           </>
         )}
-        {tab === 'hero' && (
-          <>
-            <HeroManager />
-            <TickerManager />
-          </>
-        )}
+        {tab === 'hero' && <HeroManager drops={collectionNames} ticker={<TickerManager />} />}
         {!loading && tab === 'menu' && (
           <>
             <CategoryManager menu="shop" products={products} />
