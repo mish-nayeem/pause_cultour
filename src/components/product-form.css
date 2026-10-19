@@ -693,3 +693,14 @@
   .pf-secs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .pf-sec { padding: 12px 13px 14px; }
 }
+
+/* Size chart: its columns are the sizes ticked, shown as a line. */
+.pf-chart-cols {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-bottom: 10px;
+}
