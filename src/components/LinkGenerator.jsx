@@ -26,7 +26,7 @@ const SOURCES = [
 // product instead of a guess, which is what the "New order" form's
 // screenshot/message extraction matches against.
 function dmTemplate(product) {
-  return `Hi! To confirm your order for ${product.name} — ${product.variant}, please reply with:
+  return `Hi! To confirm your order for ${product.name}${product.variant ? ` — ${product.variant}` : ''}, please reply with:
 
 Name:
 Phone number:
@@ -179,7 +179,7 @@ export default function LinkGenerator({ products }) {
       {selectedProduct && (
         <div className="linkgen-template">
           <div className="linkgen-template-head mono">
-            <span>DM TEMPLATE — {selectedProduct.name} — {selectedProduct.variant}</span>
+            <span>DM TEMPLATE — {selectedProduct.name}{selectedProduct.variant ? ` — ${selectedProduct.variant}` : ''}</span>
             <button type="button" className="linkgen-copy mono" onClick={copyTemplate}>
               {templateCopied ? 'COPIED' : 'COPY'}
             </button>

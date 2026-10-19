@@ -835,28 +835,6 @@ export default function Admin() {
     setMobileMenuOpen(false)
   }
 
-  // "+ Add another colour" on a product: a new product form with everything
-  // but the colour's name, photos and stock copied in. The two need the same
-  // colour group to show each other on the product page — a product that has
-  // none yet gets one (its name as a tag) saved first.
-  async function addColour(row) {
-    let source = row
-    if (!row.colour_group) {
-      const group = (row.name || row.id).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '') || row.id.toUpperCase()
-      const { error } = await supabase.from('products').update({ colour_group: group }).eq('id', row.id)
-      if (error) {
-        window.alert("Couldn't link the colours — try again.")
-        return
-      }
-      source = { ...row, colour_group: group }
-      setProducts((prev) => prev.map((p) => (p.id === row.id ? source : p)))
-    }
-    setCopyFrom(source)
-    setNewProductDrop('')
-    setNewProductLaunch('')
-    setEditing('new')
-  }
-
   // Every counter on the overview is a way into the orders behind it — the
   // click lands on the orders tab with that status already filtered.
   function openOrders(status) {
@@ -1540,7 +1518,6 @@ export default function Admin() {
             existing={editing === 'new' ? null : editing}
             copyFrom={editing === 'new' ? copyFrom : null}
             allProducts={products}
-            onAddColour={addColour}
             existingIds={products.map((p) => p.id)}
             categories={productCategories}
             drops={collectionNames}
@@ -1693,7 +1670,7 @@ export default function Admin() {
                     </span>
                     <div>
                       <div className="mini-name">{p.name}</div>
-                      <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.id} · {p.variant}</div>
+                      <div className="mini-id mono" style={{ marginTop: '3px' }}>{[p.id, p.variant].filter(Boolean).join(' · ')}</div>
                     </div>
                   </div>
                   <span className="stock-chips">
@@ -1766,7 +1743,7 @@ export default function Admin() {
               <div className="mini-row" key={m.id}>
                 <div>
                   <div className="mini-name">{m.name}</div>
-                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{m.id} · {m.variant}</div>
+                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{[m.id, m.variant].filter(Boolean).join(' · ')}</div>
                 </div>
                 <div className="mini-right">
                   <div className="mono">{m.margin.toFixed(0)}% margin</div>

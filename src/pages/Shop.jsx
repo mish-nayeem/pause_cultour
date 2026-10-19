@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
-import { fetchProducts, queueOrder, cardPhotos } from '../lib/products.js'
+import { fetchProducts, queueOrder, cardPhotos, oneColourEach } from '../lib/products.js'
 import { CardPrice, SaleBadge } from '../components/SalePrice.jsx'
 import { fetchMenuCategories } from '../lib/navCategories.js'
 import { isAllSoldOut, isSoldOut } from '../lib/stock.js'
@@ -71,18 +71,20 @@ export default function Shop() {
   )
 
   // A size picked: products cut in that size. With sold-out hidden as well,
-  // only the ones that still have that size to buy. Every colour is its own
-  // card; the product page links the colours of one piece together.
+  // only the ones that still have that size to buy. Then one card per piece —
+  // its lead colour; the product page shows the other colours.
   const shown = useMemo(
     () =>
-      inView.filter((p) => {
-        if (sizeFilter) {
-          if (!(p.sizes || []).includes(sizeFilter)) return false
-          if (hideSoldOut && isSoldOut(p, sizeFilter)) return false
-          return true
-        }
-        return !(hideSoldOut && isAllSoldOut(p))
-      }),
+      oneColourEach(
+        inView.filter((p) => {
+          if (sizeFilter) {
+            if (!(p.sizes || []).includes(sizeFilter)) return false
+            if (hideSoldOut && isSoldOut(p, sizeFilter)) return false
+            return true
+          }
+          return !(hideSoldOut && isAllSoldOut(p))
+        })
+      ),
     [inView, sizeFilter, hideSoldOut]
   )
 
@@ -206,7 +208,7 @@ export default function Shop() {
             >
               <div className="sthumb">
                 {/* Mouse resting on it: slides through its photos, then its other colours. */}
-                <CardPhoto images={cardPhotos(p, products)} alt={p.name} />
+                <CardPhoto images={cardPhotos(p)} alt={p.name} />
                 {/* Sold out takes the corner over NEW: green dot for new,
                     red for sold out. */}
                 {isAllSoldOut(p) ? (

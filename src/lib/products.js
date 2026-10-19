@@ -50,29 +50,28 @@ export function samePiece(a, b) {
   return Boolean(na) && na === (b.name || '').trim().toLowerCase()
 }
 
-// One card per piece: colours of the same piece (same colour group) show as
-// a single card — the first in the list's order that still has something
-// to buy, else the first. The others are picked on the product page.
+// One card per piece. The colours of a piece (same name) show as a single
+// card: its lead — the colour added first, with Add product — and the rest
+// are picked on the product page. If the lead has nothing left to buy and
+// another colour has, that one stands in for it.
 export function oneColourEach(list, inStock = () => true) {
-  const chosen = []
+  const made = (p) => new Date(p.createdAt ?? p.created_at ?? 0).getTime()
+  const pick = new Map()
   for (const p of list) {
-    const i = chosen.findIndex((c) => samePiece(c, p))
-    if (i === -1) chosen.push(p)
-    else if (!inStock(chosen[i]) && inStock(p)) chosen[i] = p
+    const key = (p.name || '').trim().toLowerCase() || `#${p.id}`
+    const cur = pick.get(key)
+    if (!cur) { pick.set(key, p); continue }
+    const better = inStock(p) !== inStock(cur) ? inStock(p) : made(p) < made(cur) || (made(p) === made(cur) && String(p.id) < String(cur.id))
+    if (better) pick.set(key, p)
   }
-  return list.filter((p) => chosen.includes(p))
+  const chosen = new Set(pick.values())
+  return list.filter((p) => chosen.has(p))
 }
 
-// The photos a card slides through on hover: the product's own photos, then
-// every photo of each of its other colours (same colour group), so the
-// whole range shows without opening the product.
-export function cardPhotos(product, all) {
-  const own = (product.images || []).filter(Boolean)
-  const others = all
-    .filter((p) => p.id !== product.id && samePiece(product, p))
-    .flatMap((p) => p.images || [])
-    .filter((src) => src && !own.includes(src))
-  return [...own, ...new Set(others)]
+// The photos a card slides through on hover: the product's own, so the
+// card shows that colour only — the other colours are on the product page.
+export function cardPhotos(product) {
+  return (product.images || []).filter(Boolean)
 }
 
 // Admin: saves the ALL page order — ids top to bottom.

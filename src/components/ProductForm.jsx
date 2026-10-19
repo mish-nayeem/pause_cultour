@@ -8,6 +8,7 @@ import { stockForSizes, stockMap } from '../lib/stock.js'
 import { sendRestockAlert } from '../lib/email.js'
 import { parseDetails, serializeDetails, mergeLabels, rememberedLabels, rememberLabels } from '../lib/details.js'
 import InfoTip from './InfoTip.jsx'
+import QuickColours from './QuickColours.jsx'
 import './product-form.css'
 
 const BLANK = {
@@ -133,7 +134,7 @@ function asNewColour(row, ids) {
 // it already has, else the group a same-named product already uses, else a
 // tag made from the name when another product shares it. `relink` lists
 // same-named products with no group yet, to be given this one.
-function tagOf(name) {
+export function tagOf(name) {
   return name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
@@ -185,7 +186,7 @@ function Box({ title, tip, wide = false, children }) {
   )
 }
 
-export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel, onAddColour }) {
+export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
   const [p, setP] = useState(() => {
@@ -211,6 +212,9 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
   const fileRef = useRef(null)
+  // Set once a new product is saved, or from + Add another colour: the
+  // piece whose other colours are being added (QuickColours).
+  const [quickBase, setQuickBase] = useState(null)
 
   // The other colours this product will be shown with (same name), for the
   // OTHER COLOURS line.
@@ -387,8 +391,8 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   function validate() {
     if (!p.id.trim()) return 'Product ID is missing — reload the page and try again'
     if (!p.name.trim()) return 'Name is required'
-    if (!p.variant.trim()) return copyFrom ? "Give this colour a name (Variant / colour), e.g. Blue" : 'Variant (colour) is required'
-    if (copyFrom && p.variant.trim().toLowerCase() === (copyFrom.variant || '').trim().toLowerCase()) {
+    // The colour's name is optional — colours of a piece link by its name.
+    if (copyFrom && p.variant.trim() && p.variant.trim().toLowerCase() === (copyFrom.variant || '').trim().toLowerCase()) {
       return `${copyFrom.name} already comes in ${copyFrom.variant} — give this colour its own name`
     }
     if (!p.price || Number(p.price) <= 0) return 'Enter a price above 0'
@@ -456,6 +460,11 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
 
     setSaving(false)
 
+    // A new product goes straight on to its other colours, if it has any.
+    if (isNewRecord) {
+      setQuickBase({ ...p, id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) })
+      return
+    }
     onDone()
   }
 
@@ -472,6 +481,10 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     onDone()
   }
 
+  if (quickBase) {
+    return <QuickColours base={quickBase} existingIds={existingIds} onDone={onDone} />
+  }
+
   return (
     <div className="pform">
       <div className="pform-head">
@@ -481,8 +494,8 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         <div className="pf-head-actions">
           {/* Same piece, another colour: a new product with all of this one's
               details already filled in, linked to it on the product page. */}
-          {!isNewRecord && onAddColour && (
-            <button type="button" className="pf-add-colour mono" onClick={() => onAddColour(existing)}>
+          {!isNewRecord && (
+            <button type="button" className="pf-add-colour mono" onClick={() => setQuickBase(fromRow(existing))}>
               + Add another colour
             </button>
           )}
@@ -588,7 +601,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
           </label>
 
           <label className="pf-field">
-            <FieldLabel>VARIANT / COLOUR</FieldLabel>
+            <FieldLabel tip="Optional. Shown under the colour photos on the product page, e.g. Bone White.">COLOUR NAME (OPTIONAL)</FieldLabel>
             <input value={p.variant} onChange={(e) => set('variant', e.target.value)} placeholder="Bone White" />
           </label>
 
