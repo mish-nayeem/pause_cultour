@@ -226,7 +226,7 @@ export default function Shop() {
                   {isAllSoldOut(p) && <span className="card-notify mono">NOTIFY ME</span>}
                 </div>
                 <div className="smeta mono">
-                  <span>{p.variant}</span>
+                  <span className="svariant">{p.variant}</span>
                   <CardPrice product={p} />
                 </div>
               </div>
