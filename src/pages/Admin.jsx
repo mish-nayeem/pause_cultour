@@ -1068,7 +1068,8 @@ export default function Admin() {
           <span className="mono side-sub">ADMIN</span>
         </div>
 
-        <nav className="side-nav mono">
+        {/* data-lenis-prevent: the wheel scrolls the menu, not the page, while the pointer is over it. */}
+        <nav className="side-nav mono" data-lenis-prevent>
           {navItems.map((item) => (
             <button
               key={item.key}
