@@ -57,12 +57,12 @@
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(237, 234, 225, 0.25) transparent;
+  /* No scrollbar line: the wheel or a finger scrolls it with the pointer
+     over it, the way the menu reads best. */
+  scrollbar-width: none;
 }
 
-.side-nav::-webkit-scrollbar { width: 6px; }
-.side-nav::-webkit-scrollbar-thumb { background: rgba(237, 234, 225, 0.25); border-radius: 3px; }
+.side-nav::-webkit-scrollbar { display: none; }
 
 .side-nav button {
   background: none;
