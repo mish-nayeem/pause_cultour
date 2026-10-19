@@ -624,17 +624,12 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
           {/* No colour-group box to fill in: products with the same name are
               colours of one piece and link up by themselves when saved. */}
           <div className="pf-field">
-            <FieldLabel tip="Products with the same name are shown as colours of one piece: each colour its own card in the shop, and a colour picker on the product page. Use + Add another colour, or give another product the same name.">
+            <FieldLabel tip="Products with the same name are shown as colours of one piece: each colour its own card in the shop, and a colour picker on the product page. Use + Add another colour at the top, or give another product the same name.">
               OTHER COLOURS
             </FieldLabel>
             <div className="pf-colours mono">
               {otherColours.length ? otherColours.map((c) => c.variant || c.id).join(' · ') : 'None yet'}
             </div>
-            {!isNewRecord && onAddColour && (
-              <button type="button" className="pf-add-colour pf-add-colour-inline mono" onClick={() => onAddColour(existing)}>
-                + Add another colour
-              </button>
-            )}
           </div>
         </Box>
 
