@@ -8,6 +8,30 @@ const STEP_MS = 2200
 // How far a finger has to travel sideways for a swipe to change the photo.
 const SWIPE_PX = 30
 
+// A photo wider than the card (a landscape shot in a portrait card) would
+// lose its sides to the crop — shoes and chair cut off. Those show whole
+// instead, over a blurred, filled copy of themselves so the card has no
+// empty bars. Portrait photos fill the card as before.
+function FitPhoto({ src, alt = '', loading, shimmer = false }) {
+  const box = useRef(null)
+  const [wide, setWide] = useState(false)
+  function check(img) {
+    if (img?.naturalWidth && img.naturalWidth / img.naturalHeight > 0.9) setWide(true)
+  }
+  // Already in the cache: it may have loaded before onLoad was listening.
+  useEffect(() => {
+    const img = box.current?.querySelector('img.card-fit-main')
+    if (img?.complete) check(img)
+  }, [src])
+  const Img = shimmer ? ShimmerImage : 'img'
+  return (
+    <span className={`card-fit ${wide ? 'wide' : ''}`} ref={box}>
+      {wide && <img className="card-fit-bg" src={src} alt="" aria-hidden="true" />}
+      <Img className="card-fit-main" src={src} alt={alt} loading={loading} onLoad={(e) => check(e.currentTarget)} />
+    </span>
+  )
+}
+
 // A shop card's photos. Resting the mouse pointer on the photo slides
 // through the product's other photos one by one; moving off slides back to
 // the first. On a phone, swiping the photo left or right moves through them
@@ -141,7 +165,7 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
   }, [count])
 
   if (count < 2) {
-    return <ShimmerImage src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
+    return <FitPhoto shimmer src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
   }
 
   return (
@@ -152,12 +176,12 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
         style={{ transform: `translateX(calc(${-index * 100}% + ${drag}px))` }}
         onTransitionEnd={landed}
       >
-        <ShimmerImage src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
+        <FitPhoto shimmer src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
         {list.slice(1).map((src) =>
-          woken ? <img key={src} src={imgUrl(src, { w: width })} alt="" /> : <span key={src} className="card-track-wait" />
+          woken ? <FitPhoto key={src} src={imgUrl(src, { w: width })} /> : <span key={src} className="card-track-wait" />
         )}
         {/* The copy of the first photo the circle slides onto. */}
-        {woken ? <img src={imgUrl(list[0], { w: width })} alt="" /> : <span className="card-track-wait" />}
+        {woken ? <FitPhoto src={imgUrl(list[0], { w: width })} /> : <span className="card-track-wait" />}
       </span>
       <span className="card-dots" aria-hidden="true">
         {list.map((src, i) => <i key={src} className={i === index % count ? 'on' : ''} />)}
