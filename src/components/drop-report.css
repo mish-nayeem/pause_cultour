@@ -165,3 +165,24 @@
 .dr-pnums.lv-out strong { border-color: color-mix(in srgb, #F0457A 45%, transparent); }
 
 .dr-items-solo { border: 1.5px solid #1FB57A; }
+
+/* ---------- PC: drops as cards in a grid, the list in a side sheet ---------- */
+
+.dr-list.dr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 12px;
+}
+
+.dr-grid .dr-card { background: var(--glass, transparent); box-shadow: var(--glass-shine, none); }
+.dr-grid .dr-card.open { border-width: 2px; border-left-width: 4px; }
+.dr-grid .dr-head { height: 100%; display: flex; flex-direction: column; }
+.dr-grid .dr-title { flex-direction: column; align-items: flex-start; gap: 2px; }
+.dr-grid .dr-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.dr-grid .dr-nums { margin-top: auto; padding-top: 14px; }
+.dr-grid .dr-num strong { font-size: 22px; }
+.dr-grid .dr-num span { white-space: nowrap; font-size: 9.5px; }
+
+.osheet-head.dr-sheet-head { border-bottom: 3px solid var(--acc); }
+.dr-sheet-list { padding-bottom: 4px; }
+.dr-sheet-list .dr-items { border-top: none; padding: 0; }

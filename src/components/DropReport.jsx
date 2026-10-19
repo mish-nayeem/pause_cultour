@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { imgUrl } from '../lib/images.js'
 import { dropKey } from '../lib/lookbook.js'
 import { totalStock, starSizes } from '../lib/stock.js'
@@ -22,6 +22,20 @@ function levelOf(left) {
   return 'ok'
 }
 
+// A PC gets the drops as cards in a grid and the list in a sheet from the
+// side, like Orders; a phone keeps them one under another, opening in place.
+function useIsPc() {
+  const query = '(min-width: 861px)'
+  const [pc, setPc] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setPc(m.matches)
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [])
+  return pc
+}
+
 // Products → Stock & sales. Everything in one place: how many products, how
 // many pieces are left and what they're worth, and what has sold — then the
 // same drop by drop. Tap "pieces in stock" or a drop to see which products
@@ -30,6 +44,7 @@ function levelOf(left) {
 // its pieces have already left the stock.
 export default function DropReport({ products, orders }) {
   const [open, setOpen] = useState(null) // a drop's name | 'all' | null
+  const pc = useIsPc()
 
   const { totals, drops } = useMemo(() => {
     // Sold per product, from every order that wasn't cancelled.
@@ -119,7 +134,7 @@ export default function DropReport({ products, orders }) {
         >
           <span className="mono">PIECES IN STOCK</span>
           <strong>{totals.left}</strong>
-          <em className="mono">{open === 'all' ? 'Hide list ↑' : 'See which ↓'}</em>
+          <em className="mono">{pc ? 'See which →' : open === 'all' ? 'Hide list ↑' : 'See which ↓'}</em>
         </button>
         <div className="dr-total t-amber">
           <span className="mono">STOCK VALUE</span>
@@ -140,13 +155,13 @@ export default function DropReport({ products, orders }) {
         </div>
       )}
 
-      {open === 'all' && <LeftList items={remaining(allItems)} />}
+      {open === 'all' && !pc && <LeftList items={remaining(allItems)} />}
 
       <div className="dr-label mono">BY DROP</div>
 
       {drops.length === 0 && <div className="empty mono">No products yet.</div>}
 
-      <div className="dr-list">
+      <div className={`dr-list ${pc ? 'dr-grid' : ''}`}>
         {drops.map((d, i) => {
           const isOpen = open === d.name
           return (
@@ -177,15 +192,67 @@ export default function DropReport({ products, orders }) {
                   </div>
                 </div>
                 <div className="dr-bar" aria-hidden="true"><i style={{ width: `${d.pct}%` }} /></div>
-                <div className="dr-more mono">{isOpen ? 'Hide products ↑' : 'See what’s left ↓'}</div>
+                <div className="dr-more mono">{pc ? 'See what’s left →' : isOpen ? 'Hide products ↑' : 'See what’s left ↓'}</div>
               </button>
 
-              {isOpen && <LeftList items={remaining(d.items)} inCard />}
+              {isOpen && !pc && <LeftList items={remaining(d.items)} inCard />}
             </div>
           )
         })}
       </div>
+
+      {pc && open && (() => {
+        const i = drops.findIndex((d) => d.name === open)
+        const d = drops[i]
+        if (open !== 'all' && !d) return null
+        const items = remaining(open === 'all' ? allItems : d.items)
+        return (
+          <SideSheet onClose={() => setOpen(null)}>
+            <div className="osheet-head dr-sheet-head" style={{ '--acc': open === 'all' ? '#1FB57A' : d.name === NO_DROP ? '#8B8A82' : DROP_COLOURS[i % DROP_COLOURS.length] }}>
+              <div>
+                <div className="osheet-id mono">{open === 'all' ? 'EVERY DROP' : 'DROP'}</div>
+                <div className="osheet-name">{open === 'all' ? 'Pieces in stock' : d.name}</div>
+                <div className="osheet-when mono">
+                  {open === 'all'
+                    ? `${totals.left} pieces · ${taka(totals.stockValue)} at full price`
+                    : `${d.items.length} product${d.items.length === 1 ? '' : 's'} · ${d.sold} sold · ${d.left} left · ${d.pct}% sold through`}
+                </div>
+              </div>
+              <button type="button" className="osheet-close" onClick={() => setOpen(null)} aria-label="Close">✕</button>
+            </div>
+            <div className="osec dr-sheet-list">
+              <div className="osec-label mono">STILL IN STOCK · {items.length} PRODUCT{items.length === 1 ? '' : 'S'}</div>
+              <LeftList items={items} inCard />
+            </div>
+          </SideSheet>
+        )
+      })()}
     </section>
+  )
+}
+
+// The list, in a sheet from the right (PC only). Esc or a click outside closes it.
+function SideSheet({ onClose, children }) {
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') close.current()
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [])
+  return (
+    <div className="osheet-overlay" onClick={onClose}>
+      <aside className="osheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} data-lenis-prevent>
+        {children}
+      </aside>
+    </div>
   )
 }
 
