@@ -1,0 +1,56 @@
+/* The ⓘ and its note — see InfoTip.jsx. Colours from the admin theme. */
+
+.itip { position: relative; display: inline-flex; vertical-align: middle; }
+
+.itip-btn {
+  width: 17px;
+  height: 17px;
+  border-radius: 50% !important;
+  border: 1px solid color-mix(in srgb, var(--cobalt) 45%, transparent);
+  background: none;
+  color: var(--cobalt);
+  font: italic 700 10.5px/1 Georgia, serif;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+}
+
+.itip-btn.on,
+.itip-btn:hover { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
+
+.itip-pop {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 9px);
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+}
+
+.itip-pop::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: calc(var(--arrow, 16px) - 5px);
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+.itip-pop strong, .itip-pop b { color: inherit; font-weight: 700; }
+.itip-pop p { margin: 0 0 6px; }
+.itip-pop p:last-child { margin-bottom: 0; }

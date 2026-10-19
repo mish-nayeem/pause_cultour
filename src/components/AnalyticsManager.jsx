@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl } from '../lib/images.js'
+import InfoTip from './InfoTip.jsx'
 import './analytics-manager.css'
 
 const MIGRATION = 'has supabase-migration-analytics-v2.sql been run?'
@@ -187,6 +188,14 @@ export default function AnalyticsManager({ sub, orders, products }) {
             Last {r.label}
           </button>
         ))}
+        <span className="an-how mono">
+          How this works
+          <InfoTip label="How Analytics works">
+            <p>Every time someone opens a page on the shop, it's counted. One <b>visitor</b> is one browser visit — closing the tab and coming back later is a new visit. Your own admin browsing isn't counted.</p>
+            <p>Pick the range at the top (7, 30 or 90 days); every tab follows it. ↑/↓ compares with the same length of time just before.</p>
+            <p>Orders and sales come from your orders (cancelled ones left out); everything about visitors comes from page views.</p>
+          </InfoTip>
+        </span>
         {loading && <span className="an-loading">Loading…</span>}
       </div>
 
@@ -195,34 +204,34 @@ export default function AnalyticsManager({ sub, orders, products }) {
       {sub === 'summary' && (
         <>
           <div className="an-kpis">
-            <Kpi label="VISITORS" value={visitors.toLocaleString()} delta={change(visitors, data?.prev_visitors)} note="One per browser visit" />
-            <Kpi label="ORDERS" value={sales.orders} delta={change(sales.orders, sales.prevOrders)} note="Not counting cancelled" />
-            <Kpi label="CONVERSION" value={`${pct(sales.orders, visitors).toFixed(1)}%`} note="Orders ÷ visitors" />
-            <Kpi label="SALES" value={taka(sales.revenue)} delta={change(sales.revenue, sales.prevRevenue)} note="Orders placed in the range" />
-            <Kpi label="AVERAGE ORDER" value={taka(sales.orders ? sales.revenue / sales.orders : 0)} />
-            <Kpi label="PAGE VIEWS" value={(data?.views || 0).toLocaleString()} />
-            <Kpi label="PAGES PER VISIT" value={(visitors ? data.views / visitors : 0).toFixed(1)} />
-            <Kpi label="BOUNCE" value={`${pct(data?.bounced || 0, visitors).toFixed(0)}%`} note="Left after one page" />
+            <Kpi label="VISITORS" tip={'People who opened the shop in this range — one per browser visit. A visit ends when the tab is closed.'} value={visitors.toLocaleString()} delta={change(visitors, data?.prev_visitors)} note="One per browser visit" />
+            <Kpi label="ORDERS" tip={'Orders placed in this range, from the site and added by hand, not counting cancelled ones.'} value={sales.orders} delta={change(sales.orders, sales.prevOrders)} note="Not counting cancelled" />
+            <Kpi label="CONVERSION" tip={'Out of every 100 visitors, how many ordered. Most small shops sit between 1% and 3% — higher means the site turns visits into sales well.'} value={`${pct(sales.orders, visitors).toFixed(1)}%`} note="Orders ÷ visitors" />
+            <Kpi label="SALES" tip={'The total of those orders, delivery included, less refunds. Counted when the order is placed, so not-yet-delivered orders are in here too.'} value={taka(sales.revenue)} delta={change(sales.revenue, sales.prevRevenue)} note="Orders placed in the range" />
+            <Kpi label="AVERAGE ORDER" tip={'Sales ÷ orders — what one order is worth on average. Bundles or a free-delivery threshold push it up.'} value={taka(sales.orders ? sales.revenue / sales.orders : 0)} />
+            <Kpi label="PAGE VIEWS" tip={'Every page opened, by every visitor. One visitor looking at five products is five page views.'} value={(data?.views || 0).toLocaleString()} />
+            <Kpi label="PAGES PER VISIT" tip={'Page views ÷ visitors — how far people browse. Higher usually means they like what they see.'} value={(visitors ? data.views / visitors : 0).toFixed(1)} />
+            <Kpi label="BOUNCE" tip={"Visitors who opened one page and left. Lower is better; a high bounce on a link you posted means the page didn't match what they expected."} value={`${pct(data?.bounced || 0, visitors).toFixed(0)}%`} note="Left after one page" />
           </div>
 
           <section className="panel">
-            <div className="panel-label mono">VISITORS PER DAY</div>
+            <div className="panel-label mono an-label">VISITORS PER DAY<InfoTip>How many people visited each day. Hover or tap a bar for the number. A jump usually lines up with a post or a drop.</InfoTip></div>
             <Columns rows={daily.map((d) => ({ key: d.key, label: d.label, value: d.visitors, tip: `${d.label}: ${d.visitors} visitors` }))} />
           </section>
 
           <section className="panel">
-            <div className="panel-label mono">ORDERS PER DAY</div>
+            <div className="panel-label mono an-label">ORDERS PER DAY<InfoTip>How many orders came in each day (cancelled left out). Compare with the visitors chart above — a busy day with no orders is worth a look.</InfoTip></div>
             <Columns rows={daily.map((d) => ({ key: d.key, label: d.label, value: d.orders, tip: `${d.label}: ${d.orders} orders` }))} />
           </section>
 
           <section className="panel">
-            <div className="panel-label mono">FROM VISIT TO ORDER</div>
+            <div className="panel-label mono an-label">FROM VISIT TO ORDER<InfoTip>The steps a visit goes through before an order. The biggest drop shows where people give up: few open a product → the shop page; few reach the cart → the product page (price, photos, sizes); many leave at checkout → the delivery charge or the form.</InfoTip></div>
             <div className="panel-note">How many visitors reached each step, and how many dropped off before the next.</div>
             <Funnel f={data?.funnel} />
           </section>
 
           <section className="panel">
-            <div className="panel-label mono">PHONE OR COMPUTER</div>
+            <div className="panel-label mono an-label">PHONE OR COMPUTER<InfoTip>What people shop on. Visits from before this was recorded show as Not recorded yet. If most are on phones, check new products on a phone first.</InfoTip></div>
             <Bars
               rows={[
                 ['mobile', 'Phone'],
@@ -242,7 +251,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
 
       {sub === 'products' && (
         <section className="panel">
-          <div className="panel-label mono">PRODUCTS · VIEWED VS BOUGHT</div>
+          <div className="panel-label mono an-label">PRODUCTS · VIEWED VS BOUGHT<InfoTip><b>Views</b> is how often the page was opened, <b>people</b> how many different visitors, <b>sold</b> the pieces ordered in this range, <b>bought</b> the share of those people who ordered it. A red % means many looked but nobody bought.</InfoTip></div>
           <div className="panel-note">
             Most-viewed first. A high view count with few orders is worth a look — the price, the photos
             or the sizes left.
@@ -277,7 +286,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
 
       {sub === 'sources' && (
         <section className="panel">
-          <div className="panel-label mono">WHERE VISITORS COME FROM</div>
+          <div className="panel-label mono an-label">WHERE VISITORS COME FROM<InfoTip>The site someone clicked from to reach the shop. Direct means typed in, a bookmark, or a link from an app that hides where it came from. Use Marketing → Tracked links to tell your posts apart.</InfoTip></div>
           <div className="panel-note">
             The site a visitor clicked through from. Links opened inside the Instagram or Facebook app
             sometimes arrive without one and count as Direct. For orders by tracked link, see Overview →
@@ -302,7 +311,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
       {sub === 'timing' && (
         <>
           <section className="panel">
-            <div className="panel-label mono">ORDERS BY HOUR · DHAKA TIME</div>
+            <div className="panel-label mono an-label">ORDERS BY HOUR · DHAKA TIME<InfoTip>When in the day orders are placed. Post a little before the busiest hours so the post is fresh when people are ready to buy.</InfoTip></div>
             <div className="panel-note">When orders come in — a good guide for when to post.</div>
             <Columns
               rows={sales.byHour.map((n, h) => ({ key: h, label: hourLabel(h), value: n, tip: `${hourLabel(h)}: ${n} orders` }))}
@@ -310,7 +319,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
             />
           </section>
           <section className="panel">
-            <div className="panel-label mono">VISITORS BY HOUR · DHAKA TIME</div>
+            <div className="panel-label mono an-label">VISITORS BY HOUR · DHAKA TIME<InfoTip>When in the day people visit. If visitors peak much earlier than orders, people browse first and come back to buy later.</InfoTip></div>
             <Columns
               rows={Array.from({ length: 24 }, (_, h) => {
                 const n = (data?.hours || []).find((x) => x.hour === h)?.visitors || 0
@@ -320,7 +329,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
             />
           </section>
           <section className="panel">
-            <div className="panel-label mono">ORDERS BY DAY OF THE WEEK</div>
+            <div className="panel-label mono an-label">ORDERS BY DAY OF THE WEEK<InfoTip>Which days bring the most orders — a good guide for when to launch a drop.</InfoTip></div>
             <Bars
               rows={WEEKDAYS.map((d, i) => ({ name: d, value: sales.byWeekday[i] }))}
               total={sales.orders}
@@ -334,7 +343,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
 
       {sub === 'location' && (
         <section className="panel">
-          <div className="panel-label mono">ORDERS BY DISTRICT</div>
+          <div className="panel-label mono an-label">ORDERS BY DISTRICT<InfoTip>Where orders are delivered, from the district picked at checkout, with the taka from each. Useful for courier choices and where to run ads.</InfoTip></div>
           <Bars
             rows={sales.districts.map((d) => ({ name: d.name, value: d.orders, extra: taka(d.value) }))}
             total={sales.orders}
@@ -346,7 +355,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
 
       {sub === 'pages' && (
         <section className="panel">
-          <div className="panel-label mono">PAGES</div>
+          <div className="panel-label mono an-label">PAGES<InfoTip><b>Views</b>: how often that kind of page was opened. <b>Visits started here</b>: how many visits landed on it first. <b>Left at once</b>: of those, the share who left without opening another page.</InfoTip></div>
           <div className="panel-note">
             Views per kind of page, and — for visits that started there — how many left without
             opening a second page.
@@ -364,10 +373,13 @@ function hourLabel(h) {
   return `${n}${am ? 'am' : 'pm'}`
 }
 
-function Kpi({ label, value, delta, note }) {
+function Kpi({ label, value, delta, note, tip }) {
   return (
     <div className="an-kpi">
-      <div className="an-kpi-label mono">{label}</div>
+      <div className="an-kpi-label mono">
+        {label}
+        {tip && <InfoTip>{tip}</InfoTip>}
+      </div>
       <div className="an-kpi-value">{value}</div>
       {delta && <div className={`an-kpi-delta mono ${delta.up ? 'up' : 'down'}`}>{delta.text}</div>}
       {note && <div className="an-kpi-note mono">{note}</div>}

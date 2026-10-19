@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { toLocalInput, launchLabel } from '../lib/schedule.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
@@ -7,6 +7,7 @@ import { IconX } from './Icons.jsx'
 import { stockForSizes, stockMap } from '../lib/stock.js'
 import { sendRestockAlert } from '../lib/email.js'
 import { parseDetails, serializeDetails, mergeLabels, rememberedLabels, rememberLabels } from '../lib/details.js'
+import InfoTip from './InfoTip.jsx'
 import './product-form.css'
 
 const BLANK = {
@@ -140,54 +141,11 @@ function lastChartFor(category, all, exceptId) {
 const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL']
 const SIZE_NAMES = { XS: 'XS · Extra small', S: 'S · Small', M: 'M · Medium', L: 'L · Large', XL: 'XL · Extra large', XXL: 'XXL' }
 
-// An ⓘ beside a title: tapping it opens the explanation, tapping anywhere —
-// the note itself included — closes it again.
-function Tip({ children }) {
-  const [open, setOpen] = useState(false)
-  // Near the right edge of the screen the note opens leftwards instead.
-  const [flip, setFlip] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    if (!open) return
-    const r = ref.current?.getBoundingClientRect()
-    if (r) setFlip(r.left + 290 > window.innerWidth)
-    function away(e) {
-      if (!ref.current?.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', away)
-    return () => document.removeEventListener('pointerdown', away)
-  }, [open])
-
-  return (
-    <span className="pf-tip" ref={ref}>
-      <button
-        type="button"
-        className={`pf-tip-btn ${open ? 'on' : ''}`}
-        aria-label="What's this?"
-        aria-expanded={open}
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setOpen((v) => !v)
-        }}
-      >
-        i
-      </button>
-      {open && (
-        <span className={`pf-tip-pop mono ${flip ? 'flip' : ''}`} role="note" onClick={(e) => { e.preventDefault(); setOpen(false) }}>
-          {children}
-        </span>
-      )}
-    </span>
-  )
-}
-
 function FieldLabel({ tip, children }) {
   return (
     <span className="pf-flabel mono">
       {children}
-      {tip && <Tip>{tip}</Tip>}
+      {tip && <InfoTip>{tip}</InfoTip>}
     </span>
   )
 }
@@ -198,7 +156,7 @@ function Box({ title, tip, wide = false, children }) {
     <section className={`pf-sec ${wide ? 'wide' : ''}`}>
       <div className="pf-sec-head">
         <span className="pf-sec-title mono">{title}</span>
-        {tip && <Tip>{tip}</Tip>}
+        {tip && <InfoTip>{tip}</InfoTip>}
       </div>
       {children}
     </section>

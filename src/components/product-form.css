@@ -642,61 +642,6 @@
 
 .pf-field > .pf-flabel { margin-bottom: 6px; }
 
-/* ---------- ⓘ ---------- */
-
-.pf-tip { position: relative; display: inline-flex; }
-
-.pf-tip-btn {
-  width: 17px;
-  height: 17px;
-  border-radius: 50% !important;
-  border: 1px solid color-mix(in srgb, var(--cobalt) 45%, transparent);
-  background: none;
-  color: var(--cobalt);
-  font: italic 700 10.5px/1 Georgia, serif;
-  display: inline-grid;
-  place-items: center;
-  padding: 0;
-  cursor: pointer;
-}
-
-.pf-tip-btn.on,
-.pf-tip-btn:hover { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
-
-.pf-tip-pop {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 8px);
-  left: -10px;
-  width: min(280px, 78vw);
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--ink);
-  color: var(--paper);
-  font-size: 11.5px;
-  line-height: 1.55;
-  letter-spacing: 0;
-  text-transform: none;
-  font-weight: 400;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
-  cursor: pointer;
-}
-
-.pf-tip-pop::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 14px;
-  width: 10px;
-  height: 10px;
-  background: inherit;
-  transform: rotate(45deg);
-}
-
-.pf-tip-pop.flip { left: auto; right: -10px; }
-.pf-tip-pop.flip::before { left: auto; right: 14px; }
-.pf-tip-pop strong { color: inherit; }
-
 /* ---------- Inside the boxes ---------- */
 
 .pf-sec .pf-images { margin-bottom: 0; }
