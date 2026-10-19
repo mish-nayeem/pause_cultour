@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { signInUser, signUpUser, signInWithGoogle, sendPasswordReset } from '../lib/auth.js'
+import { sendLoginCode, verifyLoginCode, signInWithGoogle } from '../lib/auth.js'
 import { setRemember } from '../lib/sessionPolicy.js'
 import './login.css'
 
-const MIN_PASSWORD = 8
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+// Supabase's own wait between two codes to the same address.
+const RESEND_AFTER = 60
 
 // The button only appears once Google is switched on in Supabase — before that
 // it would send people to an error page.
@@ -17,24 +18,19 @@ function safeNext(raw) {
   return raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : null
 }
 
-function signInMessage(error) {
+function sendMessage(error) {
   const raw = (error?.message || '').toLowerCase()
-  if (raw.includes('email not confirmed')) {
-    return 'Confirm your email first — check your inbox for the link.'
-  }
-  return 'Login failed — check your email and password.'
-}
-
-function signUpMessage(error) {
-  const raw = (error?.message || '').toLowerCase()
-  if (error?.message === 'already_registered' || raw.includes('already registered')) {
-    return 'That email already has an account. Log in instead.'
-  }
+  if (raw.includes('after') && raw.includes('second')) return 'A code was just sent — wait a minute before asking for another.'
+  if (raw.includes('rate limit')) return 'Too many codes asked for. Try again in a few minutes.'
   if (raw.includes('signups not allowed') || raw.includes('signup is disabled')) {
     return "Account creation isn't open yet."
   }
-  if (raw.includes('password')) return error.message
-  return "Couldn't create the account right now. Try again in a moment."
+  return "Couldn't send the code right now. Try again in a moment."
+}
+
+// Supabase answers a wrong code and an expired one the same way.
+function verifyMessage() {
+  return "That code is wrong or has expired. Check the email, or send a new one."
 }
 
 function GoogleMark() {
@@ -53,24 +49,30 @@ export default function Login() {
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
 
-  const [mode, setMode] = useState('signin') // signin | signup | forgot
-  const [name, setName] = useState('')
+  const [step, setStep] = useState('email') // email | code
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
   const [remember, setRememberMe] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [wait, setWait] = useState(0)
+  const codeInput = useRef(null)
 
   useEffect(() => {
     document.title = 'Log in — PAUSE'
   }, [])
 
-  function switchMode(m) {
-    setMode(m)
-    setError('')
-    setNotice('')
-  }
+  // Counts down to when another code can be asked for.
+  useEffect(() => {
+    if (wait <= 0) return
+    const t = setTimeout(() => setWait((w) => w - 1), 1000)
+    return () => clearTimeout(t)
+  }, [wait])
+
+  useEffect(() => {
+    if (step === 'code') codeInput.current?.focus()
+  }, [step])
 
   function landOn(isAdmin) {
     if (isAdmin) navigate(next || '/admin', { replace: true })
@@ -84,73 +86,56 @@ export default function Login() {
     if (err) setError("Google sign-in isn't available right now.")
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function send() {
     setError('')
     setNotice('')
-
     if (!EMAIL_RE.test(email.trim())) {
       setError('Enter a valid email address.')
       return
     }
-
-    if (mode === 'forgot') {
-      setSubmitting(true)
-      await sendPasswordReset(email)
-      setSubmitting(false)
-      // Same answer whether or not the address has an account.
-      setNotice('If that email has an account, a reset link is on its way.')
-      return
-    }
-
-    if (mode === 'signup' && !name.trim()) {
-      setError('Enter your name.')
-      return
-    }
-    if (!password) {
-      setError('Enter your password.')
-      return
-    }
-    if (mode === 'signup' && password.length < MIN_PASSWORD) {
-      setError(`Use a password of at least ${MIN_PASSWORD} characters.`)
-      return
-    }
-
     setSubmitting(true)
-
-    if (mode === 'signin') {
-      const { session, isAdmin, error: err } = await signInUser(email, password)
-      setSubmitting(false)
-      if (err || !session) {
-        setError(signInMessage(err))
-        return
-      }
-      setRemember(remember)
-      landOn(isAdmin)
-      return
-    }
-
-    const { session, isAdmin, error: err } = await signUpUser({ name, email, password })
+    const { error: err } = await sendLoginCode(email)
     setSubmitting(false)
-
     if (err) {
-      setError(signUpMessage(err))
+      setError(sendMessage(err))
       return
     }
+    setCode('')
+    setStep('code')
+    setWait(RESEND_AFTER)
+    setNotice(`We've emailed a code to ${email.trim().toLowerCase()}.`)
+  }
 
-    // No session: the project wants the email confirmed before the first login.
-    if (!session) {
-      setPassword('')
-      setNotice('Account created. Check your inbox to confirm your email, then log in.')
-      setMode('signin')
+  async function verify() {
+    setError('')
+    const clean = code.replace(/\D/g, '')
+    if (clean.length < 6) {
+      setError('Enter the code from the email.')
       return
     }
-
-    setRemember(true)
+    setSubmitting(true)
+    const { session, isAdmin, error: err } = await verifyLoginCode(email, clean)
+    setSubmitting(false)
+    if (err || !session) {
+      setError(verifyMessage(err))
+      return
+    }
+    setRemember(remember)
     landOn(isAdmin)
   }
 
-  const title = mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Reset password' : 'Log in'
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (step === 'email') send()
+    else verify()
+  }
+
+  function changeEmail() {
+    setStep('email')
+    setCode('')
+    setError('')
+    setNotice('')
+  }
 
   return (
     <div className="auth-wrap">
@@ -162,103 +147,82 @@ export default function Login() {
         <div className="auth-rule" />
 
         <div className="auth-panel">
-          <h1 className="auth-title mono">{title.toUpperCase()}</h1>
+          <h1 className="auth-title mono">{step === 'code' ? 'ENTER YOUR CODE' : 'LOG IN'}</h1>
 
           <form onSubmit={handleSubmit} noValidate>
-            {mode !== 'forgot' && GOOGLE_ON && (
-              <button type="button" className="auth-google" onClick={handleGoogle}>
-                <GoogleMark />
-                <span>{mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}</span>
-              </button>
+            {step === 'email' && GOOGLE_ON && (
+              <>
+                <button type="button" className="auth-google" onClick={handleGoogle}>
+                  <GoogleMark />
+                  <span>Sign in with Google</span>
+                </button>
+                <div className="auth-or mono"><span>OR WITH YOUR EMAIL</span></div>
+              </>
             )}
 
-            {mode === 'forgot' && (
-              <p className="auth-lead">
-                Enter the email you signed up with and we'll send you a link to choose a new password.
-              </p>
+            {step === 'email' && (
+              <>
+                <p className="auth-lead">
+                  No password needed — we'll email you a one-time code. New here? The same code
+                  creates your account.
+                </p>
+                <label className="auth-field">
+                  <span>Email address</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    inputMode="email"
+                  />
+                </label>
+              </>
             )}
 
-            {mode === 'signup' && (
+            {step === 'code' && (
               <label className="auth-field">
-                <span>Full name</span>
+                <span>Code from the email</span>
                 <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoComplete="name"
-                />
-              </label>
-            )}
-
-            <label className="auth-field">
-              <span>Email address</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="username"
-              />
-            </label>
-
-            {mode !== 'forgot' && (
-              <label className="auth-field">
-                <span>Password{mode === 'signup' ? ` (${MIN_PASSWORD}+ characters)` : ''}</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  ref={codeInput}
+                  className="auth-code mono"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="••••••"
                 />
               </label>
             )}
 
             {error && <div className="auth-msg bad mono">{error}</div>}
-            {notice && <div className="auth-msg good mono">{notice}</div>}
+            {notice && !error && <div className="auth-msg good mono">{notice}</div>}
 
             <button type="submit" className="auth-btn mono" disabled={submitting}>
-              {submitting
-                ? 'Please wait…'
-                : mode === 'signup'
-                  ? 'Create account'
-                  : mode === 'forgot'
-                    ? 'Send reset link'
-                    : 'Log in'}
+              {submitting ? 'Please wait…' : step === 'email' ? 'Send code' : 'Log in'}
             </button>
 
-            {mode === 'signin' && (
-              <div className="auth-row">
-                <label className="auth-check">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span>Remember me</span>
-                </label>
-                <button type="button" className="auth-link mono" onClick={() => switchMode('forgot')}>
-                  I forgot my password
+            <div className="auth-row">
+              <label className="auth-check">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>Remember me</span>
+              </label>
+              {step === 'code' && (
+                <button type="button" className="auth-link mono" onClick={send} disabled={wait > 0 || submitting}>
+                  {wait > 0 ? `Resend in ${wait}s` : 'Send a new code'}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </form>
 
-          <div className="auth-switch">
-            {mode === 'signin' && (
-              <>
-                I'm new here.{' '}
-                <button type="button" onClick={() => switchMode('signup')}>Create an account</button>
-              </>
-            )}
-            {mode === 'signup' && (
-              <>
-                Already have an account.{' '}
-                <button type="button" onClick={() => switchMode('signin')}>Log in</button>
-              </>
-            )}
-            {mode === 'forgot' && (
-              <button type="button" onClick={() => switchMode('signin')}>Back to log in</button>
-            )}
-          </div>
+          {step === 'code' && (
+            <div className="auth-switch">
+              Wrong address? <button type="button" onClick={changeEmail}>Use another email</button>
+            </div>
+          )}
 
           <div className="auth-foot mono">
             <Link to="/shop">Back to shop</Link>

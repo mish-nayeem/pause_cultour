@@ -5,7 +5,7 @@
 //
 // Supabase's own mailer sends "Confirm your email address" from Supabase Auth.
 // This is its Send Email hook: with it switched on, Supabase hands every auth
-// email (sign-up confirmation, invite, password reset) to this function
+// email (the one-time login code, invite, password reset) to this function
 // instead, and it goes out through Brevo's HTTP API — the same one the order
 // emails use, so no SMTP port is involved — from the PAUSE sender.
 //
@@ -45,17 +45,22 @@ interface Copy {
   heading: string
   text: string
   button: string
+  // Sign-in mails lead with the one-time code; the button is the fallback.
+  code?: boolean
 }
 
 // What each kind of auth mail says. Anything not listed here is refused
 // rather than sent with the wrong wording.
 const COPY: Record<string, Copy> = {
+  // The first code an address ever gets — the same login, it just creates
+  // the account too.
   signup: {
-    subject: 'Confirm your PAUSE account',
-    eyebrow: 'CONFIRM YOUR ACCOUNT',
-    heading: 'Thanks for signing up.',
-    text: "Confirm your email to finish creating your account. Once you're in, you can keep a wishlist of sold-out sizes and we'll email you the day they're back.",
-    button: 'CONFIRM EMAIL',
+    subject: 'Your PAUSE login code',
+    eyebrow: 'WELCOME TO PAUSE',
+    heading: 'Your login code',
+    text: 'Type this code on the login page to finish creating your account. It works once and expires soon.',
+    button: 'OR TAP TO LOG IN',
+    code: true,
   },
   invite: {
     subject: "You've been invited to PAUSE",
@@ -72,15 +77,22 @@ const COPY: Record<string, Copy> = {
     button: 'RESET PASSWORD',
   },
   magiclink: {
-    subject: 'Your PAUSE sign-in link',
-    eyebrow: 'SIGN IN',
-    heading: 'Sign in to PAUSE.',
-    text: "Use the button below to sign in. If you didn't ask for this, ignore this email.",
-    button: 'SIGN IN',
+    subject: 'Your PAUSE login code',
+    eyebrow: 'LOG IN',
+    heading: 'Your login code',
+    text: 'Type this code on the login page. It works once and expires soon.',
+    button: 'OR TAP TO LOG IN',
+    code: true,
   },
 }
 
-function buildHtml(copy: Copy, link: string): string {
+function buildHtml(copy: Copy, link: string, token: string): string {
+  const codeBlock =
+    copy.code && token
+      ? `<div style="font-family:'Courier New',monospace;font-size:34px;font-weight:bold;letter-spacing:10px;color:#16160F;background:#fff;border:1px solid #C9C6BA;padding:18px 22px;margin:0 0 22px;display:inline-block;">
+        ${escapeHtml(token)}
+      </div><br>`
+      : ''
   return `
   <div style="background:#EDEAE1;padding:32px 20px;font-family:Helvetica,Arial,sans-serif;">
     <div style="max-width:520px;margin:0 auto;">
@@ -96,6 +108,7 @@ function buildHtml(copy: Copy, link: string): string {
         ${escapeHtml(copy.text)}
       </p>
 
+      ${codeBlock}
       <a href="${escapeHtml(link)}"
          style="display:inline-block;background:#16160F;color:#EDEAE1;text-decoration:none;font-size:13px;letter-spacing:1.5px;padding:15px 30px;">
         ${escapeHtml(copy.button)}
@@ -108,7 +121,8 @@ function buildHtml(copy: Copy, link: string): string {
 
       <div style="margin-top:32px;padding-top:18px;border-top:1px solid #C9C6BA;font-size:11px;color:#8B8A82;line-height:1.6;">
         Didn't ask for this? You can ignore this email — nothing changes until
-        the link is opened.<br>
+        the code is used or the link is opened. PAUSE will never ask you for
+        this code over a call or a message.<br>
         PAUSE · Dhaka, BD
       </div>
     </div>
@@ -143,6 +157,7 @@ Deno.serve(async (req) => {
     let event: {
       user: { email: string }
       email_data: {
+        token: string
         token_hash: string
         redirect_to: string
         email_action_type: string
@@ -187,8 +202,10 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         sender: { email: fromEmail, name: fromName },
         to: [{ email: user.email }],
-        subject: copy.subject,
-        htmlContent: buildHtml(copy, link),
+        // The code in the subject too, so it shows in the phone's
+        // notification without opening the mail.
+        subject: copy.code && email_data.token ? `${email_data.token} — ${copy.subject}` : copy.subject,
+        htmlContent: buildHtml(copy, link, email_data.token),
       }),
     })
 
