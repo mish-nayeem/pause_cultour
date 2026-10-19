@@ -20,7 +20,7 @@
   font-family: var(--admin-font);
   color: var(--ink);
   background: var(--paper-dim);
-  grid-template-columns: 236px 1fr;
+  grid-template-columns: 212px 1fr;
 }
 
 .admin[data-theme='green'] {
@@ -173,19 +173,21 @@
   /* Room inside the scroll area for the picked item's curves (26px above and
      below it), taken back with the margin so the spacing doesn't change. */
   padding: 26px 0;
-  margin: -26px 0;
+  /* Taken back at the top only: at the bottom the room keeps the last item
+     (and its curve) clear of View storefront below. */
+  margin: -26px 0 0;
 }
 
 /* The picked item is cut out of the sidebar in the page's own colour and runs
    into the content, with a concave curve above and below where it joins. */
 .admin .side-nav button {
   position: relative;
-  margin-left: 16px;
-  padding: 13px 18px 13px 14px;
+  margin-left: 14px;
+  padding: 9px 12px 9px 14px;
   border: none;
   border-radius: 26px 0 0 26px;
   color: var(--side-muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
   transition: background 0.2s ease, color 0.2s ease, padding 0.2s ease;
@@ -237,7 +239,7 @@
   font-weight: 700;
 }
 
-.admin .side-foot { padding: 16px 26px 0; font-size: 13px; }
+.admin .side-foot { padding: 4px 24px 0; font-size: 12.5px; gap: 10px; }
 .admin .side-foot a,
 .admin .signout { color: var(--side-muted); font-weight: 600; }
 .admin .side-foot a:hover,
