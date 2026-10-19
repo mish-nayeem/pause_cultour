@@ -37,11 +37,37 @@
 
 /* Transparent so the photograph reads first — the button is an outline over
    the image rather than a panel sitting on top of it. */
-.view-shop {
+/* The button, and the drop countdown above it when one is set, together in
+   the middle of the hero. */
+.hero-center {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: max-content;
+  max-width: calc(100% - 40px);
+}
+
+.drop-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--paper);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.drop-count-label { font-size: 11px; letter-spacing: 0.22em; }
+.drop-count-time { font-size: clamp(26px, 4vw, 40px); letter-spacing: 0.08em; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.view-shop {
+  position: relative;
   z-index: 5;
   background: transparent;
   color: var(--paper);

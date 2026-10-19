@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchHeroSlides, slidesFor, PHONE_QUERY } from '../lib/hero.js'
-import { fetchTicker } from '../lib/siteSettings.js'
+import { fetchTicker, fetchHeroExtras, DEFAULT_HERO_BUTTON } from '../lib/siteSettings.js'
+import DropCountdown from '../components/DropCountdown.jsx'
 import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './home.css'
@@ -27,6 +28,9 @@ export default function Home() {
   // Admin → Homepage → Ticker. Empty until loaded, so the old lines never
   // flash up before a sale announcement.
   const [ticker, setTicker] = useState(null)
+  // Admin → Homepage: the hero's button and the drop countdown.
+  const [button, setButton] = useState(DEFAULT_HERO_BUTTON)
+  const [countdown, setCountdown] = useState(null)
 
   usePageMeta()
 
@@ -41,6 +45,11 @@ export default function Home() {
     })
     fetchTicker().then((lines) => {
       if (!cancelled) setTicker(lines)
+    })
+    fetchHeroExtras().then(({ button, countdown }) => {
+      if (cancelled) return
+      setButton(button)
+      setCountdown(countdown)
     })
     return () => { cancelled = true }
   }, [])
@@ -77,7 +86,14 @@ export default function Home() {
 
         <div className="hero-shade" />
 
-        <Link to="/shop" className="view-shop mono">VIEW SHOP</Link>
+        <div className="hero-center">
+          <DropCountdown countdown={countdown} />
+          {/^https?:\/\//.test(button.link) ? (
+            <a href={button.link} className="view-shop mono" target="_blank" rel="noreferrer">{button.label}</a>
+          ) : (
+            <Link to={button.link || '/shop'} className="view-shop mono">{button.label}</Link>
+          )}
+        </div>
 
         {slides.length > 1 && (
           <div className="hero-dots">

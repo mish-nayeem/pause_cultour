@@ -22,9 +22,11 @@ function pct(a, b) {
   return b > 0 ? (a / b) * 100 : 0
 }
 
-// "↑ 24%" / "↓ 8%" against the period before, or nothing to compare with.
-function change(now, before) {
-  if (!before) return null
+// "↑ 24%" / "↓ 8%" against the period before. Left out when the period
+// before had too little to compare with — 1 visit then and 300 now would
+// read as a meaningless ↑ 30000%.
+function change(now, before, enough = 1) {
+  if (!before || before < enough) return null
   const d = ((now - before) / before) * 100
   return { up: d >= 0, text: `${d >= 0 ? '↑' : '↓'} ${Math.abs(d).toFixed(0)}% vs previous` }
 }
@@ -204,8 +206,8 @@ export default function AnalyticsManager({ sub, orders, products }) {
       {sub === 'summary' && (
         <>
           <div className="an-kpis">
-            <Kpi label="VISITORS" tip={'People who opened the shop in this range — one per browser visit. A visit ends when the tab is closed.'} value={visitors.toLocaleString()} delta={change(visitors, data?.prev_visitors)} note="One per browser visit" />
-            <Kpi label="ORDERS" tip={'Orders placed in this range, from the site and added by hand, not counting cancelled ones.'} value={sales.orders} delta={change(sales.orders, sales.prevOrders)} note="Not counting cancelled" />
+            <Kpi label="VISITORS" tip={'People who opened the shop in this range — one per browser visit. A visit ends when the tab is closed.'} value={visitors.toLocaleString()} delta={change(visitors, data?.prev_visitors, 20)} note="One per browser visit" />
+            <Kpi label="ORDERS" tip={'Orders placed in this range, from the site and added by hand, not counting cancelled ones.'} value={sales.orders} delta={change(sales.orders, sales.prevOrders, 3)} note="Not counting cancelled" />
             <Kpi label="CONVERSION" tip={'Out of every 100 visitors, how many ordered. Most small shops sit between 1% and 3% — higher means the site turns visits into sales well.'} value={`${pct(sales.orders, visitors).toFixed(1)}%`} note="Orders ÷ visitors" />
             <Kpi label="SALES" tip={'The total of those orders, delivery included, less refunds. Counted when the order is placed, so not-yet-delivered orders are in here too.'} value={taka(sales.revenue)} delta={change(sales.revenue, sales.prevRevenue)} note="Orders placed in the range" />
             <Kpi label="AVERAGE ORDER" tip={'Sales ÷ orders — what one order is worth on average. Bundles or a free-delivery threshold push it up.'} value={taka(sales.orders ? sales.revenue / sales.orders : 0)} />
