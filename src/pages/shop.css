@@ -161,10 +161,15 @@
 .sname {
   font-size: 14.5px;
   font-weight: 500;
-  /* A touch tighter, so the name reads as one word-shape under the photo. */
+  /* The name in the mono face and the colour under it in the sans — the
+     other way round from the rest of the card. A touch tighter, so the name
+     reads as one word-shape under the photo. */
+  font-family: 'JetBrains Mono', monospace;
   letter-spacing: -0.02em;
   margin-bottom: 6px;
 }
+
+.svariant { font-family: 'Inter', sans-serif; }
 
 .smeta {
   display: flex;
