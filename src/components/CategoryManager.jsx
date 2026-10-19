@@ -8,6 +8,8 @@ import {
   reorderNavCategories,
 } from '../lib/navCategories.js'
 import { IconX } from './Icons.jsx'
+import AdminBox from './AdminBox.jsx'
+import InfoTip from './InfoTip.jsx'
 import './category-manager.css'
 
 // The two dropdowns differ only in wording and which product field an entry has
@@ -135,16 +137,26 @@ export default function CategoryManager({ menu = SHOP_MENU, products = [] }) {
     setBusy(false)
   }
 
-  const visibleCount = cats.filter((c) => c.active).length
+  const visible = cats.filter((c) => c.active)
 
   return (
-    <section className="panel">
-      <div className="panel-label mono" style={{ marginBottom: '12px' }}>
-        {config.navLabel} DROPDOWN
-      </div>
-
-      <div className="panel-note mono" style={{ marginBottom: '18px' }}>
-        {config.intro}
+    <AdminBox
+      title={`${config.navLabel} MENU`}
+      side={loading ? '' : `${visible.length} showing${cats.length > visible.length ? ` · ${cats.length - visible.length} hidden` : ''}`}
+      tip={
+        <>
+          <p>{config.intro}</p>
+          <p><b>Spelling matters:</b> a name has to match {config.matchHint} exactly, or it opens an empty page. The count on each row says how many products it shows.</p>
+          <p>Use ↑ ↓ for the order, the pill to hide or show it, ✕ to take it off the menu.</p>
+        </>
+      }
+    >
+      {/* What a shopper sees: the word in the nav and its dropdown. */}
+      <div className="cm-preview">
+        <span className="cm-preview-word mono">{config.navLabel} ▾</span>
+        <div className="cm-preview-list mono">
+          {visible.length ? visible.map((c) => <span key={c.id}>{c.label}</span>) : <em>Empty — {config.navLabel} lists every {config.noun} in the catalog</em>}
+        </div>
       </div>
 
       {error && <div className="err-banner mono">{error}</div>}
@@ -157,47 +169,44 @@ export default function CategoryManager({ menu = SHOP_MENU, products = [] }) {
         }}
       >
         <input
-          className="cm-input mono"
+          className="ab-input mono"
           placeholder={config.placeholder}
           value={newLabel}
           onChange={(e) => setNewLabel(e.target.value.toUpperCase())}
           disabled={busy}
         />
-        <button className="cm-add-btn mono" disabled={busy || !newLabel.trim()}>
-          {busy ? 'Working…' : '+ Add to menu'}
+        <button className="ab-btn mono" disabled={busy || !newLabel.trim()}>
+          {busy ? 'Working…' : '+ Add'}
         </button>
       </form>
 
-      <div className="cm-note mono">
-        <strong>Spelling matters:</strong> the name has to match {config.matchHint} exactly,
-        or the menu item opens an empty page. The count next to each row tells
-        you how many products it will show.
-      </div>
-
       {missing.length > 0 && (
         <div className="cm-suggest mono">
-          <span className="cm-suggest-label">In your catalog but not on the menu:</span>
-          {missing.map((c) => (
-            <button key={c} onClick={() => add(c)} disabled={busy}>
-              + {c} ({counts[c]})
-            </button>
-          ))}
+          <span className="ab-label">
+            IN YOUR CATALOG, NOT ON THE MENU
+            <InfoTip>Spelt exactly as on the products — one tap adds it, so the spelling can't go wrong.</InfoTip>
+          </span>
+          <div className="cm-chips">
+            {missing.map((c) => (
+              <button key={c} type="button" onClick={() => add(c)} disabled={busy}>
+                + {c} <b>{counts[c]}</b>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {loading && <div className="empty mono">Loading…</div>}
+      {loading && <div className="ab-empty mono">Loading…</div>}
 
       {!loading && cats.length === 0 && (
-        <div className="empty mono">
+        <div className="ab-empty mono">
           Nothing on this menu yet. Until you add something, {config.navLabel} falls
           back to every {config.noun} it can find in the catalog.
         </div>
       )}
 
-      {!loading && cats.length > 0 && visibleCount === 0 && (
-        <div className="cm-warn mono">
-          Every entry is hidden, so the {config.navLabel} dropdown is empty right now.
-        </div>
+      {!loading && cats.length > 0 && visible.length === 0 && (
+        <div className="ab-warn mono">Every entry is hidden, so the {config.navLabel} dropdown is empty right now.</div>
       )}
 
       <div className="cm-list">
@@ -206,44 +215,37 @@ export default function CategoryManager({ menu = SHOP_MENU, products = [] }) {
 
           return (
             <div className={`cm-row ${c.active ? '' : 'off'}`} key={c.id}>
+              <span className="cm-pos mono">{i + 1}</span>
               <input
-                className="cm-name"
+                className="cm-name mono"
                 defaultValue={c.label}
+                aria-label="Name on the menu"
                 onBlur={(e) => rename(c, e.target.value)}
               />
-
-              <div className={`cm-count mono ${count === 0 ? 'zero' : ''}`}>
-                {count === 0 ? 'no products' : `${count} product${count === 1 ? '' : 's'}`}
-              </div>
-
-              <div className="cm-order mono">
-                <button onClick={() => move(i, -1)} disabled={i === 0 || busy}>←</button>
-                <span>{i + 1}</span>
-                <button onClick={() => move(i, 1)} disabled={i === cats.length - 1 || busy}>→</button>
-              </div>
-
-              <button className="cm-toggle mono" onClick={() => toggleActive(c)} disabled={busy}>
-                {c.active ? 'On menu' : 'Hidden'}
-              </button>
-
-              {confirmId === c.id ? (
-                <div className="cm-confirm mono">
-                  <button className="cm-danger" onClick={() => remove(c.id)}>Delete</button>
-                  <button className="cm-ghost" onClick={() => setConfirmId(null)}>No</button>
-                </div>
-              ) : (
-                <button
-                  className="cm-x"
-                  onClick={() => setConfirmId(c.id)}
-                  title="Remove from menu"
-                >
-                  <IconX width="14" height="14" />
+              <span className={`cm-count mono ${count === 0 ? 'zero' : ''}`} title={count === 0 ? 'Opens an empty page — check the spelling' : ''}>
+                {count === 0 ? '0 · empty' : count}
+              </span>
+              <span className="cm-tools">
+                <button type="button" className="ab-tool" onClick={() => move(i, -1)} disabled={i === 0 || busy} aria-label="Up">↑</button>
+                <button type="button" className="ab-tool" onClick={() => move(i, 1)} disabled={i === cats.length - 1 || busy} aria-label="Down">↓</button>
+                <button type="button" className={`ab-switch mono ${c.active ? 'on' : ''}`} onClick={() => toggleActive(c)} disabled={busy}>
+                  {c.active ? 'Showing' : 'Hidden'}
                 </button>
-              )}
+                {confirmId === c.id ? (
+                  <span className="ab-confirm mono">
+                    <button type="button" className="ab-yes" onClick={() => remove(c.id)}>Remove</button>
+                    <button type="button" className="ab-no" onClick={() => setConfirmId(null)}>No</button>
+                  </span>
+                ) : (
+                  <button type="button" className="ab-tool danger" onClick={() => setConfirmId(c.id)} aria-label="Take off the menu">
+                    <IconX width="12" height="12" />
+                  </button>
+                )}
+              </span>
             </div>
           )
         })}
       </div>
-    </section>
+    </AdminBox>
   )
 }

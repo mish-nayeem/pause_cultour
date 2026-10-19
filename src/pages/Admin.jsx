@@ -1905,10 +1905,10 @@ export default function Admin() {
         )}
         {tab === 'hero' && <HeroManager drops={collectionNames} ticker={<TickerManager />} />}
         {!loading && tab === 'menu' && (
-          <>
+          <div className="ab-grid">
             <CategoryManager menu="shop" products={products} />
             <CategoryManager menu="drops" products={products} />
-          </>
+          </div>
         )}
         {!loading && tab === 'marketing' && (
           <>

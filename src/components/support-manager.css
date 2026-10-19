@@ -13,10 +13,9 @@
 
 .sm-help { font-size: 13px; color: var(--steel); margin: 8px 0 14px; line-height: 1.6; }
 
-.sm-filter, .sm-pages { display: flex; flex-wrap: wrap; gap: 6px; }
+.sm-filter { display: flex; flex-wrap: wrap; gap: 6px; }
 
-.sm-filter button,
-.sm-pages button {
+.sm-filter button {
   border: 1px solid var(--steel-line);
   background: none;
   color: var(--steel);
@@ -31,62 +30,96 @@
   gap: 6px;
 }
 
-.sm-filter button.on,
-.sm-pages button.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.sm-filter button.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 
-.sm-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cobalt); }
+.sm-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--cobalt); }
 
-/* ---------- Page editor ---------- */
+/* ---------- Support pages: the pages on the left, the editor on the right ---------- */
 
-.sm-input,
-.sm-table input,
-.sm-contact input {
+.sm-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.sm-nav { position: sticky; top: 16px; }
+
+.sm-pages { display: flex; flex-direction: column; gap: 6px; }
+
+.admin .main .sm-pages button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--steel-line);
-  background: transparent;
-  padding: 8px 10px;
-  font-size: 13px;
+  background: none;
   color: var(--ink);
-  min-width: 0;
-  font-family: inherit;
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
 }
 
-.sm-input:focus, .sm-table input:focus, .sm-contact input:focus {
-  outline: none;
-  border-color: var(--cobalt);
-}
+.admin .main .sm-pages button.on { border-color: var(--cobalt); background: var(--glass-hover, transparent); box-shadow: inset 3px 0 0 var(--cobalt); }
 
+.sm-pages em { font-style: normal; font-size: 10px; color: var(--steel); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 
-.sm-editor { margin-top: 6px; }
+.sm-blocks { display: flex; flex-direction: column; gap: 10px; }
 
 .sm-block {
-  border: 1px solid var(--steel-line);
+  border: 1px solid var(--order-edge, var(--steel-line));
   border-radius: 12px;
-  padding: 12px 14px;
-  margin-top: 14px;
+  padding: 10px 12px 12px;
+  background: var(--glass, transparent);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.sm-block-bar { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--steel); letter-spacing: 0.06em; }
-
+.sm-block-bar { display: flex; justify-content: space-between; align-items: center; }
+.sm-kind { font-size: 10.5px; letter-spacing: 0.08em; color: var(--cobalt); font-weight: 700; }
 .sm-block-tools { display: flex; gap: 4px; }
+.sm-heading { font-weight: 700; }
 
-.sm-block-tools button,
-.sm-table .sm-tool button,
-.sm-contact button {
-  border: 1px solid var(--steel-line);
-  background: none;
-  color: var(--ink);
-  border-radius: 6px;
-  padding: 4px 9px;
-  font-size: 12px;
-  cursor: pointer;
+.sm-add { margin-top: 12px; }
+
+/* Save, kept at the bottom of the screen while the page is long. */
+.sm-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px -16px -16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--order-edge, var(--steel-line));
+  border-radius: 0 0 16px 16px;
+  background: var(--paper);
 }
 
-.sm-block-tools button:disabled { opacity: 0.35; cursor: default; }
+.sm-state { margin-right: auto; font-size: 11.5px; color: var(--steel); }
+.sm-state.dirty { color: var(--signal); }
 
-.sm-input { width: 100%; resize: vertical; line-height: 1.55; }
+/* ---------- Tables and contact cards inside a section ---------- */
+
+.sm-table input,
+.sm-contact input {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 7px 9px;
+  font-size: 12.5px;
+  color: var(--ink);
+  min-width: 0;
+  font-family: inherit;
+  border-radius: 8px;
+}
+
+.sm-table input:focus, .sm-contact input:focus { outline: none; border-color: var(--cobalt); }
 
 .sm-table-wrap { overflow-x: auto; }
 .sm-table { border-collapse: collapse; width: 100%; min-width: 360px; }
@@ -104,40 +137,30 @@
   grid-template-columns: 1fr 1.3fr 1.6fr auto;
   gap: 6px;
   width: 100%;
+  align-items: center;
 }
 
 /* ---------- Portal ---------- */
 
-.sm-portal { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
-
 .sm-portal-photo {
   aspect-ratio: 4 / 5;
-  background: rgba(22, 22, 15, 0.04);
+  max-width: 260px;
+  background: var(--paper-dim);
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .sm-portal-photo img { width: 100%; height: 100%; object-fit: cover; }
+.sm-photo-actions, .sm-portal-save { margin-top: 12px; }
+.sm-upload.busy { opacity: 0.7; }
 
-.sm-upload {
-  display: inline-block;
-  border: 1px dashed var(--steel-line);
-  padding: 10px 16px;
-  font-size: 12px;
-  cursor: pointer;
-  border-radius: 8px;
-}
-
-.sm-upload:hover, .sm-upload.busy { border-color: var(--cobalt); color: var(--cobalt); }
-.sm-upload input { display: none; }
-.sm-remove { margin-left: 8px; }
-
-@media (max-width: 700px) {
+@media (max-width: 860px) {
+  .sm-layout { grid-template-columns: minmax(0, 1fr); }
+  .sm-nav { position: static; }
+  .sm-pages { flex-direction: row; flex-wrap: wrap; }
   .sm-contact { grid-template-columns: 1fr 1fr; }
-  .sm-portal { grid-template-columns: 1fr; }
-  .sm-portal-photo { max-width: 220px; }
 }
 
 .subtab .badge {

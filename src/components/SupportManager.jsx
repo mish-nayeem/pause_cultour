@@ -9,6 +9,8 @@ import {
   savePortal,
   saveSupportPages,
 } from '../lib/support.js'
+import AdminBox from './AdminBox.jsx'
+import InfoTip from './InfoTip.jsx'
 import './support-manager.css'
 
 const MIGRATION = 'has supabase-migration-support.sql been run?'
@@ -44,6 +46,8 @@ export function SupportPages() {
   }, [])
 
   function pick(next) {
+    if (next === slug) return
+    if (dirty && !window.confirm('You have changes on this page that aren\'t saved. Leave them?')) return
     setSlug(next)
     setDraft(clone(saved[next] && Array.isArray(saved[next].blocks) ? { ...INFO_PAGES[next], ...saved[next] } : INFO_PAGES[next]))
     setNote('')
@@ -104,84 +108,104 @@ export function SupportPages() {
     persist(next, 'Back to the built-in copy.')
   }
 
-  if (loading || !draft) return <section className="panel"><div className="empty mono">Loading…</div></section>
+  if (loading || !draft) return <div className="ab-empty mono">Loading…</div>
 
   const label = EDITABLE.find((t) => t.slug === slug)?.label
+  const current = saved[slug] && Array.isArray(saved[slug].blocks) ? { ...INFO_PAGES[slug], ...saved[slug] } : INFO_PAGES[slug]
+  // Merged onto the built-in page both sides, so key order can't count as a change.
+  const dirty = JSON.stringify({ ...INFO_PAGES[slug], ...draft }) !== JSON.stringify(current)
+  const KIND = { table: 'TABLE', contact: 'CONTACT CARDS', text: 'TEXT' }
 
   return (
-    <section className="panel sm-panel">
-      <div className="panel-label mono">SUPPORT PAGES</div>
-      <p className="sm-help">
-        Each tab on the storefront's <a href={`/support/${slug}`} target="_blank" rel="noreferrer">Support page</a>.
-        Pick one, change the words, save. A blank line in a section starts a new paragraph.
-      </p>
+    <div className="sm-layout">
+      {/* ---- Which page ---- */}
+      <AdminBox
+        title="PAGES"
+        tip="Every tab on the storefront's Support page. Pick one to change its words. A dot means it's been edited here; the others show the built-in copy."
+        className="sm-nav"
+      >
+        <div className="sm-pages mono">
+          {EDITABLE.map((t) => (
+            <button key={t.slug} type="button" className={slug === t.slug ? 'on' : ''} onClick={() => pick(t.slug)}>
+              <span>{t.label}</span>
+              <em>{saved[t.slug] ? <><i className="sm-dot" /> Edited</> : 'Built-in'}</em>
+            </button>
+          ))}
+        </div>
+      </AdminBox>
 
-      <div className="sm-pages mono">
-        {EDITABLE.map((t) => (
-          <button key={t.slug} className={slug === t.slug ? 'on' : ''} onClick={() => pick(t.slug)}>
-            {t.label}
-            {saved[t.slug] && <span className="sm-dot" title="Edited" />}
-          </button>
-        ))}
-      </div>
+      {/* ---- The page ---- */}
+      <AdminBox
+        title={`EDITING · ${(label || '').toUpperCase()}`}
+        side={<a href={`/support/${slug}`} target="_blank" rel="noreferrer">Open the page ↗</a>}
+        tip={
+          <>
+            <p>The page title, a short intro, then its sections in order — ↑ ↓ moves one, ✕ removes it.</p>
+            <p>A <b>text</b> section is a heading and words (an empty line starts a new paragraph). A <b>table</b> has its own columns and rows.</p>
+            <p>Nothing changes on the site until <b>Save</b>. <b>Back to default</b> brings the built-in copy back.</p>
+          </>
+        }
+        className="sm-edit"
+      >
+        <span className="ab-label">PAGE TITLE</span>
+        <input className="ab-input" value={draft.title || ''} onChange={(e) => set({ title: e.target.value })} />
+        <span className="ab-label">INTRO</span>
+        <textarea className="ab-input" rows={2} value={draft.intro || ''} onChange={(e) => set({ intro: e.target.value })} />
 
-      <div className="sm-editor">
-        <label className="pf-field">
-          <span className="mono">PAGE TITLE</span>
-          <input value={draft.title || ''} onChange={(e) => set({ title: e.target.value })} />
-        </label>
-        <label className="pf-field">
-          <span className="mono">INTRO</span>
-          <textarea rows={2} value={draft.intro || ''} onChange={(e) => set({ intro: e.target.value })} />
-        </label>
+        <span className="ab-label">SECTIONS</span>
+        <div className="sm-blocks">
+          {draft.blocks.map((b, i) => (
+            <div className="sm-block" key={i}>
+              <div className="sm-block-bar mono">
+                <span className="sm-kind">{i + 1} · {KIND[b.type] || 'TEXT'}</span>
+                <span className="sm-block-tools">
+                  <button type="button" className="ab-tool" onClick={() => moveBlock(i, -1)} disabled={i === 0} aria-label="Move up">↑</button>
+                  <button type="button" className="ab-tool" onClick={() => moveBlock(i, 1)} disabled={i === draft.blocks.length - 1} aria-label="Move down">↓</button>
+                  <button type="button" className="ab-tool danger" onClick={() => removeBlock(i)} aria-label="Remove">✕</button>
+                </span>
+              </div>
 
-        {draft.blocks.map((b, i) => (
-          <div className="sm-block" key={i}>
-            <div className="sm-block-bar mono">
-              <span>{b.type === 'table' ? 'TABLE' : b.type === 'contact' ? 'CONTACT CARDS' : 'SECTION'} {i + 1}</span>
-              <span className="sm-block-tools">
-                <button type="button" onClick={() => moveBlock(i, -1)} disabled={i === 0} aria-label="Move up">↑</button>
-                <button type="button" onClick={() => moveBlock(i, 1)} disabled={i === draft.blocks.length - 1} aria-label="Move down">↓</button>
-                <button type="button" onClick={() => removeBlock(i)} aria-label="Remove">✕</button>
-              </span>
+              {b.type !== 'contact' && (
+                <input
+                  className="ab-input sm-heading"
+                  placeholder="Heading"
+                  value={b.heading || ''}
+                  onChange={(e) => setBlock(i, { heading: e.target.value })}
+                />
+              )}
+
+              {b.type === 'text' || !b.type ? (
+                <textarea
+                  className="ab-input"
+                  rows={4}
+                  value={b.body || ''}
+                  onChange={(e) => setBlock(i, { body: e.target.value })}
+                />
+              ) : null}
+
+              {b.type === 'table' && <TableEditor block={b} onChange={(patch) => setBlock(i, patch)} />}
+              {b.type === 'contact' && <ContactEditor block={b} onChange={(patch) => setBlock(i, patch)} />}
             </div>
+          ))}
+        </div>
 
-            {b.type !== 'contact' && (
-              <input
-                className="sm-input"
-                placeholder="Heading"
-                value={b.heading || ''}
-                onChange={(e) => setBlock(i, { heading: e.target.value })}
-              />
-            )}
+        <div className="ab-row sm-add">
+          <button type="button" className="ab-btn ghost mono" onClick={() => addBlock('text')}>+ Text section</button>
+          <button type="button" className="ab-btn ghost mono" onClick={() => addBlock('table')}>+ Table</button>
+        </div>
 
-            {b.type === 'text' || !b.type ? (
-              <textarea
-                className="sm-input"
-                rows={4}
-                value={b.body || ''}
-                onChange={(e) => setBlock(i, { body: e.target.value })}
-              />
-            ) : null}
-
-            {b.type === 'table' && <TableEditor block={b} onChange={(patch) => setBlock(i, patch)} />}
-            {b.type === 'contact' && <ContactEditor block={b} onChange={(patch) => setBlock(i, patch)} />}
-          </div>
-        ))}
-
-        <div className="tk-actions">
-          <button type="button" className="tk-add" onClick={() => addBlock('text')}>+ Text section</button>
-          <button type="button" className="tk-add" onClick={() => addBlock('table')}>+ Table</button>
+        {/* Kept in view at the bottom while the page is long. */}
+        <div className="sm-savebar">
+          <span className={`sm-state mono ${dirty ? 'dirty' : ''}`}>{note || (dirty ? '● Unsaved changes' : saved[slug] ? 'Saved' : 'Built-in copy')}</span>
           {saved[slug] && (
-            <button type="button" className="tk-reset" onClick={reset} disabled={busy}>Back to default</button>
+            <button type="button" className="ab-btn ghost mono" onClick={reset} disabled={busy}>Back to default</button>
           )}
-          <button type="button" className="courier-btn mono tk-save" onClick={save} disabled={busy}>
+          <button type="button" className="ab-btn mono" onClick={save} disabled={busy || !dirty}>
             {busy ? 'Saving…' : `Save ${label}`}
           </button>
         </div>
-        {note && <div className="tk-note mono">{note}</div>}
-      </div>
-    </section>
+      </AdminBox>
+    </div>
   )
 }
 
@@ -224,24 +248,24 @@ function TableEditor({ block, onChange }) {
                 </td>
               ))}
               <td className="sm-tool">
-                <button type="button" onClick={() => onChange({ rows: rows.filter((_, rj) => rj !== ri) })} aria-label="Remove row">✕</button>
+                <button type="button" className="ab-tool danger" onClick={() => onChange({ rows: rows.filter((_, rj) => rj !== ri) })} aria-label="Remove row">✕</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
       <div className="sm-table-tools">
-        <button type="button" className="tk-add" onClick={() => onChange({ rows: [...rows, Array(cols).fill('')] })}>+ Row</button>
+        <button type="button" className="ab-btn ghost mono" onClick={() => onChange({ rows: [...rows, Array(cols).fill('')] })}>+ Row</button>
         <button
           type="button"
-          className="tk-add"
+          className="ab-btn ghost mono"
           onClick={() => onChange({ head: [...head, 'COLUMN'], rows: rows.map((r) => [...r, '']) })}
         >
           + Column
         </button>
         <button
           type="button"
-          className="tk-add"
+          className="ab-btn ghost mono"
           disabled={cols <= 1}
           onClick={() => onChange({ head: head.slice(0, -1), rows: rows.map((r) => r.slice(0, cols - 1)) })}
         >
@@ -264,12 +288,12 @@ function ContactEditor({ block, onChange }) {
           <input placeholder="LABEL" value={it.label || ''} onChange={(e) => setItem(i, { label: e.target.value.toUpperCase() })} />
           <input placeholder="What's shown" value={it.value || ''} onChange={(e) => setItem(i, { value: e.target.value })} />
           <input placeholder="Link (mailto:, tel:, https://)" value={it.href || ''} onChange={(e) => setItem(i, { href: e.target.value })} />
-          <button type="button" onClick={() => onChange({ items: items.filter((_, ii) => ii !== i) })} aria-label="Remove">✕</button>
+          <button type="button" className="ab-tool danger" onClick={() => onChange({ items: items.filter((_, ii) => ii !== i) })} aria-label="Remove">✕</button>
         </div>
       ))}
       <button
         type="button"
-        className="tk-add"
+        className="ab-btn ghost mono"
         onClick={() => onChange({ items: [...items, { label: 'LABEL', value: '', href: '' }] })}
       >
         + Contact card
@@ -321,46 +345,46 @@ export function SupportPortal() {
     }
   }
 
-  if (loading) return <section className="panel"><div className="empty mono">Loading…</div></section>
+  if (loading) return <div className="ab-empty mono">Loading…</div>
 
   return (
-    <section className="panel sm-panel">
-      <div className="panel-label mono">RETURN &amp; EXCHANGE PORTAL</div>
-      <p className="sm-help">
-        The card on <a href="/support/portal" target="_blank" rel="noreferrer">/support/portal</a> — photo on the
-        left, the order check on the right.
-      </p>
-
-      <div className="sm-portal">
+    <div className="ab-grid stretch">
+      <AdminBox
+        title="PHOTO"
+        tip="The photo on the left of the portal card. A portrait shot (4:5) fits best."
+        side={<a href="/support/portal" target="_blank" rel="noreferrer">Open the portal ↗</a>}
+      >
         <div className="sm-portal-photo">
           {portal.image ? <img src={imgUrl(portal.image, { w: 600 })} alt="" /> : <span className="mono dim">No photo</span>}
         </div>
-        <div>
-          <label className={`sm-upload mono ${busy ? 'busy' : ''}`}>
+        <div className="ab-row sm-photo-actions">
+          <label className={`ab-btn ${portal.image ? 'ghost' : ''} mono sm-upload ${busy ? 'busy' : ''}`}>
             {busy ? 'Working…' : portal.image ? 'Change photo' : 'Upload photo'}
-            <input type="file" accept="image/*" onChange={upload} disabled={busy} />
+            <input type="file" accept="image/*" onChange={upload} disabled={busy} hidden />
           </label>
           {portal.image && (
-            <button type="button" className="tk-reset sm-remove" disabled={busy} onClick={() => save({ ...portal, image: '' }, 'Photo removed.')}>
-              Remove photo
+            <button type="button" className="ab-btn ghost mono" disabled={busy} onClick={() => save({ ...portal, image: '' }, 'Photo removed.')}>
+              Remove
             </button>
           )}
-          <label className="pf-field">
-            <span className="mono">HEADING</span>
-            <input value={portal.heading} onChange={(e) => { setPortal({ ...portal, heading: e.target.value }); setNote('') }} />
-          </label>
-          <label className="pf-field">
-            <span className="mono">TEXT UNDER THE BUTTON</span>
-            <textarea rows={3} value={portal.intro} onChange={(e) => { setPortal({ ...portal, intro: e.target.value }); setNote('') }} />
-          </label>
-          <div className="tk-actions">
-            <button type="button" className="courier-btn mono tk-save" disabled={busy} onClick={() => save()}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          {note && <div className="tk-note mono">{note}</div>}
         </div>
-      </div>
-    </section>
+      </AdminBox>
+
+      <AdminBox
+        title="WORDS"
+        tip="The heading over the order check, and the line under its button — e.g. how many days a return can be asked for. Saved when you press Save."
+      >
+        <span className="ab-label">HEADING</span>
+        <input className="ab-input" value={portal.heading} onChange={(e) => { setPortal({ ...portal, heading: e.target.value }); setNote('') }} />
+        <span className="ab-label">TEXT UNDER THE BUTTON</span>
+        <textarea className="ab-input" rows={4} value={portal.intro} onChange={(e) => { setPortal({ ...portal, intro: e.target.value }); setNote('') }} />
+        <div className="ab-row sm-portal-save">
+          <button type="button" className="ab-btn mono" disabled={busy} onClick={() => save()}>
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+          {note && <span className="ab-note mono">{note}</span>}
+        </div>
+      </AdminBox>
+    </div>
   )
 }
