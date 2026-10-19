@@ -11,9 +11,6 @@ function taka(n) {
 
 const NO_DROP = 'No drop'
 
-// One colour per drop, round and round, so each reads as its own block.
-const DROP_COLOURS = ['#2F8CFF', '#F0457A', '#1FB57A', '#F2A516', '#7C6CFF', '#13B5C8']
-
 // How full a product still is: plenty, running low, or gone.
 function levelOf(left) {
   if (left == null) return ''
@@ -123,25 +120,25 @@ export default function DropReport({ products, orders }) {
       </div>
 
       <div className="dr-totals">
-        <div className="dr-total t-blue">
+        <div className="dr-total">
           <span className="mono">PRODUCTS</span>
           <strong>{totals.products}</strong>
         </div>
         <button
           type="button"
-          className={`dr-total dr-total-btn t-green ${open === 'all' ? 'on' : ''}`}
+          className={`dr-total dr-total-btn ${open === 'all' ? 'on' : ''}`}
           onClick={() => setOpen(open === 'all' ? null : 'all')}
         >
           <span className="mono">PIECES IN STOCK</span>
           <strong>{totals.left}</strong>
           <em className="mono">{pc ? 'See which →' : open === 'all' ? 'Hide list ↑' : 'See which ↓'}</em>
         </button>
-        <div className="dr-total t-amber">
+        <div className="dr-total">
           <span className="mono">STOCK VALUE</span>
           <strong>{taka(totals.stockValue)}</strong>
           <em className="mono">at full price</em>
         </div>
-        <div className="dr-total t-pink">
+        <div className="dr-total">
           <span className="mono">SOLD</span>
           <strong>{taka(totals.soldValue)}</strong>
           <em className="mono">{totals.soldUnits} pieces</em>
@@ -162,13 +159,12 @@ export default function DropReport({ products, orders }) {
       {drops.length === 0 && <div className="empty mono">No products yet.</div>}
 
       <div className={`dr-list ${pc ? 'dr-grid' : ''}`}>
-        {drops.map((d, i) => {
+        {drops.map((d) => {
           const isOpen = open === d.name
           return (
             <div
               className={`dr-card ${isOpen ? 'open' : ''}`}
               key={d.name}
-              style={{ '--acc': d.name === NO_DROP ? '#8B8A82' : DROP_COLOURS[i % DROP_COLOURS.length] }}
             >
               <button type="button" className="dr-head" onClick={() => setOpen(isOpen ? null : d.name)}>
                 <div className="dr-title">
@@ -202,13 +198,12 @@ export default function DropReport({ products, orders }) {
       </div>
 
       {pc && open && (() => {
-        const i = drops.findIndex((d) => d.name === open)
-        const d = drops[i]
+        const d = drops.find((x) => x.name === open)
         if (open !== 'all' && !d) return null
         const items = remaining(open === 'all' ? allItems : d.items)
         return (
           <SideSheet onClose={() => setOpen(null)}>
-            <div className="osheet-head dr-sheet-head" style={{ '--acc': open === 'all' ? '#1FB57A' : d.name === NO_DROP ? '#8B8A82' : DROP_COLOURS[i % DROP_COLOURS.length] }}>
+            <div className="osheet-head dr-sheet-head">
               <div>
                 <div className="osheet-id mono">{open === 'all' ? 'EVERY DROP' : 'DROP'}</div>
                 <div className="osheet-name">{open === 'all' ? 'Pieces in stock' : d.name}</div>

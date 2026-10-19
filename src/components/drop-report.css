@@ -126,30 +126,27 @@
 
 
 /* ---------- Colour ----------
-   Only the borders carry colour — one per total, one per drop, and green /
-   amber / red on a product by how much is left. Text stays the theme's own
-   (black, or white on the dark theme). */
+   The boxes take the admin theme's colour, like the order cards — blue on
+   the blue theme, green on the green one. Only a product's pill is green /
+   amber / red, by how much is left. Text stays the theme's own. */
 
-.dr-total { --acc: #2F8CFF; }
-.dr-total.t-blue { --acc: #2F8CFF; }
-.dr-total.t-green { --acc: #1FB57A; }
-.dr-total.t-amber { --acc: #F2A516; }
-.dr-total.t-pink { --acc: #F0457A; }
+.dr-total,
+.dr-card { --acc: var(--order-edge, var(--cobalt)); }
 
 .dr-total { border: 1.5px solid var(--acc); }
 .dr-total span { color: var(--ink); opacity: 0.7; }
 .dr-total-btn em { color: var(--ink); opacity: 0.7; }
 .dr-total-btn:hover,
-.dr-total-btn.on { border-width: 2px; border-color: var(--acc); }
+.dr-total-btn.on { border-width: 1.5px; border-color: var(--cobalt); }
 
 .dr-card {
-  --acc: #2F8CFF;
   border: 1.5px solid var(--acc);
-  border-left-width: 4px;
 }
 
 .dr-card .dr-more { color: var(--ink); opacity: 0.7; }
-.dr-card .dr-bar i { background: var(--acc); }
+.dr-card .dr-bar i { background: var(--cobalt); }
+.dr-card:hover,
+.dr-card.open { border-color: var(--cobalt); }
 
 .dr-pnums strong {
   display: inline-block;
@@ -164,7 +161,7 @@
 .dr-pnums.lv-low strong { border-color: color-mix(in srgb, #F2A516 45%, transparent); }
 .dr-pnums.lv-out strong { border-color: color-mix(in srgb, #F0457A 45%, transparent); }
 
-.dr-items-solo { border: 1.5px solid #1FB57A; }
+.dr-items-solo { border: 1.5px solid var(--order-edge, var(--steel-line)); }
 
 /* ---------- PC: drops as cards in a grid, the list in a side sheet ---------- */
 
@@ -175,7 +172,7 @@
 }
 
 .dr-grid .dr-card { background: var(--glass, transparent); box-shadow: var(--glass-shine, none); }
-.dr-grid .dr-card.open { border-width: 2px; border-left-width: 4px; }
+.dr-grid .dr-card.open { border-width: 2px; }
 .dr-grid .dr-head { height: 100%; display: flex; flex-direction: column; }
 .dr-grid .dr-title { flex-direction: column; align-items: flex-start; gap: 2px; }
 .dr-grid .dr-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
@@ -183,6 +180,6 @@
 .dr-grid .dr-num strong { font-size: 22px; }
 .dr-grid .dr-num span { white-space: nowrap; font-size: 9.5px; }
 
-.osheet-head.dr-sheet-head { border-bottom: 3px solid var(--acc); }
+.osheet-head.dr-sheet-head { border-bottom: 2px solid var(--cobalt); }
 .dr-sheet-list { padding-bottom: 4px; }
 .dr-sheet-list .dr-items { border-top: none; padding: 0; }
