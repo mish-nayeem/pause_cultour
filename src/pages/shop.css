@@ -161,6 +161,8 @@
 .sname {
   font-size: 14.5px;
   font-weight: 500;
+  /* A touch tighter, so the name reads as one word-shape under the photo. */
+  letter-spacing: -0.02em;
   margin-bottom: 6px;
 }
 
