@@ -54,7 +54,7 @@ export default function YouMayLike({ currentId }) {
         {visible.map((p) => (
           <Link to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`} className="yml-card" key={p.id}>
             <div className="yml-thumb">
-              <CardPhoto images={cardPhotos(p, products)} alt={p.name} loading="lazy" />
+              <CardPhoto images={cardPhotos(p)} alt={p.name} loading="lazy" />
               {isAllSoldOut(p) ? (
                 <span className="snew out mono"><i className="rec" />SOLD OUT</span>
               ) : (

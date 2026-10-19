@@ -12,7 +12,6 @@ import './you-may-like.css'
 // newest first — kept in this browser only. Laid out like You may like.
 export default function RecentlyViewed({ currentId }) {
   const [products, setProducts] = useState([])
-  const [all, setAll] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -24,7 +23,6 @@ export default function RecentlyViewed({ currentId }) {
     fetchProducts().then(({ products: all }) => {
       if (cancelled) return
       const byId = new Map(all.map((p) => [String(p.id), p]))
-      setAll(all)
       setProducts(ids.map((id) => byId.get(id)).filter(Boolean))
     })
     return () => { cancelled = true }
@@ -40,7 +38,7 @@ export default function RecentlyViewed({ currentId }) {
         {products.map((p) => (
           <Link to={`/product/${p.id}${isAllSoldOut(p) ? '?notify=1' : ''}`} className="yml-card" key={p.id}>
             <div className="yml-thumb">
-              <CardPhoto images={cardPhotos(p, all)} alt={p.name} loading="lazy" />
+              <CardPhoto images={cardPhotos(p)} alt={p.name} loading="lazy" />
               {isAllSoldOut(p) ? (
                 <span className="snew out mono"><i className="rec" />SOLD OUT</span>
               ) : (

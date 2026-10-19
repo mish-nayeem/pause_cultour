@@ -3,7 +3,7 @@ import { imgUrl } from '../lib/images.js'
 import ShimmerImage from './ShimmerImage.jsx'
 
 // How long each photo shows while the pointer rests on a card.
-const STEP_MS = 1300
+const STEP_MS = 2200
 
 // How far a finger has to travel sideways for a swipe to change the photo.
 const SWIPE_PX = 30

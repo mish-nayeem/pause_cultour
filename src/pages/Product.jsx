@@ -109,7 +109,7 @@ export default function Product() {
 
   usePageMeta(
     product?.name,
-    product ? `${product.name} — ${product.variant}. ${product.description || ''}`.trim() : undefined
+    product ? `${product.name}${product.variant ? ` — ${product.variant}` : ''}. ${product.description || ''}`.trim() : undefined
   )
   useProductSchema(product)
 
@@ -244,7 +244,7 @@ export default function Product() {
     if (!product) return
 
     const url = `${window.location.origin}/product/${product.id}?utm_source=share&utm_medium=native`
-    const text = `${product.name} — ${product.variant}`
+    const text = `${product.name}${product.variant ? ` — ${product.variant}` : ''}`
 
     if (navigator.share) {
       try {

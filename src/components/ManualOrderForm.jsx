@@ -91,7 +91,7 @@ function ItemPicker({ products, value, onChange, onAdd, addLabel = 'Add', onDism
         >
           <option value="">Select product</option>
           {shown.map((p) => (
-            <option key={p.id} value={p.id}>{p.id} · {p.name} — {p.variant}</option>
+            <option key={p.id} value={p.id}>{p.id} · {p.name}{p.variant ? ` — ${p.variant}` : ''}</option>
           ))}
         </select>
       </div>
@@ -234,7 +234,7 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
     setSuggestions(
       guesses.map((guess, i) => {
         const product = products.find(
-          (p) => `${p.name} — ${p.variant}`.toLowerCase() === String(guess.product_match || '').toLowerCase()
+          (p) => `${p.name}${p.variant ? ` — ${p.variant}` : ''}`.toLowerCase() === String(guess.product_match || '').toLowerCase()
         )
         const size = String(guess.size || '').toUpperCase()
 
