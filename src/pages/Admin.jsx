@@ -171,6 +171,7 @@ const THEMES = [
   { key: 'green', label: 'Green & white' },
   { key: 'blue', label: 'Blue & white' },
   { key: 'dark', label: 'Black & grey' },
+  { key: 'orange', label: 'Black & orange' },
 ]
 
 const THEME_KEY = 'pause_admin_theme'
@@ -1015,7 +1016,9 @@ export default function Admin() {
   ]
 
   return (
-    <div className="admin" data-theme={theme} data-tab={tab}>
+    // Black & orange is the dark theme with its own colours (data-accent), so
+    // every rule written for the dark theme holds for it too.
+    <div className="admin" data-theme={theme === 'orange' ? 'dark' : theme} data-accent={theme === 'orange' ? 'orange' : undefined} data-tab={tab}>
       <div className="admin-topbar">
         {/* Phones: one step back inside the panel, like the phone's own Back. */}
         {panelHistory.depth > 0 && (

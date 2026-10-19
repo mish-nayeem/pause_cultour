@@ -7,7 +7,9 @@
 
      green — green sidebar, white cards
      blue  — blue sidebar, white cards
-     dark  — black / grey (the panel's original dark look)                    */
+     dark  — black / grey (the panel's original dark look)
+     orange — black cards, an orange sidebar and one orange accent (set as
+              the dark theme plus data-accent='orange')                      */
 
 /* ---------- Theme tokens ---------- */
 
@@ -99,6 +101,38 @@
 .admin[data-theme='dark'][data-tab='customers'],
 .admin[data-theme='dark'][data-tab='menu'] { --cobalt: #ffc14d; }
 .admin[data-theme='dark'][data-tab='marketing'] { --cobalt: #7c6cff; }
+
+/* Black & orange. [data-theme] in the selector lifts it over the dark
+   theme's per-section accents, so orange is the one accent everywhere. */
+.admin[data-accent='orange'][data-theme] {
+  --paper: #18181b;
+  --paper-dim: #0c0c0d;
+  --ink: #f6f3ef;
+  --steel: #cbc5bd;
+  --steel-line: rgba(255, 255, 255, 0.09);
+  --cobalt: #ff7a1a;
+  --side-bg: linear-gradient(180deg, #ff7a1a 0%, #e04a00 100%);
+  --side-text: #111111;
+  --side-muted: rgba(17, 17, 17, 0.74);
+  --side-hover: rgba(0, 0, 0, 0.1);
+  --card-shadow: none;
+  --detail-bg: linear-gradient(140deg, rgba(255, 122, 26, 0.12) 0%, rgba(0, 0, 0, 0.35) 60%, rgba(255, 122, 26, 0.05) 100%);
+  --detail-border: rgba(255, 122, 26, 0.25);
+  --pill-pending: #ffb547;
+  --pill-shipped: #7cc4ff;
+  --pill-delivered: #3ddc97;
+  --pill-cancelled: #ff5e7e;
+  /* Box edges and the glass inside them, in orange (admin.css). */
+  --order-edge: rgba(255, 122, 26, 0.4);
+  --order-edge-strong: #ff7a1a;
+  --glass: linear-gradient(135deg, rgba(255, 122, 26, 0.08), rgba(255, 255, 255, 0.02));
+  --glass-hover: rgba(255, 122, 26, 0.13);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* On the orange sidebar: dark dots, the picked one orange. */
+.admin[data-accent='orange'] .nav-dot { background: rgba(17, 17, 17, 0.5); }
+.admin[data-accent='orange'] .side-nav button.on .nav-dot { background: var(--cobalt); }
 
 /* ---------- Type ---------- */
 
@@ -290,6 +324,7 @@
 .theme-swatch[data-swatch='green'] { background: linear-gradient(135deg, #12a252 50%, #ffffff 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
 .theme-swatch[data-swatch='blue'] { background: linear-gradient(135deg, #1c63b8 50%, #ffffff 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
 .theme-swatch[data-swatch='dark'] { background: linear-gradient(135deg, #212429 50%, #6b7079 50%); }
+.theme-swatch[data-swatch='orange'] { background: linear-gradient(135deg, #ff7a1a 50%, #111111 50%); }
 
 /* ---------- Cards: rounded, with room between them ---------- */
 
