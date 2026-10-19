@@ -1736,9 +1736,18 @@ export default function Admin() {
             {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
             {top.map((p, i) => (
               <div className="mini-row" key={p.id || p.name}>
-                <div>
-                  <div className="mini-name">{String(i + 1).padStart(2, '0')} · {p.name}</div>
-                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.id || '—'}</div>
+                <div className="sl-who">
+                  <span className="sl-thumb">
+                    {productsById.get(String(p.id))?.images?.[0] && (
+                      <img src={imgUrl(productsById.get(String(p.id)).images[0], { w: 120 })} alt="" loading="lazy" />
+                    )}
+                  </span>
+                  <div>
+                    <div className="mini-name">{String(i + 1).padStart(2, '0')} · {p.name}</div>
+                    <div className="mini-id mono" style={{ marginTop: '3px' }}>
+                      {[productsById.get(String(p.id))?.variant, p.id].filter(Boolean).join(' · ') || '—'}
+                    </div>
+                  </div>
                 </div>
                 <div className="mini-right">
                   <div className="mono">{p.units} sold</div>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toLocalInput, launchLabel } from '../lib/schedule.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
@@ -136,6 +136,75 @@ function lastChartFor(category, all, exceptId) {
   return match ? JSON.parse(JSON.stringify(match.size_chart)) : null
 }
 
+// Sizes ticked on and off in the form, in this order, with their full names.
+const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL']
+const SIZE_NAMES = { XS: 'XS · Extra small', S: 'S · Small', M: 'M · Medium', L: 'L · Large', XL: 'XL · Extra large', XXL: 'XXL' }
+
+// An ⓘ beside a title: tapping it opens the explanation, tapping anywhere —
+// the note itself included — closes it again.
+function Tip({ children }) {
+  const [open, setOpen] = useState(false)
+  // Near the right edge of the screen the note opens leftwards instead.
+  const [flip, setFlip] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const r = ref.current?.getBoundingClientRect()
+    if (r) setFlip(r.left + 290 > window.innerWidth)
+    function away(e) {
+      if (!ref.current?.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [open])
+
+  return (
+    <span className="pf-tip" ref={ref}>
+      <button
+        type="button"
+        className={`pf-tip-btn ${open ? 'on' : ''}`}
+        aria-label="What's this?"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setOpen((v) => !v)
+        }}
+      >
+        i
+      </button>
+      {open && (
+        <span className={`pf-tip-pop mono ${flip ? 'flip' : ''}`} role="note" onClick={(e) => { e.preventDefault(); setOpen(false) }}>
+          {children}
+        </span>
+      )}
+    </span>
+  )
+}
+
+function FieldLabel({ tip, children }) {
+  return (
+    <span className="pf-flabel mono">
+      {children}
+      {tip && <Tip>{tip}</Tip>}
+    </span>
+  )
+}
+
+// One box of the form: a title (with its ⓘ) and what goes in it.
+function Box({ title, tip, wide = false, children }) {
+  return (
+    <section className={`pf-sec ${wide ? 'wide' : ''}`}>
+      <div className="pf-sec-head">
+        <span className="pf-sec-title mono">{title}</span>
+        {tip && <Tip>{tip}</Tip>}
+      </div>
+      {children}
+    </section>
+  )
+}
+
 export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel, onAddColour }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
@@ -208,6 +277,33 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       sizes,
       stock: stockMap(prev) ? stockForSizes(prev, sizes) : prev.stock,
     }))
+  }
+
+  // Sizes ticked on and off: the usual ones plus any this product (or this
+  // session) added, in that order.
+  const [addingSize, setAddingSize] = useState(false)
+  const [newSize, setNewSize] = useState('')
+  const [extraSizes, setExtraSizes] = useState(() => (p.sizes || []).filter((z) => !STANDARD_SIZES.includes(z)))
+  const sizeChoices = [...STANDARD_SIZES, ...extraSizes.filter((z) => !STANDARD_SIZES.includes(z))]
+
+  function toggleSize(z) {
+    const on = p.sizes.includes(z)
+    const next = on ? p.sizes.filter((x) => x !== z) : sizeChoices.filter((x) => x === z || p.sizes.includes(x))
+    setSizes(next.join(', '))
+    if (on && p.sizesOut.includes(z)) set('sizesOut', p.sizesOut.filter((x) => x !== z))
+  }
+
+  function addSize() {
+    const z = newSize.trim().toUpperCase()
+    if (!z) return
+    if (!sizeChoices.includes(z)) setExtraSizes((prev) => [...prev, z])
+    if (!p.sizes.includes(z)) setSizes([...p.sizes, z].join(', '))
+    setNewSize('')
+    setAddingSize(false)
+  }
+
+  function toggleSizeOut(z) {
+    set('sizesOut', p.sizesOut.includes(z) ? p.sizesOut.filter((x) => x !== z) : [...p.sizesOut, z])
   }
 
   function setStock(size, value) {
@@ -433,115 +529,117 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
 
       {error && <div className="pf-error mono">{error}</div>}
 
-      {/* ---- Images ---- */}
-      <div className="pf-label mono">IMAGES</div>
-      <div className="pf-note mono">
-        The <strong>MAIN</strong> photo is the one on the shop card and first on the product page;
-        the rest follow in this order. Use ← → to reorder, or "Set as main" on any photo.
-      </div>
+      {/* Every part of the form is its own box — three to a row on a
+          desktop, one under the other on a phone. The longer explanations
+          sit behind an ⓘ beside each title. */}
+      <div className="pf-secs">
+        {/* ---- Images ---- */}
+        <Box
+          title="IMAGES"
+          wide
+          tip={<>The <strong>MAIN</strong> photo is the one on the shop card and first on the product page; the rest follow in this order. Use ← → to reorder, or "Set as main" on any photo.</>}
+        >
+          <div className="pf-images">
+            {p.images.map((url, i) => (
+              <div className="pf-img" key={url}>
+                <img src={imgUrl(url, { w: 200 })} alt="" />
+                {i === 0 ? (
+                  <span className="pf-img-main mono">MAIN</span>
+                ) : (
+                  <button type="button" className="pf-img-setmain mono" onClick={() => makeMain(i)}>Set as main</button>
+                )}
+                <button className="pf-img-x" onClick={() => removeImage(url)} title="Remove">
+                  <IconX width="13" height="13" />
+                </button>
+                <div className="pf-img-move mono">
+                  <button onClick={() => moveImage(i, -1)} disabled={i === 0}>←</button>
+                  <span>{i + 1}</span>
+                  <button onClick={() => moveImage(i, 1)} disabled={i === p.images.length - 1}>→</button>
+                </div>
+              </div>
+            ))}
 
-      <div className="pf-images">
-        {p.images.map((url, i) => (
-          <div className="pf-img" key={url}>
-            <img src={imgUrl(url, { w: 200 })} alt="" />
-            {i === 0 ? (
-              <span className="pf-img-main mono">MAIN</span>
-            ) : (
-              <button type="button" className="pf-img-setmain mono" onClick={() => makeMain(i)}>Set as main</button>
-            )}
-            <button className="pf-img-x" onClick={() => removeImage(url)} title="Remove">
-              <IconX width="13" height="13" />
-            </button>
-            <div className="pf-img-move mono">
-              <button onClick={() => moveImage(i, -1)} disabled={i === 0}>←</button>
-              <span>{i + 1}</span>
-              <button onClick={() => moveImage(i, 1)} disabled={i === p.images.length - 1}>→</button>
+            <label className={`pf-upload mono ${uploading ? 'busy' : ''}`}>
+              {uploading ? 'Uploading…' : '+ Add images'}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFiles}
+                disabled={uploading}
+              />
+            </label>
+          </div>
+        </Box>
+
+        {/* ---- ID, price, cost ---- */}
+        <Box title="CODE & PRICE">
+          <label className="pf-field">
+            <FieldLabel
+              tip={isNewRecord
+                ? 'Given automatically — the next number after your last product. Also used as its code (SKU).'
+                : "ID can't be changed after creation. It's also the product's code (SKU)."}
+            >
+              PRODUCT ID
+            </FieldLabel>
+            <input value={p.id} disabled readOnly />
+          </label>
+
+          <label className="pf-field">
+            <FieldLabel>PRICE (৳)</FieldLabel>
+            <input
+              type="number"
+              value={p.price}
+              onChange={(e) => set('price', e.target.value)}
+              placeholder="1200"
+            />
+          </label>
+
+          <label className="pf-field">
+            <FieldLabel tip="What it cost to make or buy in. Used for the Cost & margin panel — never shown to customers.">
+              COST (৳, OPTIONAL)
+            </FieldLabel>
+            <input
+              type="number"
+              value={p.cost ?? ''}
+              onChange={(e) => set('cost', e.target.value)}
+              placeholder="What it cost you"
+            />
+          </label>
+        </Box>
+
+        {/* ---- Name & colour ---- */}
+        <Box title="NAME & COLOUR">
+          <label className="pf-field">
+            <FieldLabel>PRODUCT NAME</FieldLabel>
+            <input value={p.name} onChange={(e) => set('name', e.target.value)} placeholder="Heavyweight Tee" />
+          </label>
+
+          <label className="pf-field">
+            <FieldLabel>VARIANT / COLOUR</FieldLabel>
+            <input value={p.variant} onChange={(e) => set('variant', e.target.value)} placeholder="Bone White" />
+          </label>
+
+          {/* No colour-group box to fill in: products with the same name are
+              colours of one piece and link up by themselves when saved. */}
+          <div className="pf-field">
+            <FieldLabel tip="Products with the same name are shown as colours of one piece: each colour its own card in the shop, and a colour picker on the product page. Use + Add another colour, or give another product the same name.">
+              OTHER COLOURS
+            </FieldLabel>
+            <div className="pf-colours mono">
+              {otherColours.length ? otherColours.map((c) => c.variant || c.id).join(' · ') : 'None yet'}
             </div>
+            {!isNewRecord && onAddColour && (
+              <button type="button" className="pf-add-colour pf-add-colour-inline mono" onClick={() => onAddColour(existing)}>
+                + Add another colour
+              </button>
+            )}
           </div>
-        ))}
+        </Box>
 
-        <label className={`pf-upload mono ${uploading ? 'busy' : ''}`}>
-          {uploading ? 'Uploading…' : '+ Add images'}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFiles}
-            disabled={uploading}
-          />
-        </label>
-      </div>
-
-      {/* ---- Basics ---- */}
-      <div className="pf-grid">
-        <label className="pf-field">
-          <span className="mono">PRODUCT ID</span>
-          <input value={p.id} disabled readOnly />
-          <em className="pf-hint mono">
-            {isNewRecord
-              ? 'Given automatically — the next number after your last product. Also used as its code (SKU).'
-              : "ID can't be changed after creation."}
-          </em>
-        </label>
-
-        <label className="pf-field">
-          <span className="mono">NAME</span>
-          <input value={p.name} onChange={(e) => set('name', e.target.value)} placeholder="Heavyweight Tee" />
-        </label>
-
-        <label className="pf-field">
-          <span className="mono">VARIANT / COLOUR</span>
-          <input value={p.variant} onChange={(e) => set('variant', e.target.value)} placeholder="Bone White" />
-        </label>
-
-        {/* No colour-group box to fill in: products with the same name are
-            colours of one piece and link up by themselves when saved. */}
-        <div className="pf-field">
-          <span className="mono">OTHER COLOURS</span>
-          <div className="pf-colours mono">
-            {otherColours.length
-              ? otherColours.map((c) => c.variant || c.id).join(' · ')
-              : 'None yet — use "+ Add another colour", or give another product the same name.'}
-          </div>
-          {/* Here as well as up by the title, where it's easy to miss once
-              the form's scrolled — on a phone especially. */}
-          {!isNewRecord && onAddColour && (
-            <button type="button" className="pf-add-colour pf-add-colour-inline mono" onClick={() => onAddColour(existing)}>
-              + Add another colour
-            </button>
-          )}
-          <em className="pf-hint mono">
-            Products with the same name are shown as colours of one piece: each colour its own
-            card in the shop, and a colour picker on the product page.
-          </em>
-        </div>
-
-        <label className="pf-field">
-          <span className="mono">PRICE (৳)</span>
-          <input
-            type="number"
-            value={p.price}
-            onChange={(e) => set('price', e.target.value)}
-            placeholder="1200"
-          />
-        </label>
-
-        <label className="pf-field">
-          <span className="mono">COST (৳, OPTIONAL)</span>
-          <input
-            type="number"
-            value={p.cost ?? ''}
-            onChange={(e) => set('cost', e.target.value)}
-            placeholder="What it cost to make or buy in"
-          />
-          <em className="pf-hint mono">For the margin panel — never shown to customers.</em>
-        </label>
-
-        <div className="pf-field pf-cat-field">
-          <span className="mono">COLLECTION / DROP</span>
-          {/* The collections made in Products → Collections; picking one
-              keeps the spelling the same as the menu and the lookbook. */}
+        {/* ---- Collection / drop ---- */}
+        <Box title="COLLECTION / DROP" tip="The collections made in Products → Collections. Picking one keeps the spelling the same as the menu and the lookbook — or type a new name.">
           {drops.length > 0 && (
             <div className="pf-cats">
               {[...new Set([...drops, p.drop].filter(Boolean))].map((d) => (
@@ -557,20 +655,17 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               ))}
             </div>
           )}
-          <input
-            value={p.drop || ''}
-            onChange={(e) => set('drop', e.target.value)}
-            placeholder={drops.length ? 'Or type a name' : 'e.g. PAUSE UNIVERSITY'}
-            style={drops.length ? { marginTop: '8px' } : undefined}
-          />
-        </div>
+          <div className="pf-field">
+            <input
+              value={p.drop || ''}
+              onChange={(e) => set('drop', e.target.value)}
+              placeholder={drops.length ? 'Or type a name' : 'e.g. PAUSE UNIVERSITY'}
+            />
+          </div>
+        </Box>
 
-        <div className="pf-field pf-cat-field">
-          <span className="mono">CATEGORY</span>
-
-          {/* Picking from existing names instead of typing keeps the shop menu
-              clean — a typo like T-SHIRT vs T-SHIRTS would otherwise split one
-              category into two. */}
+        {/* ---- Category ---- */}
+        <Box title="CATEGORY" tip="The product shows under this category in the shop menu. Picking an existing one (rather than typing) keeps T-SHIRT and T-SHIRTS from splitting into two. Picking one also fills in the size chart from the last product in that category.">
           <div className="pf-cats">
             {[...new Set([...categories, p.category].filter(Boolean))].sort().map((c) => (
               <button
@@ -585,11 +680,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
             ))}
 
             {!addingCategory && (
-              <button
-                type="button"
-                className="pf-cat new"
-                onClick={() => setAddingCategory(true)}
-              >
+              <button type="button" className="pf-cat new" onClick={() => setAddingCategory(true)}>
                 + New category
               </button>
             )}
@@ -628,217 +719,51 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               </button>
             </div>
           )}
+        </Box>
 
-          <em className="pf-hint mono">
-            The product shows under this category in the shop menu.
-          </em>
-        </div>
-      </div>
-
-      <label className="pf-field">
-        <span className="mono">DESCRIPTION</span>
-        <textarea
-          rows={3}
-          value={p.description}
-          onChange={(e) => set('description', e.target.value)}
-          placeholder="Fabric, fit, what makes it worth buying."
-        />
-      </label>
-
-      {/* ---- Details ---- */}
-      <div className="pf-label mono">DETAILS</div>
-      <div className="pf-note mono">
-        Box name on the left (Fabric, Fit…), the detail on the right. Customers see
-        only what's on the right — "Fabric | 100% cotton" shows as "100% cotton".
-        Leave the right side empty and that row isn't shown. A new product starts
-        with the last product's boxes; add one with + Add box, drop one with ×.
-      </div>
-
-      <div className="pf-detail-grid">
-        {detailRows.map((row, i) => (
-          <div className="pf-detail-row" key={i}>
-            <input
-              className="mono"
-              list="pf-detail-labels"
-              value={row.label}
-              onChange={(e) =>
-                updateDetailRows(detailRows.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
-              }
-              placeholder="Fabric"
+        {/* ---- Description ---- */}
+        <Box title="DESCRIPTION" tip="Shown on the product page under the price — fabric, fit, what makes it worth buying.">
+          <div className="pf-field">
+            <textarea
+              rows={5}
+              value={p.description}
+              onChange={(e) => set('description', e.target.value)}
+              placeholder="Fabric, fit, what makes it worth buying."
             />
-            <input
-              value={row.value}
-              onChange={(e) =>
-                updateDetailRows(detailRows.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))
-              }
-              placeholder="100% cotton"
-            />
-            <button
-              type="button"
-              className="pf-chart-x"
-              onClick={() => {
-                const next = detailRows.filter((_, j) => j !== i)
-                updateDetailRows(next.length > 0 ? next : [{ label: '', value: '' }])
-              }}
-              title="Remove row"
-            >
-              <IconX width="12" height="12" />
-            </button>
           </div>
-        ))}
-      </div>
+        </Box>
 
-      <datalist id="pf-detail-labels">
-        {knownLabels.map((l) => (
-          <option key={l} value={l} />
-        ))}
-      </datalist>
-
-      <button
-        type="button"
-        className="pf-chart-add mono"
-        onClick={() => updateDetailRows([...detailRows, { label: '', value: '' }])}
-      >
-        + Add box
-      </button>
-
-      {/* ---- Sizes ---- */}
-      <div className="pf-grid">
-        <label className="pf-field">
-          <span className="mono">SIZES AVAILABLE</span>
-          <input
-            value={p.sizes.join(', ')}
-            onChange={(e) => setSizes(e.target.value)}
-            placeholder="S, M, L, XL"
-          />
-          <em className="pf-hint mono">Comma separated.</em>
-        </label>
-
-        <label className="pf-field">
-          <span className="mono">SIZES OFF THE PAGE</span>
-          <input
-            value={p.sizesOut.join(', ')}
-            onChange={(e) =>
-              set('sizesOut', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))
-            }
-            placeholder="XXL"
-          />
-          <em className="pf-hint mono">
-            Manual override — struck through whatever the count says. A size that
-            runs out sells out on its own.
-          </em>
-        </label>
-      </div>
-
-      {/* ---- Stock ---- */}
-      <div className="pf-label mono">STOCK</div>
-      <div className="pf-note mono">
-        Pieces left in each size. Every order takes its own off the count, and a
-        size that hits 0 goes sold out on the product page by itself. Turn
-        counting off and this product sells with no limit, as it did before
-        stock existed.
-      </div>
-
-      {p.sizes.length === 0 ? (
-        <div className="pf-note mono">Add a size above to count stock for it.</div>
-      ) : !tracking ? (
-        <button type="button" className="pf-add mono" onClick={startTracking}>
-          + Count stock for this product
-        </button>
-      ) : (
-        <>
-          <div className="pf-stock">
-            {p.sizes.map((size) => {
-              const count = Number(p.stock?.[size] ?? 0)
-
-              return (
-                <label className="pf-stock-cell" key={size}>
-                  <span className="mono">{size}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    className={count === 0 ? 'zero' : ''}
-                    value={String(count)}
-                    onChange={(e) => setStock(size, e.target.value)}
-                  />
-                </label>
-              )
-            })}
-          </div>
-          <button type="button" className="pf-remove mono" onClick={stopTracking}>
-            Stop counting stock
-          </button>
-        </>
-      )}
-
-      {/* ---- Size chart ---- */}
-      <div className="pf-label mono">SIZE CHART</div>
-      <div className="pf-note mono">
-        Each product carries its own chart — a jacket and a tee don't measure the
-        same way. Picking a category fills in the chart from the last product in that
-        category ({p.category || 'none picked'}); change it if this one differs. Without
-        a chart, the SIZE CHART button stays hidden on the page.
-      </div>
-
-      {!p.sizeChart ? (
-        <button
-          type="button"
-          className="pf-chart-add mono"
-          onClick={() => set('sizeChart', blankChart(p.sizes))}
+        {/* ---- Details ---- */}
+        <Box
+          title="DETAILS"
+          tip={<>Box name on the left (Fabric, Fit…), the detail on the right. Customers see only what's on the right — "Fabric | 100% cotton" shows as "100% cotton". Leave the right side empty and that row isn't shown. A new product starts with the last product's boxes; add one with + Add box, drop one with ×.</>}
         >
-          + Add a size chart
-        </button>
-      ) : (
-        <div className="pf-chart">
-          <label className="pf-field">
-            <span className="mono">COLUMNS</span>
-            <input
-              className="mono"
-              value={p.sizeChart.columns.join(', ')}
-              onChange={(e) => setChartColumns(e.target.value)}
-              placeholder="S, M, L, XL"
-            />
-            <em className="pf-hint mono">Comma separated — usually the sizes you sell.</em>
-          </label>
-
-          <div className="pf-chart-grid">
-            <div
-              className="pf-chart-row head mono"
-              style={{ gridTemplateColumns: `150px repeat(${p.sizeChart.columns.length}, 1fr) 30px` }}
-            >
-              <span>MEASUREMENT</span>
-              {p.sizeChart.columns.map((c) => (
-                <span key={c}>{c}</span>
-              ))}
-              <span />
-            </div>
-
-            {p.sizeChart.rows.map((row, ri) => (
-              <div
-                className="pf-chart-row"
-                key={ri}
-                style={{ gridTemplateColumns: `150px repeat(${p.sizeChart.columns.length}, 1fr) 30px` }}
-              >
+          <div className="pf-detail-grid">
+            {detailRows.map((row, i) => (
+              <div className="pf-detail-row" key={i}>
                 <input
                   className="mono"
+                  list="pf-detail-labels"
                   value={row.label}
-                  onChange={(e) => setChartRowLabel(ri, e.target.value.toUpperCase())}
-                  placeholder="CHEST"
+                  onChange={(e) =>
+                    updateDetailRows(detailRows.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
+                  }
+                  placeholder="Fabric"
                 />
-                {p.sizeChart.columns.map((c, ci) => (
-                  <input
-                    key={c}
-                    className="mono"
-                    value={row.values[ci] ?? ''}
-                    onChange={(e) => setChartCell(ri, ci, e.target.value)}
-                    placeholder="—"
-                  />
-                ))}
+                <input
+                  value={row.value}
+                  onChange={(e) =>
+                    updateDetailRows(detailRows.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))
+                  }
+                  placeholder="100% cotton"
+                />
                 <button
                   type="button"
                   className="pf-chart-x"
-                  onClick={() => removeChartRow(ri)}
+                  onClick={() => {
+                    const next = detailRows.filter((_, j) => j !== i)
+                    updateDetailRows(next.length > 0 ? next : [{ label: '', value: '' }])
+                  }}
                   title="Remove row"
                 >
                   <IconX width="12" height="12" />
@@ -847,73 +772,256 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
             ))}
           </div>
 
-          <div className="pf-chart-actions">
-            <button type="button" className="pf-chart-add mono" onClick={addChartRow}>
-              + Add measurement
-            </button>
-            <button
-              type="button"
-              className="pf-ghost danger mono"
-              onClick={() => set('sizeChart', null)}
-            >
-              Remove chart
-            </button>
+          <datalist id="pf-detail-labels">
+            {knownLabels.map((l) => (
+              <option key={l} value={l} />
+            ))}
+          </datalist>
+
+          <button
+            type="button"
+            className="pf-chart-add mono"
+            onClick={() => updateDetailRows([...detailRows, { label: '', value: '' }])}
+          >
+            + Add box
+          </button>
+        </Box>
+
+        {/* ---- Sizes ---- */}
+        <Box title="SIZES AVAILABLE" tip="Tick the sizes this product comes in; + Add size for one that isn't listed. Under it, tick a size to strike it through on the page whatever the stock count says — a size that runs out sells out by itself.">
+          <div className="pf-sizes">
+            {sizeChoices.map((z) => (
+              <button
+                type="button"
+                key={z}
+                className={`pf-cat ${p.sizes.includes(z) ? 'on' : ''}`}
+                onClick={() => toggleSize(z)}
+              >
+                <span className="pf-box" />
+                {SIZE_NAMES[z] || z}
+              </button>
+            ))}
           </div>
 
-          <label className="pf-field">
-            <span className="mono">CHART NOTES</span>
-            <textarea
-              rows={3}
-              value={(p.sizeChart.notes || []).join('\n')}
-              onChange={(e) =>
-                updateChart((chart) => ({
-                  ...chart,
-                  notes: e.target.value.split('\n'),
-                }))
-              }
-              placeholder={'Measured flat, in centimetres\nChest measured as circumference'}
-            />
-            <em className="pf-hint mono">One line per note, shown under the chart.</em>
-          </label>
-        </div>
-      )}
-
-      {/* ---- Launch time ---- */}
-      <div className="pf-field pf-launch">
-        <span className="mono">GOES LIVE AT (OPTIONAL)</span>
-        <div className="pf-launch-row">
-          <input
-            type="datetime-local"
-            value={p.publishAt || ''}
-            onChange={(e) => set('publishAt', e.target.value)}
-          />
-          {p.publishAt && (
-            <button type="button" className="pf-ghost mono" onClick={() => set('publishAt', '')}>
-              Clear — live now
+          {addingSize ? (
+            <div className="pf-newcat">
+              <input
+                className="mono"
+                autoFocus
+                value={newSize}
+                onChange={(e) => setNewSize(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSize() } }}
+                placeholder="E.G. 3XL, 32, FREE"
+              />
+              <button type="button" className="pf-newcat-add mono" onClick={addSize}>Add</button>
+              <button type="button" className="pf-ghost mono" onClick={() => { setNewSize(''); setAddingSize(false) }}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="pf-chart-add mono" onClick={() => setAddingSize(true)}>
+              + Add size
             </button>
           )}
-        </div>
-        <em className="pf-hint mono">
-          {p.publishAt && new Date(p.publishAt) > new Date()
-            ? `Hidden from the shop until ${launchLabel(new Date(p.publishAt).toISOString())} — then it appears by itself.`
-            : 'Leave empty to show it as soon as it\'s saved. Set a time to keep it hidden until then (e.g. a drop at 10 pm).'}
-        </em>
-      </div>
 
-      {/* ---- Flags ---- */}
-      <div className="pf-flags">
-        <label className="pf-check mono">
-          <input type="checkbox" checked={p.isNew} onChange={(e) => set('isNew', e.target.checked)} />
-          Show NEW badge
-        </label>
-        <label className="pf-check mono">
-          <input
-            type="checkbox"
-            checked={p.featured}
-            onChange={(e) => set('featured', e.target.checked)}
-          />
-          Feature on shop grid (large tile)
-        </label>
+          {p.sizes.length > 0 && (
+            <div className="pf-field">
+              <FieldLabel tip="Struck through on the product page whatever the count says — for a size you've put aside. A size that runs out sells out on its own.">
+                STRUCK THROUGH ON THE PAGE
+              </FieldLabel>
+              <div className="pf-sizes">
+                {p.sizes.map((z) => (
+                  <button
+                    type="button"
+                    key={z}
+                    className={`pf-cat off ${p.sizesOut.includes(z) ? 'on' : ''}`}
+                    onClick={() => toggleSizeOut(z)}
+                  >
+                    <span className="pf-box" />
+                    {z}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </Box>
+
+        {/* ---- Stock ---- */}
+        <Box title="STOCK" tip="Pieces left in each size. Every order takes its own off the count, and a size that hits 0 goes sold out on the product page by itself. Turn counting off and this product sells with no limit.">
+          {p.sizes.length === 0 ? (
+            <div className="pf-note mono">Tick a size first to count stock for it.</div>
+          ) : !tracking ? (
+            <button type="button" className="pf-add mono" onClick={startTracking}>
+              + Count stock for this product
+            </button>
+          ) : (
+            <>
+              <div className="pf-stock-list">
+                {p.sizes.map((size) => {
+                  const count = Number(p.stock?.[size] ?? 0)
+                  return (
+                    <label className="pf-stock-line" key={size}>
+                      <span className="mono">{SIZE_NAMES[size] || size}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        className={count === 0 ? 'zero' : ''}
+                        value={String(count)}
+                        onChange={(e) => setStock(size, e.target.value)}
+                      />
+                    </label>
+                  )
+                })}
+              </div>
+              <div className="pf-stock-total mono">
+                Total {p.sizes.reduce((n, z) => n + Number(p.stock?.[z] ?? 0), 0)} pieces
+              </div>
+              <button type="button" className="pf-remove mono" onClick={stopTracking}>
+                Stop counting stock
+              </button>
+            </>
+          )}
+        </Box>
+
+        {/* ---- Launch & badges ---- */}
+        <Box title="GOES LIVE & BADGES" tip="Leave the time empty to show the product as soon as it's saved. Set a time to keep it hidden from the shop until then — e.g. a drop at 10 pm — and it appears by itself.">
+          <div className="pf-field pf-launch">
+            <FieldLabel>GOES LIVE AT (OPTIONAL)</FieldLabel>
+            <input
+              type="datetime-local"
+              value={p.publishAt || ''}
+              onChange={(e) => set('publishAt', e.target.value)}
+            />
+            {p.publishAt && (
+              <button type="button" className="pf-ghost mono pf-launch-clear" onClick={() => set('publishAt', '')}>
+                Clear — live now
+              </button>
+            )}
+            {p.publishAt && new Date(p.publishAt) > new Date() && (
+              <em className="pf-hint mono">
+                Hidden from the shop until {launchLabel(new Date(p.publishAt).toISOString())}.
+              </em>
+            )}
+          </div>
+
+          <div className="pf-flags">
+            <label className="pf-check mono">
+              <input type="checkbox" checked={p.isNew} onChange={(e) => set('isNew', e.target.checked)} />
+              Show NEW badge
+            </label>
+            <label className="pf-check mono">
+              <input
+                type="checkbox"
+                checked={p.featured}
+                onChange={(e) => set('featured', e.target.checked)}
+              />
+              Feature on shop grid (large tile)
+            </label>
+          </div>
+        </Box>
+
+        {/* ---- Size chart ---- */}
+        <Box
+          title="SIZE CHART"
+          wide
+          tip={<>Each product carries its own chart — a jacket and a tee don't measure the same way. Picking a category fills in the chart from the last product in that category ({p.category || 'none picked'}); change it if this one differs. Without a chart, the SIZE CHART button stays hidden on the page.</>}
+        >
+          {!p.sizeChart ? (
+            <button
+              type="button"
+              className="pf-chart-add mono"
+              onClick={() => set('sizeChart', blankChart(p.sizes))}
+            >
+              + Add a size chart
+            </button>
+          ) : (
+            <div className="pf-chart">
+              <label className="pf-field">
+                <FieldLabel tip="Comma separated — usually the sizes you sell.">COLUMNS</FieldLabel>
+                <input
+                  className="mono"
+                  value={p.sizeChart.columns.join(', ')}
+                  onChange={(e) => setChartColumns(e.target.value)}
+                  placeholder="S, M, L, XL"
+                />
+              </label>
+
+              <div className="pf-chart-grid">
+                <div
+                  className="pf-chart-row head mono"
+                  style={{ gridTemplateColumns: `150px repeat(${p.sizeChart.columns.length}, 1fr) 30px` }}
+                >
+                  <span>MEASUREMENT</span>
+                  {p.sizeChart.columns.map((c) => (
+                    <span key={c}>{c}</span>
+                  ))}
+                  <span />
+                </div>
+
+                {p.sizeChart.rows.map((row, ri) => (
+                  <div
+                    className="pf-chart-row"
+                    key={ri}
+                    style={{ gridTemplateColumns: `150px repeat(${p.sizeChart.columns.length}, 1fr) 30px` }}
+                  >
+                    <input
+                      className="mono"
+                      value={row.label}
+                      onChange={(e) => setChartRowLabel(ri, e.target.value.toUpperCase())}
+                      placeholder="CHEST"
+                    />
+                    {p.sizeChart.columns.map((c, ci) => (
+                      <input
+                        key={c}
+                        className="mono"
+                        value={row.values[ci] ?? ''}
+                        onChange={(e) => setChartCell(ri, ci, e.target.value)}
+                        placeholder="—"
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      className="pf-chart-x"
+                      onClick={() => removeChartRow(ri)}
+                      title="Remove row"
+                    >
+                      <IconX width="12" height="12" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pf-chart-actions">
+                <button type="button" className="pf-chart-add mono" onClick={addChartRow}>
+                  + Add measurement
+                </button>
+                <button
+                  type="button"
+                  className="pf-ghost danger mono"
+                  onClick={() => set('sizeChart', null)}
+                >
+                  Remove chart
+                </button>
+              </div>
+
+              <label className="pf-field">
+                <FieldLabel tip="One line per note, shown under the chart.">CHART NOTES</FieldLabel>
+                <textarea
+                  rows={3}
+                  value={(p.sizeChart.notes || []).join('\n')}
+                  onChange={(e) =>
+                    updateChart((chart) => ({
+                      ...chart,
+                      notes: e.target.value.split('\n'),
+                    }))
+                  }
+                  placeholder={'Measured flat, in centimetres\nChest measured as circumference'}
+                />
+              </label>
+            </div>
+          )}
+        </Box>
       </div>
 
       {/* ---- Actions ---- */}
