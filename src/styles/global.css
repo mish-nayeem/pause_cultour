@@ -121,6 +121,21 @@ button {
    the slide is the hover effect here. */
 .card-track > img { transform: none !important; }
 .card-track-wait { background: var(--paper-dim); }
+/* One card photo (FitPhoto): fills the card; a landscape one shows whole
+   over a blurred copy of itself instead of losing its sides. */
+.card-fit { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; }
+.card-fit > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-fit.wide > .card-fit-main { position: relative; object-fit: contain; }
+.card-fit-bg {
+  position: absolute;
+  inset: 0;
+  filter: blur(18px) saturate(1.1);
+  transform: scale(1.15) !important;
+  opacity: 0.85;
+}
+.card-track .card-fit > img { transform: none !important; }
+.card-track .card-fit > .card-fit-bg { transform: scale(1.15) !important; }
+
 /* Following a finger: no easing, or the strip lags behind it. */
 .card-track.dragging { transition: none; }
 
