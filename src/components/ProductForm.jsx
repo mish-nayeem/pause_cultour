@@ -69,11 +69,33 @@ export function nextProductId(ids) {
 }
 
 function blankChart(sizes) {
-  const columns = sizes.length > 0 ? sizes : ['S', 'M', 'L', 'XL']
+  const columns = sizes.length > 0 ? sizes.map((z) => String(z).trim().toUpperCase()) : ['S', 'M', 'L', 'XL']
   return {
     columns,
     rows: [{ label: 'CHEST', values: columns.map(() => '') }],
     notes: ['Measured flat, in centimetres'],
+  }
+}
+
+// The chart's columns are the sizes the product is sold in, in that order.
+// A cell's value goes with its size (and row), so ticking a size off and back
+// on brings its numbers back — memo holds the ones of sizes ticked off.
+function chartForSizes(chart, sizes, memo = null) {
+  if (!chart || !sizes?.length) return chart
+  const columns = sizes.map((z) => String(z).trim().toUpperCase())
+  if (columns.join('|') === (chart.columns || []).join('|')) return chart
+  return {
+    ...chart,
+    columns,
+    rows: chart.rows.map((r, ri) => {
+      const had = Object.fromEntries((chart.columns || []).map((c, i) => [c, r.values[i] ?? '']))
+      if (memo) {
+        const kept = memo.get(ri) || {}
+        for (const [c, v] of Object.entries(had)) if (v) kept[c] = v
+        memo.set(ri, kept)
+      }
+      return { ...r, values: columns.map((c) => had[c] || memo?.get(ri)?.[c] || '') }
+    }),
   }
 }
 
@@ -166,8 +188,8 @@ function Box({ title, tip, wide = false, children }) {
 export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel, onAddColour }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
-  const [p, setP] = useState(() => (
-    existing
+  const [p, setP] = useState(() => {
+    const start = existing
       ? fromRow(existing)
       : copyFrom
         ? asNewColour(copyFrom, existingIds)
@@ -178,7 +200,10 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
             id: nextProductId(existingIds),
             sizeChart: lastChartFor(BLANK.category, allProducts, null),
           }
-  ))
+    return { ...start, sizeChart: chartForSizes(start.sizeChart, start.sizes) }
+  })
+  // Size-chart numbers of sizes ticked off, by row, for when they come back.
+  const chartMemo = useRef(new Map())
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -220,7 +245,8 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   function pickCategory(category) {
     setP((prev) => {
       if ((prev.category || '').trim().toLowerCase() === (category || '').trim().toLowerCase()) return { ...prev, category }
-      return { ...prev, category, sizeChart: lastChartFor(category, allProducts, prev.id) }
+      chartMemo.current = new Map()
+      return { ...prev, category, sizeChart: chartForSizes(lastChartFor(category, allProducts, prev.id), prev.sizes) }
     })
   }
 
@@ -234,6 +260,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       ...prev,
       sizes,
       stock: stockMap(prev) ? stockForSizes(prev, sizes) : prev.stock,
+      sizeChart: chartForSizes(prev.sizeChart, sizes, chartMemo.current),
     }))
   }
 
@@ -325,20 +352,6 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
 
   function updateChart(fn) {
     setP((prev) => ({ ...prev, sizeChart: fn(prev.sizeChart) }))
-  }
-
-  // Changing the columns has to resize every row in step, otherwise a row keeps
-  // values that no longer line up with a heading.
-  function setChartColumns(csv) {
-    const columns = csv.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
-    updateChart((chart) => ({
-      ...chart,
-      columns,
-      rows: chart.rows.map((r) => ({
-        ...r,
-        values: columns.map((_, i) => r.values[i] ?? ''),
-      })),
-    }))
   }
 
   function setChartCell(rowIndex, colIndex, value) {
@@ -890,15 +903,11 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
             </button>
           ) : (
             <div className="pf-chart">
-              <label className="pf-field">
-                <FieldLabel tip="Comma separated — usually the sizes you sell.">COLUMNS</FieldLabel>
-                <input
-                  className="mono"
-                  value={p.sizeChart.columns.join(', ')}
-                  onChange={(e) => setChartColumns(e.target.value)}
-                  placeholder="S, M, L, XL"
-                />
-              </label>
+              {/* The columns are the sizes ticked under Sizes available. */}
+              <div className="pf-chart-cols mono">
+                COLUMNS · {p.sizeChart.columns.join(' · ')}
+                <InfoTip>The chart has one column per size ticked under Sizes available, in the same order. Tick a size on or off there and its column comes or goes here — numbers typed for a size come back if it's ticked on again.</InfoTip>
+              </div>
 
               <div className="pf-chart-grid">
                 <div
