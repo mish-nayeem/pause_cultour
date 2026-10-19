@@ -16,7 +16,6 @@ import {
   fetchReturns,
   fetchAbandonedCarts,
   fetchBlockedAttempts,
-  customerList,
   repeatVsNew,
   costAndMargin,
   fetchAllReviews,
@@ -119,7 +118,7 @@ const SECTION_COLORS = {
 const OVERVIEW_SUBS = [
   { key: 'stats', label: 'Key stats' },
   { key: 'trend', label: 'Sales trend' },
-  { key: 'recent', label: 'Recent orders' },
+  { key: 'recent', label: 'Order sources' },
 ]
 
 const ORDERS_SUBS = [
@@ -139,7 +138,6 @@ const PRODUCTS_SUBS = [
 ]
 
 const CUSTOMERS_SUBS = [
-  { key: 'list', label: 'Customer list' },
   { key: 'repeat', label: 'Repeat vs new' },
   { key: 'reviews', label: 'Reviews' },
   { key: 'wishlist', label: 'Wishlist' },
@@ -467,7 +465,7 @@ export default function Admin() {
   const [supportSub, setSupportSub] = useState('requests')
   const [pageViews, setPageViews] = useState([])
   const [productsSub, setProductsSub] = useState('catalog')
-  const [customersSub, setCustomersSub] = useState('list')
+  const [customersSub, setCustomersSub] = useState('repeat')
   const [allReviews, setAllReviews] = useState([])
   const [marketingSub, setMarketingSub] = useState('audience')
   const [adSpend, setAdSpend] = useState([])
@@ -571,7 +569,6 @@ export default function Admin() {
   const top = useMemo(() => topProducts(orders, 5), [orders])
   const demand = useMemo(() => groupDemand(wishRows), [wishRows])
   const customers = useMemo(() => customerIndex(orders), [orders])
-  const custList = useMemo(() => customerList(orders), [orders])
   const custSplit = useMemo(() => repeatVsNew(orders), [orders])
   const margins = useMemo(() => costAndMargin(products), [products])
   const traffic = useMemo(() => trafficByPage(pageViews), [pageViews])
@@ -1308,47 +1305,6 @@ export default function Admin() {
             </section>
             )}
 
-            {overviewSub === 'recent' && (
-            <div className="two-col">
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
-                  <IconTruck width="13" height="13" />RECENT ORDERS
-                </div>
-                {orders.length === 0 && <div className="empty mono">No orders yet.</div>}
-                {orders.slice(0, 6).map((o) => (
-                  <div className="mini-row" key={o.id}>
-                    <div>
-                      <div className="mini-id mono">{o.id}</div>
-                      <div className="mini-name">{o.customer_name}</div>
-                    </div>
-                    <div className="mini-right">
-                      <div className="mono">{taka(o.subtotal)}</div>
-                      <span className={`pill ${o.status} mono`}>{o.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </section>
-
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>
-                  <IconStar width="13" height="13" />TOP SELLERS
-                </div>
-                {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
-                {top.map((p, i) => (
-                  <div className="mini-row" key={p.name}>
-                    <div>
-                      <div className="mini-id mono">{String(i + 1).padStart(2, '0')}</div>
-                      <div className="mini-name">{p.name}</div>
-                    </div>
-                    <div className="mini-right">
-                      <div className="mono">{p.units} sold</div>
-                      <div className="mono dim">{taka(p.value)}</div>
-                    </div>
-                  </div>
-                ))}
-              </section>
-            </div>
-            )}
           </div>
         )}
 
@@ -1780,9 +1736,18 @@ export default function Admin() {
             {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
             {top.map((p, i) => (
               <div className="mini-row" key={p.id || p.name}>
-                <div>
-                  <div className="mini-name">{String(i + 1).padStart(2, '0')} · {p.name}</div>
-                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{p.id || '—'}</div>
+                <div className="sl-who">
+                  <span className="sl-thumb">
+                    {productsById.get(String(p.id))?.images?.[0] && (
+                      <img src={imgUrl(productsById.get(String(p.id)).images[0], { w: 120 })} alt="" loading="lazy" />
+                    )}
+                  </span>
+                  <div>
+                    <div className="mini-name">{String(i + 1).padStart(2, '0')} · {p.name}</div>
+                    <div className="mini-id mono" style={{ marginTop: '3px' }}>
+                      {[productsById.get(String(p.id))?.variant, p.id].filter(Boolean).join(' · ') || '—'}
+                    </div>
+                  </div>
                 </div>
                 <div className="mini-right">
                   <div className="mono">{p.units} sold</div>
@@ -1832,31 +1797,63 @@ export default function Admin() {
             ))}
           </div>
 
-          {customersSub === 'list' && (
+          {customersSub === 'repeat' && (
+          <>
+          <div className="stat-row four">
+            <StatCard label="CUSTOMERS" value={custSplit.new + custSplit.repeat} icon={<IconStar />} note="One per phone number" />
+            <StatCard label="NEW · 1 ORDER" value={custSplit.new} icon={<IconBox />} />
+            <StatCard label="REPEAT · 2+ ORDERS" tone="good" value={custSplit.repeat} icon={<IconCheck />} />
+            <StatCard label="CAME BACK" tone="good" value={`${custSplit.rate}%`} icon={<IconTrend />} note="Share of customers who ordered again" />
+          </div>
+
+          {/* Where the money comes from: first-timers or the ones who came back. */}
           <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '18px' }}>CUSTOMER LIST</div>
-            {custList.length === 0 && <div className="empty mono">No orders yet.</div>}
-            {custList.map((c) => (
-              <div className="mini-row" key={c.phone}>
-                <div>
+            <div className="panel-label mono" style={{ marginBottom: '12px' }}>COLLECTED · NEW VS REPEAT</div>
+            {(() => {
+              const total = custSplit.newSpent + custSplit.repeatSpent
+              const pct = total ? Math.round((custSplit.repeatSpent / total) * 100) : 0
+              return (
+                <>
+                  <div className="rv-split">
+                    <div><span className="mono dim">New</span><strong>{taka(custSplit.newSpent)}</strong><span className="mono dim">{100 - pct}%</span></div>
+                    <div><span className="mono dim">Repeat</span><strong>{taka(custSplit.repeatSpent)}</strong><span className="mono dim">{pct}%</span></div>
+                  </div>
+                  <div className="rv-bar" aria-hidden="true"><i style={{ width: `${100 - pct}%` }} /><b style={{ width: `${pct}%` }} /></div>
+                  <div className="panel-note" style={{ marginTop: '8px' }}>Delivered orders only.</div>
+                </>
+              )
+            })()}
+          </section>
+
+          <section className="panel">
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>REGULARS</div>
+            <div className="panel-note" style={{ marginBottom: '14px' }}>Everyone who's ordered more than once, most orders first.</div>
+            {custSplit.regulars.length === 0 && <div className="empty mono">No repeat customers yet.</div>}
+            {custSplit.regulars.map((c) => (
+              <div className="mini-row rv-row" key={c.phone}>
+                <div className="rv-who">
                   <div className="mini-name">{c.name}</div>
-                  <div className="mini-id mono" style={{ marginTop: '3px' }}>{c.phone}</div>
+                  <div className="mini-id mono" style={{ marginTop: '3px' }}>
+                    <a href={`tel:${c.phone}`}>{c.phone}</a>
+                    <a className="wa-mini" href={whatsappLink(c.phone, '')} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${c.name}`}>
+                      <IconChat width="13" height="13" />
+                    </a>
+                  </div>
+                  <div className="mini-id mono">
+                    First {shortDate(c.firstAt)} · last {shortDate(c.lastAt)}
+                  </div>
                 </div>
                 <div className="mini-right">
-                  <div className="mono">{c.orders} order{c.orders === 1 ? '' : 's'}</div>
-                  <div className="mono dim">{taka(c.totalSpent)}</div>
+                  <div className="mono rv-orders">{c.orders} orders</div>
+                  <div className="mono dim">
+                    {c.delivered} delivered{c.cancelled ? ` · ${c.cancelled} cancelled` : ''}
+                  </div>
+                  <div className="mono">{taka(c.totalSpent)}</div>
                 </div>
               </div>
             ))}
           </section>
-          )}
-
-          {customersSub === 'repeat' && (
-          <div className="stat-row three">
-            <StatCard label="TOTAL CUSTOMERS" value={custSplit.new + custSplit.repeat} icon={<IconStar />} />
-            <StatCard label="NEW (1 ORDER)" value={custSplit.new} icon={<IconBox />} />
-            <StatCard label="REPEAT (2+ ORDERS)" tone="good" value={custSplit.repeat} icon={<IconCheck />} />
-          </div>
+          </>
           )}
 
           {customersSub === 'reviews' && (
@@ -1901,11 +1898,18 @@ export default function Admin() {
               {demand.map((g) => (
                 <div className="wish-group" key={g.key}>
                   <div className="low-row">
-                    <div>
-                      <div className="mini-name">{g.name}</div>
-                      <div className="mini-id mono" style={{ marginTop: '3px' }}>
-                        {g.size ? `SIZE ${g.size}` : 'WHOLE PRODUCT'} · waiting since{' '}
-                        {shortDate(g.waitingSince)}
+                    <div className="sl-who">
+                      <span className="sl-thumb">
+                        {productsById.get(String(g.productId))?.images?.[0] && (
+                          <img src={imgUrl(productsById.get(String(g.productId)).images[0], { w: 120 })} alt="" loading="lazy" />
+                        )}
+                      </span>
+                      <div>
+                        <div className="mini-name">{g.name}</div>
+                        <div className="mini-id mono" style={{ marginTop: '3px' }}>
+                          {g.size ? `SIZE ${g.size}` : 'WHOLE PRODUCT'} · waiting since{' '}
+                          {shortDate(g.waitingSince)}
+                        </div>
                       </div>
                     </div>
                     <div className="low-right mono">

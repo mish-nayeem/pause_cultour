@@ -582,9 +582,28 @@ export function customerList(orders) {
     const key = phoneKey(o.customer_phone)
     if (!key) return
 
-    const entry = byPhone.get(key) || { name: o.customer_name, phone: o.customer_phone, orders: 0, totalSpent: 0 }
+    const entry = byPhone.get(key) || {
+      name: o.customer_name,
+      phone: o.customer_phone,
+      orders: 0,
+      delivered: 0,
+      cancelled: 0,
+      totalSpent: 0,
+      firstAt: o.created_at,
+      lastAt: o.created_at,
+    }
     entry.orders += 1
-    if (o.status === 'delivered') entry.totalSpent += Number(o.total ?? o.subtotal)
+    if (o.status === 'delivered') {
+      entry.delivered += 1
+      entry.totalSpent += Number(o.total ?? o.subtotal)
+    }
+    if (o.status === 'cancelled') entry.cancelled += 1
+    if (o.created_at < entry.firstAt) entry.firstAt = o.created_at
+    if (o.created_at > entry.lastAt) {
+      entry.lastAt = o.created_at
+      // The name they used most recently.
+      entry.name = o.customer_name
+    }
     byPhone.set(key, entry)
   })
 
@@ -593,11 +612,21 @@ export function customerList(orders) {
 
 // New (one order) vs repeat (more than one) — the split the Customers tab
 // shows as a headline, built off the same per-phone counts as customerList.
+// Also: what each side has spent (delivered orders only), the share of
+// customers who came back, and the repeat customers themselves, most orders
+// first — the regulars.
 export function repeatVsNew(orders) {
   const list = customerList(orders)
+  const once = list.filter((c) => c.orders === 1)
+  const back = list.filter((c) => c.orders > 1)
+  const spent = (rows) => rows.reduce((sum, c) => sum + c.totalSpent, 0)
   return {
-    new: list.filter((c) => c.orders === 1).length,
-    repeat: list.filter((c) => c.orders > 1).length,
+    new: once.length,
+    repeat: back.length,
+    rate: list.length ? Math.round((back.length / list.length) * 100) : 0,
+    newSpent: spent(once),
+    repeatSpent: spent(back),
+    regulars: back.sort((a, b) => b.orders - a.orders || b.totalSpent - a.totalSpent),
   }
 }
 

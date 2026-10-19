@@ -590,3 +590,161 @@
   display: flex;
   align-items: center;
 }
+
+/* ---------- Boxes ----------
+   The form in boxes: three to a row on a desktop, two on a tablet, one on a
+   phone. Images and the size chart take a whole row. Each box is frosted
+   glass with a soft border in the theme's colour, like the admin's lists. */
+
+.pf-secs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  /* Boxes in a row share its height, so a short box leaves no hole under it. */
+  align-items: stretch;
+}
+
+.pf-sec {
+  border: 1px solid var(--order-edge, var(--steel-line));
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  background: var(--glass, transparent);
+  box-shadow: var(--glass-shine, none);
+  min-width: 0;
+}
+
+.pf-sec.wide { grid-column: 1 / -1; }
+
+.pf-sec-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pf-sec-title { font-size: 11.5px; letter-spacing: 0.08em; font-weight: 800; color: var(--ink); }
+
+.pf-sec .pf-field:first-of-type { margin-top: 0; }
+.pf-sec .pf-field { margin-top: 12px; }
+.pf-sec > .pf-field:first-child,
+.pf-sec .pf-sec-head + .pf-field { margin-top: 0; }
+
+/* A field's label, with its ⓘ when it has one. */
+.pf-flabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-bottom: 6px;
+}
+
+.pf-field > .pf-flabel { margin-bottom: 6px; }
+
+/* ---------- ⓘ ---------- */
+
+.pf-tip { position: relative; display: inline-flex; }
+
+.pf-tip-btn {
+  width: 17px;
+  height: 17px;
+  border-radius: 50% !important;
+  border: 1px solid color-mix(in srgb, var(--cobalt) 45%, transparent);
+  background: none;
+  color: var(--cobalt);
+  font: italic 700 10.5px/1 Georgia, serif;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pf-tip-btn.on,
+.pf-tip-btn:hover { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
+
+.pf-tip-pop {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: -10px;
+  width: min(280px, 78vw);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11.5px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+}
+
+.pf-tip-pop::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 14px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+.pf-tip-pop.flip { left: auto; right: -10px; }
+.pf-tip-pop.flip::before { left: auto; right: 14px; }
+.pf-tip-pop strong { color: inherit; }
+
+/* ---------- Inside the boxes ---------- */
+
+.pf-sec .pf-images { margin-bottom: 0; }
+.pf-sec .pf-cats { margin-top: 0; }
+.pf-sec .pf-colours { min-height: 38px; }
+
+.pf-sizes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.pf-cat.off.on { border-color: var(--signal); }
+.pf-cat.off.on .pf-box { background: var(--signal); border-color: var(--signal); }
+
+.pf-stock-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+
+.pf-stock-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pf-stock-line span { font-size: 12px; color: var(--ink); }
+
+.pf-stock-line input {
+  width: 70px;
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 8px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--ink);
+  text-align: center;
+}
+
+.pf-stock-line input:focus { outline: none; border-color: var(--cobalt); }
+.pf-stock-line input.zero { border-color: var(--signal); color: var(--signal); }
+
+.pf-stock-total { font-size: 11.5px; color: var(--steel); margin: 10px 0 6px; }
+.pf-sec .pf-remove { margin-bottom: 0; }
+.pf-sec .pf-add { margin-bottom: 0; }
+
+.pf-sec .pf-detail-grid { margin-top: 0; }
+.pf-sec .pf-detail-row { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) 28px; }
+
+.pf-sec .pf-launch { margin-top: 0; }
+.pf-launch input { max-width: 100%; }
+.pf-launch-clear { align-self: flex-start; margin-top: 8px; }
+.pf-sec .pf-flags { margin-top: 14px; flex-direction: column; align-items: flex-start; gap: 10px; }
+
+.pf-sec .pf-chart { margin-top: 0; }
+
+@media (max-width: 1100px) {
+  .pf-secs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .pf-secs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .pf-sec { padding: 12px 13px 14px; }
+}
