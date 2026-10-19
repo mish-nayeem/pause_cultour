@@ -1547,3 +1547,25 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
   .osheet-head { border-radius: 20px 20px 0 0; }
   @keyframes osheet-up { from { transform: translateY(40px); opacity: 0; } }
 }
+
+/* ---------- Customers → Repeat vs new ---------- */
+
+.rv-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rv-split > div { display: flex; flex-direction: column; gap: 2px; }
+.rv-split > div:last-child { text-align: right; align-items: flex-end; }
+.rv-split strong { font-size: 20px; }
+
+.rv-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--steel-line); margin-top: 10px; }
+.rv-bar i { background: color-mix(in srgb, var(--cobalt) 35%, transparent); }
+.rv-bar b { background: var(--cobalt); }
+
+.rv-row { align-items: flex-start; }
+.rv-who .mini-id { display: flex; align-items: center; gap: 6px; }
+.rv-who a { color: inherit; }
+.rv-orders { font-weight: 800; font-size: 14px; }
+
+/* Wishlist rows: the photo and name get the line; the count and the
+   Email-them button drop under it when there isn't room. */
+.wish-group .low-row { flex-wrap: wrap; gap: 10px; }
+.wish-group .low-row .sl-who { flex: 1 1 200px; }
+.wish-group .low-right { margin-left: auto; }
