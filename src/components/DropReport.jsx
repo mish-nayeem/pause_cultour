@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { imgUrl } from '../lib/images.js'
 import { dropKey } from '../lib/lookbook.js'
 import { totalStock, starSizes } from '../lib/stock.js'
@@ -11,15 +11,26 @@ function taka(n) {
 
 const NO_DROP = 'No drop'
 
-// One colour per drop, round and round, so each reads as its own block.
-const DROP_COLOURS = ['#2F8CFF', '#F0457A', '#1FB57A', '#F2A516', '#7C6CFF', '#13B5C8']
-
 // How full a product still is: plenty, running low, or gone.
 function levelOf(left) {
   if (left == null) return ''
   if (left === 0) return 'out'
   if (left <= 5) return 'low'
   return 'ok'
+}
+
+// A PC gets the drops as cards in a grid and the list in a sheet from the
+// side, like Orders; a phone keeps them one under another, opening in place.
+function useIsPc() {
+  const query = '(min-width: 861px)'
+  const [pc, setPc] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setPc(m.matches)
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [])
+  return pc
 }
 
 // Products → Stock & sales. Everything in one place: how many products, how
@@ -30,6 +41,7 @@ function levelOf(left) {
 // its pieces have already left the stock.
 export default function DropReport({ products, orders }) {
   const [open, setOpen] = useState(null) // a drop's name | 'all' | null
+  const pc = useIsPc()
 
   const { totals, drops } = useMemo(() => {
     // Sold per product, from every order that wasn't cancelled.
@@ -108,25 +120,25 @@ export default function DropReport({ products, orders }) {
       </div>
 
       <div className="dr-totals">
-        <div className="dr-total t-blue">
+        <div className="dr-total">
           <span className="mono">PRODUCTS</span>
           <strong>{totals.products}</strong>
         </div>
         <button
           type="button"
-          className={`dr-total dr-total-btn t-green ${open === 'all' ? 'on' : ''}`}
+          className={`dr-total dr-total-btn ${open === 'all' ? 'on' : ''}`}
           onClick={() => setOpen(open === 'all' ? null : 'all')}
         >
           <span className="mono">PIECES IN STOCK</span>
           <strong>{totals.left}</strong>
-          <em className="mono">{open === 'all' ? 'Hide list ↑' : 'See which ↓'}</em>
+          <em className="mono">{pc ? 'See which →' : open === 'all' ? 'Hide list ↑' : 'See which ↓'}</em>
         </button>
-        <div className="dr-total t-amber">
+        <div className="dr-total">
           <span className="mono">STOCK VALUE</span>
           <strong>{taka(totals.stockValue)}</strong>
           <em className="mono">at full price</em>
         </div>
-        <div className="dr-total t-pink">
+        <div className="dr-total">
           <span className="mono">SOLD</span>
           <strong>{taka(totals.soldValue)}</strong>
           <em className="mono">{totals.soldUnits} pieces</em>
@@ -140,20 +152,19 @@ export default function DropReport({ products, orders }) {
         </div>
       )}
 
-      {open === 'all' && <LeftList items={remaining(allItems)} />}
+      {open === 'all' && !pc && <LeftList items={remaining(allItems)} />}
 
       <div className="dr-label mono">BY DROP</div>
 
       {drops.length === 0 && <div className="empty mono">No products yet.</div>}
 
-      <div className="dr-list">
-        {drops.map((d, i) => {
+      <div className={`dr-list ${pc ? 'dr-grid' : ''}`}>
+        {drops.map((d) => {
           const isOpen = open === d.name
           return (
             <div
               className={`dr-card ${isOpen ? 'open' : ''}`}
               key={d.name}
-              style={{ '--acc': d.name === NO_DROP ? '#8B8A82' : DROP_COLOURS[i % DROP_COLOURS.length] }}
             >
               <button type="button" className="dr-head" onClick={() => setOpen(isOpen ? null : d.name)}>
                 <div className="dr-title">
@@ -177,15 +188,66 @@ export default function DropReport({ products, orders }) {
                   </div>
                 </div>
                 <div className="dr-bar" aria-hidden="true"><i style={{ width: `${d.pct}%` }} /></div>
-                <div className="dr-more mono">{isOpen ? 'Hide products ↑' : 'See what’s left ↓'}</div>
+                <div className="dr-more mono">{pc ? 'See what’s left →' : isOpen ? 'Hide products ↑' : 'See what’s left ↓'}</div>
               </button>
 
-              {isOpen && <LeftList items={remaining(d.items)} inCard />}
+              {isOpen && !pc && <LeftList items={remaining(d.items)} inCard />}
             </div>
           )
         })}
       </div>
+
+      {pc && open && (() => {
+        const d = drops.find((x) => x.name === open)
+        if (open !== 'all' && !d) return null
+        const items = remaining(open === 'all' ? allItems : d.items)
+        return (
+          <SideSheet onClose={() => setOpen(null)}>
+            <div className="osheet-head dr-sheet-head">
+              <div>
+                <div className="osheet-id mono">{open === 'all' ? 'EVERY DROP' : 'DROP'}</div>
+                <div className="osheet-name">{open === 'all' ? 'Pieces in stock' : d.name}</div>
+                <div className="osheet-when mono">
+                  {open === 'all'
+                    ? `${totals.left} pieces · ${taka(totals.stockValue)} at full price`
+                    : `${d.items.length} product${d.items.length === 1 ? '' : 's'} · ${d.sold} sold · ${d.left} left · ${d.pct}% sold through`}
+                </div>
+              </div>
+              <button type="button" className="osheet-close" onClick={() => setOpen(null)} aria-label="Close">✕</button>
+            </div>
+            <div className="osec dr-sheet-list">
+              <div className="osec-label mono">STILL IN STOCK · {items.length} PRODUCT{items.length === 1 ? '' : 'S'}</div>
+              <LeftList items={items} inCard />
+            </div>
+          </SideSheet>
+        )
+      })()}
     </section>
+  )
+}
+
+// The list, in a sheet from the right (PC only). Esc or a click outside closes it.
+function SideSheet({ onClose, children }) {
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') close.current()
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [])
+  return (
+    <div className="osheet-overlay" onClick={onClose}>
+      <aside className="osheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} data-lenis-prevent>
+        {children}
+      </aside>
+    </div>
   )
 }
 
