@@ -299,7 +299,8 @@ export default function LookbookManager({ products }) {
               ))}
             </div>
             <div className={`lk-screen-wrap ${view}`}>
-              <div className="lk-screen">
+              {/* data-lenis-prevent: the page's smooth scroll would take the wheel otherwise, and the screen wouldn't scroll. */}
+              <div className="lk-screen" data-lenis-prevent>
                 <div className="lk-screen-head">
                   <b>{drop}</b> <span>LOOKBOOK</span>
                 </div>

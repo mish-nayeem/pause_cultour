@@ -228,6 +228,7 @@
   background: #fff;
   overflow: hidden auto;
   scrollbar-width: none;
+  overscroll-behavior: contain;
 }
 
 .lk-screen::-webkit-scrollbar { display: none; }
