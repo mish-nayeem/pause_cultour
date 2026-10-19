@@ -22,10 +22,6 @@ import {
   adSpendApi,
   emailCampaignsApi,
   socialStatsApi,
-  fetchPageViews,
-  trafficByPage,
-  conversionRate,
-  salesByDistrict,
 } from '../lib/admin.js'
 import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
 import { imgUrl } from '../lib/images.js'
@@ -76,6 +72,7 @@ import {
 } from '../components/Icons.jsx'
 import { SupportPages, SupportPortal } from '../components/SupportManager.jsx'
 import ReturnsManager from '../components/ReturnsManager.jsx'
+import AnalyticsManager from '../components/AnalyticsManager.jsx'
 import { isNewRequest } from '../lib/support.js'
 import NoticeCenter from '../components/NoticeCenter.jsx'
 import './admin.css'
@@ -160,9 +157,12 @@ const SUPPORT_SUBS = [
 ]
 
 const ANALYTICS_SUBS = [
-  { key: 'traffic', label: 'Visitor traffic' },
-  { key: 'conversion', label: 'Conversion rate' },
-  { key: 'location', label: 'Location map' },
+  { key: 'summary', label: 'Summary' },
+  { key: 'products', label: 'Products' },
+  { key: 'sources', label: 'Where from' },
+  { key: 'timing', label: 'Best times' },
+  { key: 'location', label: 'Districts' },
+  { key: 'pages', label: 'Pages' },
 ]
 
 // The three looks the panel can wear — see admin-theme.css. The pick is kept in
@@ -461,9 +461,8 @@ export default function Admin() {
   const [emailDraft, setEmailDraft] = useState({ campaign: '', open_rate: '', click_rate: '' })
   const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
   const [marketingBusy, setMarketingBusy] = useState(null)
-  const [analyticsSub, setAnalyticsSub] = useState('traffic')
+  const [analyticsSub, setAnalyticsSub] = useState('summary')
   const [supportSub, setSupportSub] = useState('requests')
-  const [pageViews, setPageViews] = useState([])
   const [productsSub, setProductsSub] = useState('catalog')
   const [customersSub, setCustomersSub] = useState('repeat')
   const [allReviews, setAllReviews] = useState([])
@@ -520,7 +519,7 @@ export default function Admin() {
     setLoading(true)
     setLoadError('')
 
-    const [o, p, c, w, r, ac, rv, as, ec, ss, pv, ba] = await Promise.all([
+    const [o, p, c, w, r, ac, rv, as, ec, ss, ba] = await Promise.all([
       fetchOrders(),
       fetchAdminProducts(),
       fetchAllNavCategories(),
@@ -531,7 +530,6 @@ export default function Admin() {
       adSpendApi.fetch(),
       emailCampaignsApi.fetch(),
       socialStatsApi.fetch(),
-      fetchPageViews(),
       fetchBlockedAttempts(),
     ])
 
@@ -551,7 +549,6 @@ export default function Admin() {
     setAdSpend(as.rows)
     setEmailCampaigns(ec.rows)
     setSocialStats(ss.rows)
-    setPageViews(pv.views)
     setBlockedAttempts(ba.attempts)
     setLoading(false)
   }, [])
@@ -571,9 +568,6 @@ export default function Admin() {
   const customers = useMemo(() => customerIndex(orders), [orders])
   const custSplit = useMemo(() => repeatVsNew(orders), [orders])
   const margins = useMemo(() => costAndMargin(products), [products])
-  const traffic = useMemo(() => trafficByPage(pageViews), [pageViews])
-  const conversion = useMemo(() => conversionRate(pageViews, orders), [pageViews, orders])
-  const byDistrict = useMemo(() => salesByDistrict(orders), [orders])
 
   // One row per product, every size's count sitting side by side — same
   // stock-chips a product's catalog row already shows, just without the rest
@@ -2123,41 +2117,7 @@ export default function Admin() {
             ))}
           </div>
 
-          {analyticsSub === 'traffic' && (
-          <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '6px' }}>VISITOR TRAFFIC</div>
-            <div className="panel-note" style={{ marginBottom: '18px' }}>
-              Site visits and bounce rate, last 30 days. Logged by the storefront itself.
-            </div>
-            {traffic.length === 0 && <div className="empty mono">No visits logged yet.</div>}
-            {traffic.map((r) => (
-              <div className="mini-row" key={r.page}>
-                <div className="mini-name">{r.page}</div>
-                <div className="mini-right">
-                  <div className="mono">{r.visits} visit{r.visits === 1 ? '' : 's'}</div>
-                  <div className="mono dim">{r.bounceRate.toFixed(0)}% bounce</div>
-                </div>
-              </div>
-            ))}
-          </section>
-          )}
-
-          {analyticsSub === 'conversion' && (
-          <div className="stat-row three">
-            <StatCard icon={<IconBox />} label="VISITORS (14 DAYS)" value={conversion.visitors} />
-            <StatCard icon={<IconTag />} label="ORDERS (14 DAYS)" value={conversion.orders} />
-            <StatCard icon={<IconCash />} tone="good" label="CONVERSION RATE" value={`${conversion.rate.toFixed(2)}%`} />
-          </div>
-          )}
-
-          {analyticsSub === 'location' && (
-          <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '18px' }}>HIGHEST-SELLING DISTRICTS</div>
-            {byDistrict.length === 0 && <div className="empty mono">No orders yet.</div>}
-            <RankBars rows={byDistrict} empty="No orders yet." accent="cobalt" countKey="orders" countLabel="orders" />
-          </section>
-          )}
-
+          <AnalyticsManager sub={analyticsSub} orders={orders} products={products} />
           </>
         )}
         {!loading && tab === 'lookbook' && <LookbookManager products={products} />}
