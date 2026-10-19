@@ -11,13 +11,16 @@ import {
   lookbookPath,
   dropKey,
 } from '../lib/lookbook.js'
+import { fetchSetting, saveSetting } from '../lib/siteSettings.js'
+import InfoTip from './InfoTip.jsx'
+import FocusPicker from './FocusPicker.jsx'
 import { IconX } from './Icons.jsx'
-import './about-manager.css'
 import './lookbook-manager.css'
 
-// Admin → Lookbook. One lookbook per drop: upload photos, give each an
-// optional caption, tag the products worn in it (those names show on the
-// photo and link to the product), reorder, hide or delete.
+// Admin → Lookbook. One lookbook per drop, in boxes: pick the drop, see how
+// complete it is (and which of its products aren't in any photo yet), add
+// photos, a phone preview of the page — then every photo as a card: what
+// stays in frame, a caption, the products worn in it, order, hide, delete.
 export default function LookbookManager({ products }) {
   const [looks, setLooks] = useState([])
   const [menuDrops, setMenuDrops] = useState([])
@@ -27,6 +30,9 @@ export default function LookbookManager({ products }) {
   const [error, setError] = useState('')
   const [newTitle, setNewTitle] = useState('')
   const [confirmId, setConfirmId] = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const [heroLink, setHeroLink] = useState(null)
+  const [heroNote, setHeroNote] = useState('')
 
   async function load() {
     const { looks, error } = await fetchAllLooks()
@@ -38,10 +44,11 @@ export default function LookbookManager({ products }) {
   useEffect(() => {
     load()
     fetchMenuDrops().then(setMenuDrops)
+    fetchSetting('hero_button').then(({ value }) => setHeroLink(value?.link || '/shop'))
   }, [])
 
   // Every drop the shop knows about: the DROPS menu, the products' own drops,
-  // and any lookbook already made — one chip per drop however it's spelt
+  // and any lookbook already made — one per drop however it's spelt
   // (dropKey), named as the DROPS menu writes it.
   const drops = useMemo(() => {
     const names = [
@@ -63,14 +70,21 @@ export default function LookbookManager({ products }) {
   const inDrop = products.filter((p) => same(p.drop_name))
   const others = products.filter((p) => !same(p.drop_name))
   const shown = looks.filter((l) => same(l.drop_name))
+  const visible = shown.filter((l) => l.active)
+
+  // The drop's products that no photo tags yet — worth a look before launch.
+  const tagged = new Set(shown.flatMap((l) => l.product_ids))
+  const missing = inDrop.filter((p) => !tagged.has(String(p.id)))
+  const untagged = shown.filter((l) => l.product_ids.length === 0).length
+
+  const heroHere = heroLink != null && heroLink.startsWith('/lookbook/') && dropKey(decodeURIComponent(heroLink.slice(10))) === dropKey(drop)
 
   function label(p) {
     return `${p.name}${p.variant ? ` — ${p.variant}` : ''}`
   }
 
-  async function handleUpload(e) {
-    const files = [...(e.target.files || [])]
-    e.target.value = ''
+  async function upload(files) {
+    files = files.filter((f) => f.type.startsWith('image/'))
     if (!files.length || !drop) return
 
     setBusy(true)
@@ -153,107 +167,207 @@ export default function LookbookManager({ products }) {
     setBusy(false)
   }
 
-  return (
-    <section className="panel">
-      <div className="panel-note mono" style={{ marginBottom: '18px' }}>
-        Each drop has its own lookbook page — the DROPS menu opens it. Upload the
-        drop's photos here, then tag the products in each photo: on the site,
-        tapping a photo shows those product names and each one opens its page.
-        Only the photos uploaded here show in the lookbook — product photos stay
-        in the shop.
-      </div>
+  // Homepage → Hero button straight to this lookbook, for a fresh drop.
+  async function pointHero() {
+    const value = { label: `SHOP ${drop}`.toUpperCase().slice(0, 28), link: lookbookPath(drop) }
+    const { error } = await saveSetting('hero_button', value)
+    if (error) return setHeroNote("Couldn't save — try again.")
+    setHeroLink(value.link)
+    setHeroNote(`Homepage button now says ${value.label}.`)
+  }
 
+  return (
+    <div className="lk">
       {error && <div className="err-banner mono">{error}</div>}
 
-      {drops.length === 0 && !loading && (
-        <div className="empty mono">No drops yet — give a product a drop name first (Products → edit → Drop).</div>
-      )}
-
-      {drops.length > 0 && (
-        <>
-          <div className="lk-drops">
-            {drops.map((d) => (
+      {/* ---- Drops ---- */}
+      <Box
+        title="DROPS"
+        wide
+        tip="Every drop has its own lookbook page — the DROPS menu opens it. Pick a drop to work on its photos. A drop shows up here once a product has it as its Drop, or it's in the DROPS menu."
+      >
+        {drops.length === 0 && !loading && (
+          <div className="empty mono">No drops yet — give a product a drop name first (Products → edit → Drop).</div>
+        )}
+        <div className="lk-drops">
+          {drops.map((d) => {
+            const mine = looks.filter((l) => dropKey(l.drop_name) === dropKey(d))
+            const cover = mine.find((l) => l.active) || mine[0]
+            return (
               <button
                 key={d}
                 type="button"
-                className={`lk-drop mono ${d === drop ? 'on' : ''}`}
-                onClick={() => { setDrop(d); setConfirmId(null) }}
+                className={`lk-drop ${dropKey(d) === dropKey(drop) ? 'on' : ''}`}
+                onClick={() => { setDrop(d); setConfirmId(null); setHeroNote('') }}
               >
-                {d}
-                <span className="lk-count">{looks.filter((l) => dropKey(l.drop_name) === dropKey(d)).length}</span>
+                <span className="lk-drop-cover">
+                  {cover ? <img src={imgUrl(cover.image_url, { w: 160 })} alt="" style={{ objectPosition: cover.focus || 'center' }} /> : <i className="mono">NO PHOTOS</i>}
+                </span>
+                <span className="lk-drop-name">{d}</span>
+                <span className="lk-drop-count mono">{mine.length} photo{mine.length === 1 ? '' : 's'}</span>
               </button>
-            ))}
-          </div>
+            )
+          })}
+        </div>
+      </Box>
 
-          <div className="lk-bar">
-            <a href={lookbookPath(drop)} target="_blank" rel="noreferrer" className="lk-view mono">
-              View {drop} lookbook ↗
-            </a>
-          </div>
-
-          <div className="am-add">
-            <input
-              className="am-text-input lk-title-input"
-              placeholder="Caption (optional) — e.g. Jorts and waffle crop top"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-            />
-            <label className={`am-upload mono ${busy ? 'busy' : ''}`}>
-              {busy ? 'Working…' : '+ Upload photos'}
-              <input type="file" accept="image/*" multiple onChange={handleUpload} disabled={busy} />
-            </label>
-          </div>
-
-          <div className="am-size-note mono">
-            <strong>Photos:</strong> portrait shots (4:5, e.g. 1600 × 2000 px) fill the
-            two-a-row grid best. You can pick several at once.
-            <br />
-            <strong>Names:</strong> tag each product in the photo, then type the name
-            to show for it (e.g. "Jorts"). Leave it empty to use the product's own name.
-            The name opens that product's page.
-          </div>
-
-          {loading && <div className="empty mono">Loading…</div>}
-
-          {!loading && shown.length === 0 && (
-            <div className="empty mono">
-              No photos in the {drop} lookbook yet — the page says it's coming soon
-              until you add some.
+      {drop && (
+        <>
+          {/* ---- This drop ---- */}
+          <Box
+            title={`${drop.toUpperCase()} AT A GLANCE`}
+            tip="How complete this lookbook is. Products not in any photo yet can't be found from the lookbook — tag them in a photo below if they're worn in one."
+          >
+            <div className="lk-stats">
+              <div><strong>{visible.length}</strong><span className="mono">SHOWING</span></div>
+              <div><strong>{shown.length - visible.length}</strong><span className="mono">HIDDEN</span></div>
+              <div className={untagged ? 'warn' : ''}><strong>{untagged}</strong><span className="mono">NO PRODUCTS</span></div>
             </div>
-          )}
 
-          <div className="am-list">
-            {shown.map((l, i) => (
-              <div className={`am-row lk-row ${l.active ? '' : 'off'}`} key={l.id}>
-                <div className="am-thumb lk-thumb">
-                  <img src={imgUrl(l.image_url, { w: 320 })} alt="" />
+            <div className="lk-sub mono">
+              NOT IN ANY PHOTO YET
+              <InfoTip>Products with {drop} as their drop that no photo here tags. Each one is listed until a photo tags it.</InfoTip>
+            </div>
+            {inDrop.length === 0 ? (
+              <div className="lk-none mono">No products have {drop} as their drop.</div>
+            ) : missing.length === 0 ? (
+              <div className="lk-ok mono">✓ Every {drop} product is in a photo.</div>
+            ) : (
+              <div className="lk-missing">
+                {missing.map((p) => (
+                  <span className="lk-chip" key={p.id} title={label(p)}>
+                    {p.images?.[0] && <img src={imgUrl(p.images[0], { w: 80 })} alt="" />}
+                    <span>{label(p)}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="lk-links">
+              <a href={lookbookPath(drop)} target="_blank" rel="noreferrer" className="lk-view mono">Open the {drop} lookbook ↗</a>
+              {heroLink != null && (heroHere ? (
+                <span className="lk-ok mono">✓ The homepage button opens this lookbook</span>
+              ) : (
+                <span className="lk-hero">
+                  <button type="button" className="courier-btn ghost mono" onClick={pointHero}>Point the homepage button here</button>
+                  <InfoTip>Sets Homepage → Hero button to SHOP {drop.toUpperCase()}, opening this lookbook — handy while the drop is new. Change it back in Admin → Homepage.</InfoTip>
+                </span>
+              ))}
+              {heroNote && <span className="lk-note mono">{heroNote}</span>}
+            </div>
+          </Box>
+
+          {/* ---- Add photos ---- */}
+          <Box
+            title="ADD PHOTOS"
+            tip={
+              <>
+                <p><b>Size:</b> portrait shots (4:5, e.g. 1600 × 2000 px) fill the grid best — 4 a row on a PC, 2 on a phone.</p>
+                <p>Pick or drop several at once; they go in after the photos already there, in the order picked. The caption is used when you add a single photo.</p>
+                <p>Only these photos show in the lookbook — product photos stay in the shop.</p>
+              </>
+            }
+          >
+            <label className="lk-field">
+              <span className="lk-flabel mono">CAPTION (OPTIONAL)</span>
+              <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g. Jorts and waffle crop top" maxLength={80} />
+            </label>
+            <label
+              className={`lk-drop-zone mono ${busy ? 'busy' : ''} ${dragging ? 'over' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => { e.preventDefault(); setDragging(false); if (!busy) upload([...e.dataTransfer.files]) }}
+            >
+              <strong>{busy ? 'Uploading…' : '+ Choose photos'}</strong>
+              <span>or drop them here · 4:5 portrait</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={busy}
+                onChange={(e) => { const f = [...(e.target.files || [])]; e.target.value = ''; upload(f) }}
+              />
+            </label>
+          </Box>
+
+          {/* ---- Preview ---- */}
+          <Box title="PREVIEW · PHONE" tip="The lookbook page on a phone: two photos a row, hidden ones left out, cropped as you set under each photo.">
+            <div className="lk-phone">
+              <div className="lk-phone-screen">
+                <div className="lk-phone-head">
+                  <b>{drop}</b> <span>LOOKBOOK</span>
                 </div>
+                {visible.length === 0 ? (
+                  <div className="lk-phone-empty mono">The lookbook for this drop is coming soon.</div>
+                ) : (
+                  <div className="lk-phone-grid">
+                    {visible.map((l) => (
+                      <img key={l.id} src={imgUrl(l.image_url, { w: 200 })} alt="" style={{ objectPosition: l.focus || 'center' }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Box>
 
-                <div className="lk-body">
+          {/* ---- Photos ---- */}
+          <Box
+            title={`PHOTOS · ${drop.toUpperCase()}`}
+            wide
+            tip={
+              <>
+                <p>Each photo in the order the page shows it — ← → moves it.</p>
+                <p><b>Products in this photo:</b> tag what's worn. On the site, tapping the photo lists them and each opens its product page. Type a short name to show instead of the product's own (e.g. "Jorts"), or leave it empty.</p>
+                <p><b>Keep in frame:</b> which part stays when the grid crops a photo that isn't 4:5.</p>
+              </>
+            }
+          >
+            {loading && <div className="empty mono">Loading…</div>}
+            {!loading && shown.length === 0 && (
+              <div className="empty mono">No photos in the {drop} lookbook yet — the page says it's coming soon until you add some.</div>
+            )}
+
+            <div className="lk-grid">
+              {shown.map((l, i) => (
+                <div className={`lk-card ${l.active ? '' : 'off'}`} key={l.id}>
+                  <div className="lk-shot">
+                    <img src={imgUrl(l.image_url, { w: 480 })} alt="" style={{ objectPosition: l.focus || 'center' }} />
+                    <span className="lk-pos mono">{i + 1}</span>
+                    {!l.active && <span className="lk-hidden mono">HIDDEN</span>}
+                  </div>
+
+                  <FocusPicker value={l.focus} disabled={busy} onChange={(focus) => patch(l, { focus })} />
+
                   <input
-                    className="am-text lk-title"
+                    className="lk-caption"
                     defaultValue={l.title || ''}
                     placeholder="Caption (optional)"
+                    maxLength={80}
                     onBlur={(e) => saveTitle(l, e.target.value)}
                   />
 
-                  <div className="lk-label mono">PRODUCTS IN THIS PHOTO — NAME SHOWN ON THE PHOTO</div>
+                  <div className="lk-sub mono">PRODUCTS IN THIS PHOTO</div>
                   <div className="lk-items">
-                    {l.product_ids.map((id) => (
-                      <div className="lk-item" key={id}>
-                        <input
-                          className="lk-name"
-                          defaultValue={l.item_labels?.[id] || ''}
-                          placeholder={byId[id] ? label(byId[id]) : 'Name on the photo'}
-                          maxLength={60}
-                          onBlur={(e) => saveLabel(l, id, e.target.value)}
-                        />
-                        <span className="lk-link mono">
-                          → {byId[id] ? label(byId[id]) : `${id} (deleted)`}
-                        </span>
-                        <button type="button" onClick={() => removeProduct(l, id)} aria-label="Remove product">×</button>
-                      </div>
-                    ))}
+                    {l.product_ids.map((id) => {
+                      const p = byId[id]
+                      return (
+                        <div className="lk-item" key={id}>
+                          <span className="lk-item-thumb">{p?.images?.[0] && <img src={imgUrl(p.images[0], { w: 80 })} alt="" />}</span>
+                          <span className="lk-item-body">
+                            <input
+                              className="lk-name"
+                              defaultValue={l.item_labels?.[id] || ''}
+                              placeholder={p ? label(p) : 'Name on the photo'}
+                              maxLength={60}
+                              aria-label="Name shown on the photo"
+                              onBlur={(e) => saveLabel(l, id, e.target.value)}
+                            />
+                            <span className="lk-link mono">→ {p ? label(p) : `${id} (deleted)`}</span>
+                          </span>
+                          <button type="button" onClick={() => removeProduct(l, id)} aria-label="Remove product">×</button>
+                        </div>
+                      )
+                    })}
                     {l.product_ids.length === 0 && <span className="lk-none mono">None tagged yet</span>}
                   </div>
 
@@ -274,35 +388,42 @@ export default function LookbookManager({ products }) {
                       </optgroup>
                     )}
                   </select>
-                </div>
 
-                <div className="am-side">
-                  <div className="am-order mono">
-                    <button onClick={() => move(i, -1)} disabled={i === 0 || busy}>←</button>
-                    <span>{i + 1}</span>
-                    <button onClick={() => move(i, 1)} disabled={i === shown.length - 1 || busy}>→</button>
-                  </div>
-
-                  <button className="am-toggle mono" onClick={() => patch(l, { active: !l.active })} disabled={busy}>
-                    {l.active ? 'Visible' : 'Hidden'}
-                  </button>
-
-                  {confirmId === l.id ? (
-                    <div className="am-confirm mono">
-                      <button className="am-danger" onClick={() => remove(l.id)}>Delete</button>
-                      <button className="am-ghost" onClick={() => setConfirmId(null)}>No</button>
-                    </div>
-                  ) : (
-                    <button className="am-x mono" onClick={() => setConfirmId(l.id)} title="Delete photo">
-                      <IconX width="13" height="13" /> Delete
+                  <div className="lk-card-row mono">
+                    <span className="lk-move">
+                      <button type="button" onClick={() => move(i, -1)} disabled={i === 0 || busy} aria-label="Earlier">←</button>
+                      <button type="button" onClick={() => move(i, 1)} disabled={i === shown.length - 1 || busy} aria-label="Later">→</button>
+                    </span>
+                    <button type="button" className={`lk-vis ${l.active ? 'on' : ''}`} onClick={() => patch(l, { active: !l.active })} disabled={busy}>
+                      {l.active ? 'Showing' : 'Hidden'}
                     </button>
-                  )}
+                    {confirmId === l.id ? (
+                      <span className="lk-confirm">
+                        <button type="button" className="lk-danger" onClick={() => remove(l.id)}>Delete</button>
+                        <button type="button" className="lk-ghost" onClick={() => setConfirmId(null)}>No</button>
+                      </span>
+                    ) : (
+                      <button type="button" className="lk-x" onClick={() => setConfirmId(l.id)} aria-label="Delete photo"><IconX width="13" height="13" /></button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Box>
         </>
       )}
+    </div>
+  )
+}
+
+function Box({ title, tip, wide = false, children }) {
+  return (
+    <section className={`lk-box ${wide ? 'wide' : ''}`}>
+      <div className="lk-box-head">
+        <span className="lk-box-title mono">{title}</span>
+        {tip && <InfoTip>{tip}</InfoTip>}
+      </div>
+      {children}
     </section>
   )
 }

@@ -1,0 +1,30 @@
+/* The keep-in-frame picker, used for hero photos and lookbook photos. */
+
+/* Keep in frame: one segmented row of arrows, the choice named above it. */
+.focus-pick-label { font-size: 10px; letter-spacing: 0.08em; color: var(--steel); margin-bottom: -4px; }
+
+.focus-pick {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--steel-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin .main .focus-pick button {
+  border: none;
+  border-left: 1px solid var(--steel-line);
+  background: none;
+  color: var(--steel);
+  padding: 5px 0;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin .main .focus-pick button:first-child { border-left: none; }
+.admin .main .focus-pick button.on { background: var(--cobalt); color: #fff; }
+.admin[data-theme='dark'] .main .focus-pick button.on { color: #15171a; }
