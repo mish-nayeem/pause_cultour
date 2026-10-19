@@ -150,35 +150,6 @@
 .hm-name:hover { border-color: var(--steel-line); }
 .hm-name:focus { outline: none; border-color: var(--cobalt); }
 
-/* Keep in frame: one segmented row of arrows, the choice named above it. */
-.hm-focus-label { font-size: 10px; letter-spacing: 0.08em; color: var(--steel); margin-bottom: -4px; }
-
-.hm-focus {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  border: 1px solid var(--steel-line);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.admin .main .hm-focus button {
-  border: none;
-  border-left: 1px solid var(--steel-line);
-  background: none;
-  color: var(--steel);
-  padding: 5px 0;
-  font-size: 13px;
-  cursor: pointer;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.admin .main .hm-focus button:first-child { border-left: none; }
-.admin .main .hm-focus button.on { background: var(--cobalt); color: #fff; }
-.admin[data-theme='dark'] .main .hm-focus button.on { color: #15171a; }
-
 .hm-card-row {
   display: flex;
   align-items: center;

@@ -12,17 +12,9 @@ import {
 import { fetchHeroExtras, saveSetting, DEFAULT_HERO_BUTTON, fetchTicker } from '../lib/siteSettings.js'
 import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
+import FocusPicker from './FocusPicker.jsx'
 import { IconX } from './Icons.jsx'
 import './hero-manager.css'
-
-// Which part of the photo stays in frame when the screen crops it.
-const FOCUS = [
-  ['top', '↑', 'Top'],
-  ['left', '←', 'Left'],
-  ['center', '●', 'Middle'],
-  ['right', '→', 'Right'],
-  ['bottom', '↓', 'Bottom'],
-]
 
 const DEVICES = [
   ['desktop', 'PC / laptop / tablet', 'Wide photo, about 2400 × 1350 px (16:9).'],
@@ -312,16 +304,7 @@ function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onA
         }}
       />
 
-      <div className="hm-focus-label mono">
-        KEEP IN FRAME · {(FOCUS.find(([k]) => k === (s.focus || 'center')) || FOCUS[2])[2].toUpperCase()}
-      </div>
-      <div className="hm-focus mono" role="radiogroup" aria-label="Keep in frame">
-        {FOCUS.map(([k, icon, name]) => (
-          <button key={k} type="button" role="radio" title={name} aria-label={name} aria-checked={(s.focus || 'center') === k} className={(s.focus || 'center') === k ? 'on' : ''} disabled={busy} onClick={() => onPatch({ focus: k })}>
-            {icon}
-          </button>
-        ))}
-      </div>
+      <FocusPicker value={s.focus} disabled={busy} onChange={(focus) => onPatch({ focus })} />
 
       <div className="hm-card-row mono">
         <select value={s.device || 'all'} disabled={busy} onChange={(e) => onPatch({ device: e.target.value })} aria-label="Shows on">
