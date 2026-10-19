@@ -19,7 +19,7 @@ import './lookbook-manager.css'
 
 // Admin → Lookbook. One lookbook per drop, in boxes: pick the drop, see how
 // complete it is (and which of its products aren't in any photo yet), add
-// photos, a phone preview of the page — then every photo as a card: what
+// photos, a phone and PC preview of the page — then every photo as a card: what
 // stays in frame, a caption, the products worn in it, order, hide, delete.
 export default function LookbookManager({ products }) {
   const [looks, setLooks] = useState([])
@@ -33,6 +33,7 @@ export default function LookbookManager({ products }) {
   const [dragging, setDragging] = useState(false)
   const [heroLink, setHeroLink] = useState(null)
   const [heroNote, setHeroNote] = useState('')
+  const [view, setView] = useState('phone')
 
   async function load() {
     const { looks, error } = await fetchAllLooks()
@@ -291,16 +292,21 @@ export default function LookbookManager({ products }) {
           </Box>
 
           {/* ---- Preview ---- */}
-          <Box title="PREVIEW · PHONE" tip="The lookbook page on a phone: two photos a row, hidden ones left out, cropped as you set under each photo.">
-            <div className="lk-phone">
-              <div className="lk-phone-screen">
-                <div className="lk-phone-head">
+          <Box title="PREVIEW" tip="The lookbook page as it looks now — two photos a row on a phone, four on a PC — hidden ones left out, cropped as you set under each photo. Scroll inside the screen to see them all.">
+            <div className="lk-view-pick mono" role="radiogroup" aria-label="Preview on">
+              {[['phone', 'Phone'], ['pc', 'PC / laptop']].map(([k, l]) => (
+                <button key={k} type="button" role="radio" aria-checked={view === k} className={view === k ? 'on' : ''} onClick={() => setView(k)}>{l}</button>
+              ))}
+            </div>
+            <div className={`lk-screen-wrap ${view}`}>
+              <div className="lk-screen">
+                <div className="lk-screen-head">
                   <b>{drop}</b> <span>LOOKBOOK</span>
                 </div>
                 {visible.length === 0 ? (
-                  <div className="lk-phone-empty mono">The lookbook for this drop is coming soon.</div>
+                  <div className="lk-screen-empty mono">The lookbook for this drop is coming soon.</div>
                 ) : (
-                  <div className="lk-phone-grid">
+                  <div className="lk-screen-grid">
                     {visible.map((l) => (
                       <img key={l.id} src={imgUrl(l.image_url, { w: 200 })} alt="" style={{ objectPosition: l.focus || 'center' }} />
                     ))}
