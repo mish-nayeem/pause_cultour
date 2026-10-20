@@ -225,8 +225,10 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
   return (
     <section className="panel">
       <div className="panel-note mono" style={{ marginBottom: '16px' }}>
-        Each collection is a drop. Make one here, then open it to add its products.
-        Collections show in the DROPS menu, the lookbook and Shop by collection.
+        Each collection is a drop. Make one here, then open it to add its products —
+        nothing else to set up. It joins the DROPS menu, its lookbook and Shop by
+        collection on its own the moment its first product is live (at its launch
+        time, if it has one). Admin → Lookbook can get its photos ready before that.
       </div>
 
       <form className="cl-new" onSubmit={create}>

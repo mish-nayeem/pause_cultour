@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
-import { fetchMenuDrops } from '../lib/navCategories.js'
+import { DROPS_MENU, fetchAllNavCategories } from '../lib/navCategories.js'
 import {
   fetchAllLooks,
   createLook,
@@ -44,7 +44,9 @@ export default function LookbookManager({ products }) {
 
   useEffect(() => {
     load()
-    fetchMenuDrops().then(setMenuDrops)
+    // Every collection, launched or not, so a new drop's lookbook can be
+    // ready before it goes live (the shop's menus only list it after).
+    fetchAllNavCategories(DROPS_MENU).then(({ categories }) => setMenuDrops(categories.map((c) => c.label)))
     fetchSetting('hero_button').then(({ value }) => setHeroLink(value?.link || '/shop'))
   }, [])
 

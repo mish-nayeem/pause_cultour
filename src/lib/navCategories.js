@@ -38,8 +38,26 @@ export function fetchMenuCategories() {
   return resolveMenu(SHOP_MENU, 'category')
 }
 
-export function fetchMenuDrops() {
-  return resolveMenu(DROPS_MENU, 'drop')
+// A drop made in Admin → Products → Collections is on the DROPS menu (and
+// so Shop by collection and the lookbook list) from the moment it's made —
+// but the storefront only lists it once it has something to show: a
+// product that's live. Until its launch time, its products aren't readable
+// by shoppers (RLS), so the drop stays off every menu and then appears on
+// its own at launch, with nothing to add anywhere by hand.
+export async function fetchMenuDrops() {
+  const [names, { data, error }] = await Promise.all([
+    resolveMenu(DROPS_MENU, 'drop'),
+    supabase.from('products').select('drop_name'),
+  ])
+  if (error) return names
+  const live = new Set((data || []).map((r) => dropKeyOf(r.drop_name)).filter(Boolean))
+  return names.filter((n) => live.has(dropKeyOf(n)))
+}
+
+// The same spelling rule as lookbook.js's dropKey (kept here so this file
+// doesn't pull the lookbook module in): case and spaces don't count.
+function dropKeyOf(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
 // Admin read — the signed-in policy returns hidden rows too, so they can be

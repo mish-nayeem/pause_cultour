@@ -259,13 +259,16 @@
 
   /* Closed links aren't tabbable or tappable. */
   .foot-col:not(.open) .foot-links-inner { visibility: hidden; transition: opacity 0.25s ease, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s 0.5s; }
+
+  /* The base row stacks: the @pause.cultour lockup, the socials, the fine
+     print — never wider than the screen. */
+  .foot-base { flex-direction: column; align-items: flex-start; gap: 18px; }
+  .foot-brand { order: -1; }
+  .foot-brand img { height: 52px; max-width: 100%; object-fit: contain; }
 }
 
 @media (max-width: 860px) and (prefers-reduced-motion: reduce) {
   .foot-links, .foot-links-inner, .foot-plus { transition: none; }
-  .foot-base { flex-direction: column; align-items: flex-start; gap: 18px; }
-  .foot-brand { order: -1; }
-  .foot-brand img { height: 52px; max-width: 100%; object-fit: contain; }
 }
 
 /* The narrowest phones: a touch smaller, so no link breaks onto two lines. */
