@@ -473,12 +473,27 @@
 .colour-chip:hover { border-color: var(--ink); }
 .colour-chip.on { border-color: var(--ink); border-width: 2px; }
 
-.colour-name {
-  font-size: 11px;
-  color: var(--steel);
-  margin-top: 9px;
-  letter-spacing: 0.04em;
+/* A chip with, for the colour showing, its name right under it. */
+.colour-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 58px;
 }
+
+.colour-name {
+  font-size: 10.5px;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  animation: colour-name-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes colour-name-in { from { opacity: 0; transform: translateY(-3px); } }
 
 .back-link {
   display: inline-block;
@@ -707,44 +722,82 @@
     scroll-snap-align: start;
   }
 
+  /* Over the photo: the layer lets taps through to the photo (full screen)
+     except on its own arrows and blocks. */
+  .gallery-wrap { position: relative; }
+
   .rail-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    margin-top: 12px;
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
-  .rail-nav button {
+  .rail-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     width: 34px;
     height: 34px;
-    border: 1px solid var(--steel-line);
-    background: transparent;
-    color: var(--ink);
-    font-size: 18px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.78);
+    color: #16160f;
+    font-size: 20px;
     line-height: 1;
+    display: grid;
+    place-items: center;
+    padding: 0 0 2px;
     cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.2s;
   }
 
-  .rail-nav button:disabled { color: var(--steel-line); cursor: default; }
+  .rail-arrow.prev { left: 10px; }
+  .rail-arrow.next { right: 10px; }
+  /* At either end its arrow fades out instead of sitting there greyed. */
+  .rail-arrow:disabled { opacity: 0; pointer-events: none; }
 
-  .rail-count {
-    font-size: 11.5px;
-    letter-spacing: 0.08em;
-    color: var(--steel);
-    min-width: 62px;
-    text-align: center;
+  /* One thin block per photo along the bottom; the showing one solid. */
+  .rail-bar {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 4px;
+    display: flex;
+    gap: 4px;
+    pointer-events: auto;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
   }
+
+  .rail-bar button {
+    flex: 1;
+    padding: 0;
+    border: none;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background 0.25s;
+    /* A taller hit area than the 3px line itself. */
+    background-clip: content-box;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    height: 19px;
+  }
+
+  .rail-bar button.on { background-color: #fff; }
 
   /* Pulled to the top of the detail column, which lands it directly under the
      photo rail rather than further down the column. */
+  /* Under the name and price, as on a PC. */
   .colours {
-    order: -1;
     margin-top: 0;
     margin-bottom: 26px;
   }
 
   .colour-chip { width: 50px; height: 50px; }
+  .colour-opt { width: 50px; }
 
   .sheet-back { padding: 16px; }
 

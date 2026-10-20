@@ -41,50 +41,71 @@ function FitPhoto({ src, alt = '', loading, shimmer = false }) {
 // It goes round in a circle: after the last photo the strip keeps sliding
 // the same way onto a copy of the first, then quietly swaps to the real
 // first — so it never sweeps back across every photo in reverse.
+// A finger's swipe settles on the easing iOS uses: quick off the mark, a
+// long soft landing.
+const TOUCH_EASE = 'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)'
+
 export function CardPhoto({ images, alt, width = 500, loading }) {
   const list = Array.isArray(images) ? images.filter(Boolean) : []
   const count = list.length
-  // 0 … count; `count` is the copy of the first photo at the end.
+  // 0 … count; `count` is the copy of the first photo at the end. The state
+  // only drives the dots — the strip itself is moved by writing its
+  // transform straight to the element, so a finger dragging it never waits
+  // on a re-render.
   const [index, setIndexState] = useState(0)
   const at = useRef(0)
-  // True for the one frame a swap to/from the copy must not animate.
-  const [instant, setInstant] = useState(false)
-  // Pixels the finger has dragged the strip, while a swipe is under way.
-  const [drag, setDrag] = useState(0)
-  // The other photos only load once someone points at the card.
+  // The other photos load once someone points at the card — or, on a
+  // phone, as it scrolls near the screen, so they're there before a swipe.
   const [woken, setWoken] = useState(false)
   const timer = useRef(null)
   const track = useRef(null)
 
-  function go(n) {
+  // ease: 'hover' (the stylesheet's slow slide), 'touch' or false (a jump).
+  function place(n, ease, dx = 0) {
+    const el = track.current
+    if (!el) return
+    el.style.transition = ease === 'hover' ? '' : ease === 'touch' ? TOUCH_EASE : 'none'
+    el.style.transform = dx ? `translate3d(calc(${-n * 100}% + ${dx}px), 0, 0)` : `translate3d(${-n * 100}%, 0, 0)`
+  }
+  function go(n, ease = 'hover') {
     at.current = n
     setIndexState(n)
+    place(n, ease)
   }
   // Two frames: one to paint the jump without a transition, one to turn the
   // transition back on.
   function afterJump(fn) {
     requestAnimationFrame(() => requestAnimationFrame(fn))
   }
-  function forward() {
-    if (at.current < count) go(at.current + 1)
+  function forward(ease) {
+    if (at.current < count) go(at.current + 1, ease)
   }
-  function back() {
-    if (at.current > 0) return go(at.current - 1)
+  function back(ease) {
+    if (at.current > 0) return go(at.current - 1, ease)
     // From the first, jump to its copy at the end and slide back from there.
-    setInstant(true)
-    go(count)
-    afterJump(() => {
-      setInstant(false)
-      go(count - 1)
-    })
+    go(count, false)
+    afterJump(() => go(count - 1, ease))
   }
   // Landed on the copy of the first: swap to the real one, unseen.
   function landed(e) {
     if (e.target !== track.current || at.current !== count) return
-    setInstant(true)
-    go(0)
-    afterJump(() => setInstant(false))
+    go(0, false)
   }
+
+  // Phones: wake the card a screen ahead of it, so its photos have loaded
+  // by the time a finger reaches it.
+  useEffect(() => {
+    const box = track.current?.parentElement
+    if (!box || count < 2 || woken || !window.matchMedia?.('(hover: none)').matches || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((en) => en.isIntersecting)) {
+        setWoken(true)
+        io.disconnect()
+      }
+    }, { rootMargin: '100% 0px' })
+    io.observe(box)
+    return () => io.disconnect()
+  }, [count, woken])
 
   // Listens on the whole photo box (the strip's parent), so pointing at a
   // badge or the + button over the photo doesn't stop the slideshow.
@@ -108,17 +129,21 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
       else go(0)
     }
 
-    // Touch: the strip follows a sideways drag, and letting go past
-    // SWIPE_PX steps one photo that way. An up/down drag is left to the page.
+    // Touch: the strip follows the finger frame by frame, and letting go
+    // past SWIPE_PX — or with a quick flick — glides one photo that way;
+    // otherwise it springs back. An up/down drag is left to the page.
     let x0 = 0
     let y0 = 0
+    let t0 = 0
     let dir = null // null until the finger's moved enough to tell | 'x' | 'y'
     let swiped = false
+    let frame = 0
     function touchStart(e) {
       if (e.touches.length !== 1) return
       setWoken(true)
       x0 = e.touches[0].clientX
       y0 = e.touches[0].clientY
+      t0 = performance.now()
       dir = null
       swiped = false
     }
@@ -128,16 +153,23 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
       if (!dir && Math.abs(dx) + Math.abs(dy) > 8) dir = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
       if (dir !== 'x') return
       if (e.cancelable) e.preventDefault()
-      setDrag(dx)
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => place(at.current, false, dx))
     }
     function touchEnd(e) {
       if (dir !== 'x') return
+      cancelAnimationFrame(frame)
       const dx = e.changedTouches[0].clientX - x0
-      setDrag(0)
-      if (Math.abs(dx) < SWIPE_PX) return
+      const speed = Math.abs(dx) / Math.max(1, performance.now() - t0) // px per ms
+      // Any sideways drag isn't a tap — even one that springs back mustn't
+      // open the product.
       swiped = true
-      if (dx < 0) forward()
-      else back()
+      if (Math.abs(dx) < SWIPE_PX && !(speed > 0.35 && Math.abs(dx) > 12)) {
+        place(at.current, 'touch')
+        return
+      }
+      if (dx < 0) forward('touch')
+      else back('touch')
     }
     // The card is a link: a swipe mustn't open the product.
     function click(e) {
@@ -170,12 +202,7 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
 
   return (
     <>
-      <span
-        className={`card-track ${drag || instant ? 'dragging' : ''}`}
-        ref={track}
-        style={{ transform: `translateX(calc(${-index * 100}% + ${drag}px))` }}
-        onTransitionEnd={landed}
-      >
+      <span className="card-track" ref={track} onTransitionEnd={landed}>
         <FitPhoto shimmer src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
         {list.slice(1).map((src) =>
           woken ? <FitPhoto key={src} src={imgUrl(src, { w: width })} /> : <span key={src} className="card-track-wait" />

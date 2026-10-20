@@ -381,27 +381,40 @@ export default function Product() {
             ))}
           </div>
 
-          {/* Phone only. The arrows are what tell you there are more frames
-              either side — a rail with no handles reads as a single photo. */}
+          {/* Phone only, over the photo: ‹ › at its sides and a thin line of
+              blocks along its bottom, one per photo, the showing one solid —
+              so it's clear there are more to swipe through. A block tapped
+              jumps to that photo. */}
           {product.images.length > 1 && (
-            <div className="rail-nav mono">
+            <div className="rail-nav">
               <button
+                className="rail-arrow prev"
                 onClick={() => stepShot(-1)}
                 disabled={shot === 0}
                 aria-label="Previous photo"
               >
                 ‹
               </button>
-              <span className="rail-count">
-                {String(shot + 1).padStart(2, '0')} / {String(product.images.length).padStart(2, '0')}
-              </span>
               <button
+                className="rail-arrow next"
                 onClick={() => stepShot(1)}
                 disabled={shot >= product.images.length - 1}
                 aria-label="Next photo"
               >
                 ›
               </button>
+              <div className="rail-bar" role="tablist" aria-label="Photos">
+                {product.images.map((img, i) => (
+                  <button
+                    key={img}
+                    role="tab"
+                    aria-selected={i === shot}
+                    aria-label={`Photo ${i + 1} of ${product.images.length}`}
+                    className={i === shot ? 'on' : ''}
+                    onClick={() => stepShot(i - shot)}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -420,25 +433,30 @@ export default function Product() {
           <ProductPrice product={product} />
           <p className="desc">{product.description}</p>
 
-          {/* The colours first, above size and add to cart, so a shopper
-              picks the colour before anything else. On a phone it moves up
-              under the photo rail. */}
+          {/* The colours, under the name and price and above size and add to
+              cart. The colour showing has its name under its photo — when the
+              admin gave it one. */}
           {colours.length > 1 && (
             <div className="colours">
               <div className="field-label mono">COLOUR</div>
               <div className="colour-row">
-                {colours.map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`/product/${c.id}`}
-                    className={`colour-chip ${c.id === product.id ? 'on' : ''}`}
-                    title={c.variant}
-                  >
-                    {c.images?.[0] && <ShimmerImage src={imgUrl(c.images[0], { w: 160 })} alt={c.variant} />}
-                  </Link>
-                ))}
+                {colours.map((c) => {
+                  const on = c.id === product.id
+                  return (
+                    <div className={`colour-opt ${on ? 'on' : ''}`} key={c.id}>
+                      <Link
+                        to={`/product/${c.id}`}
+                        className={`colour-chip ${on ? 'on' : ''}`}
+                        title={c.variant || undefined}
+                        aria-label={c.variant || `Colour ${c.id}`}
+                      >
+                        {c.images?.[0] && <ShimmerImage src={imgUrl(c.images[0], { w: 160 })} alt={c.variant || ''} />}
+                      </Link>
+                      {on && product.variant && <span className="colour-name mono">{product.variant}</span>}
+                    </div>
+                  )
+                })}
               </div>
-              <div className="colour-name mono">{product.variant}</div>
             </div>
           )}
 

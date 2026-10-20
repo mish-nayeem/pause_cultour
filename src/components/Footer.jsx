@@ -1,11 +1,50 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DockSlot } from './BottomDock.jsx'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient.js'
 import { INSTAGRAM, FACEBOOK, TIKTOK } from '../content/info-pages.js'
 import './footer.css'
 
+// One list of footer links. On a computer it's always open; on a phone its
+// heading has a + beside it, and a tap on the heading slides the links open
+// under it (the + turns to ×) — one list at a time.
+function FootCol({ id, label, open, onToggle, children }) {
+  const isOpen = open === id
+  return (
+    <div className={`foot-col ${isOpen ? 'open' : ''}`}>
+      <button
+        type="button"
+        className="foot-label foot-toggle mono"
+        aria-expanded={isOpen}
+        aria-controls={`foot-${id}`}
+        onClick={() => onToggle(id)}
+      >
+        {label}
+        <span className="foot-plus" aria-hidden="true" />
+      </button>
+      <div className="foot-links" id={`foot-${id}`}>
+        <div className="foot-links-inner">{children}</div>
+      </div>
+    </div>
+  )
+}
+
 export default function Footer() {
+  // The footer list open on a phone, if any.
+  const [open, setOpen] = useState(null)
+  const colsRef = useRef(null)
+  const toggle = (id) => setOpen((cur) => (cur === id ? null : id))
+
+  // A touch anywhere outside the lists closes the open one.
+  useEffect(() => {
+    if (!open) return
+    function away(e) {
+      if (colsRef.current && !colsRef.current.contains(e.target)) setOpen(null)
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [open])
+
   const [email, setEmail] = useState('')
   const [state, setState] = useState('idle') // idle | saving | done | error
   const [message, setMessage] = useState('')
@@ -84,29 +123,26 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="foot-cols">
-          <div className="foot-col">
-            <div className="foot-label mono">SHOP</div>
+        <div className="foot-cols" ref={colsRef}>
+          <FootCol id="shop" label="SHOP" open={open} onToggle={toggle}>
             <Link to="/shop">All products</Link>
             <Link to="/shop?c=NEW">New arrivals</Link>
             <Link to="/cart">Your cart</Link>
             <Link to="/track">Track order</Link>
-          </div>
+          </FootCol>
 
-          <div className="foot-col">
-            <div className="foot-label mono">SUPPORT</div>
+          <FootCol id="support" label="SUPPORT" open={open} onToggle={toggle}>
             <Link to="/support/portal">Return &amp; exchange</Link>
             <Link to="/support/delivery">Delivery info</Link>
             <Link to="/support/contact">Contact us</Link>
-          </div>
+          </FootCol>
 
-          <div className="foot-col">
-            <div className="foot-label mono">POLICIES</div>
+          <FootCol id="policies" label="POLICIES" open={open} onToggle={toggle}>
             <Link to="/support/refunds">Return &amp; refund</Link>
             <Link to="/support/exchange">Exchange policy</Link>
             <Link to="/support/privacy">Privacy policy</Link>
             <Link to="/support/terms">Terms of service</Link>
-          </div>
+          </FootCol>
         </div>
       </div>
 

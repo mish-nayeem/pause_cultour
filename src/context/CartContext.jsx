@@ -46,6 +46,35 @@ export function CartProvider({ children }) {
     setItems((prev) => prev.filter((i) => !(i.id === id && i.size === size)))
   }
 
+  // A line moved to another size of the same product; if that size is
+  // already in the cart, the two lines become one.
+  function changeSize(id, from, to) {
+    if (from === to) return
+    setItems((prev) => {
+      const line = prev.find((i) => i.id === id && i.size === from)
+      if (!line) return prev
+      const other = prev.find((i) => i.id === id && i.size === to)
+      if (other) {
+        return prev
+          .filter((i) => !(i.id === id && i.size === from))
+          .map((i) => (i === other ? { ...i, qty: i.qty + line.qty } : i))
+      }
+      return prev.map((i) => (i === line ? { ...i, size: to } : i))
+    })
+  }
+
+  // The same product in one more size, as its own line right after it.
+  function addSizeLine(id, size) {
+    setItems((prev) => {
+      if (prev.some((i) => i.id === id && i.size === size)) return prev
+      const at = prev.findIndex((i) => i.id === id)
+      if (at === -1) return prev
+      const next = [...prev]
+      next.splice(at + 1, 0, { ...prev[at], size, qty: 1 })
+      return next
+    })
+  }
+
   function updateQty(id, size, qty) {
     if (qty < 1) return
     setItems((prev) =>
@@ -77,7 +106,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQty, clearCart, refreshPrices, count, subtotal }}
+      value={{ items, addItem, removeItem, updateQty, changeSize, addSizeLine, clearCart, refreshPrices, count, subtotal }}
     >
       {children}
     </CartContext.Provider>
