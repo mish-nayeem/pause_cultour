@@ -200,6 +200,9 @@ export default function Checkout() {
     }
   }
 
+  // The terms box over Place order — ticked by the shopper each time.
+  const [agreed, setAgreed] = useState(false)
+
   function validate() {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Name is required'
@@ -223,6 +226,8 @@ export default function Checkout() {
         errs.trxId = 'That does not look like a bKash transaction ID (e.g. K8H7G6F5D4)'
       }
     }
+
+    if (!agreed) errs.terms = 'Tick this to place the order'
 
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -495,6 +500,28 @@ export default function Checkout() {
             </div>
 
             {submitError && <em className="err mono" style={{ display: 'block', marginBottom: '14px' }}>{submitError}</em>}
+
+            {/* Required before the order goes through; the links open the
+                same pages as the footer's, in a new tab so the form stays. */}
+            <label className={`co-terms ${errors.terms ? 'bad' : ''}`}>
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => {
+                  setAgreed(e.target.checked)
+                  if (e.target.checked && errors.terms) setErrors((er) => ({ ...er, terms: undefined }))
+                }}
+                aria-required="true"
+              />
+              <span>
+                I have read and agree to the website{' '}
+                <a href="/support/terms" target="_blank" rel="noreferrer">terms and conditions</a>
+                {' '}and{' '}
+                <a href="/support/refunds" target="_blank" rel="noreferrer">return policy</a>
+                <b className="req" aria-hidden="true"> *</b>
+              </span>
+            </label>
+            {errors.terms && <em className="err mono co-terms-err">{errors.terms}</em>}
 
             <button type="submit" className="place-order mono" disabled={submitting}>
               {submitting ? 'Placing order…' : 'Place order'}

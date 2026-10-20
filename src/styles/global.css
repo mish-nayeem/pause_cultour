@@ -151,13 +151,17 @@ button {
 /* Dots — one per photo, the showing one solid. With a mouse only while
    pointing at the card; on a phone always, so it's clear there's more to
    swipe through. */
+/* Not dots any more: a thin line of blocks along the photo's bottom edge,
+   one per photo, the showing one solid — clear of the quick-add sizes that
+   open over the bottom of the photo. */
 .card-dots {
   position: absolute;
-  left: 50%;
-  bottom: 10px;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  gap: 5px;
+  gap: 3px;
+  padding: 0 4px 3px;
   pointer-events: none;
   z-index: 2;
   opacity: 0;
@@ -173,11 +177,12 @@ button {
 }
 
 .card-dots i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.25);
+  transition: background 0.3s ease;
 }
 
 .card-dots i.on { background: #fff; }

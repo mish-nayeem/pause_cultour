@@ -3,6 +3,7 @@ import { DockSlot } from './BottomDock.jsx'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient.js'
 import { INSTAGRAM, FACEBOOK, TIKTOK } from '../content/info-pages.js'
+import { DEFAULT_FOOTER_ABOUT, fetchFooterAbout } from '../lib/siteSettings.js'
 import './footer.css'
 
 // One list of footer links. On a computer it's always open; on a phone its
@@ -32,6 +33,15 @@ function FootCol({ id, label, open, onToggle, children }) {
 export default function Footer() {
   // The footer list open on a phone, if any.
   const [open, setOpen] = useState(null)
+
+  // The short about under the newsletter: the built-in words until the
+  // saved ones arrive (or for good, if none are saved).
+  const [about, setAbout] = useState(DEFAULT_FOOTER_ABOUT)
+  useEffect(() => {
+    let live = true
+    fetchFooterAbout().then((a) => { if (live) setAbout(a) })
+    return () => { live = false }
+  }, [])
   const colsRef = useRef(null)
   const toggle = (id) => setOpen((cur) => (cur === id ? null : id))
 
@@ -114,12 +124,10 @@ export default function Footer() {
             )}
           </div>
 
+          {/* Set in Admin → Homepage → Footer text. */}
           <div className="foot-about">
-            <div className="foot-label mono">PAUSE</div>
-            <p>
-              Everything on hold. Streetwear cut and sewn in Dhaka, released in
-              small drops — when a drop is gone, it's gone.
-            </p>
+            <div className="foot-label mono">{about.heading}</div>
+            <p>{about.text}</p>
           </div>
         </div>
 

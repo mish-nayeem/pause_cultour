@@ -98,6 +98,32 @@
   font-style: normal;
 }
 
+/* Terms and conditions, ticked before Place order. */
+.co-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.co-terms input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  flex: none;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+.co-terms a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.co-terms .req { color: var(--signal); font-weight: 400; }
+.co-terms.bad input { outline: 2px solid var(--signal); outline-offset: 1px; border-radius: 3px; }
+.co-terms-err { display: block; margin: -6px 0 14px 28px; color: var(--signal); font-size: 11px; font-style: normal; }
+
 .field .trx-hint {
   font-size: 11px;
   line-height: 1.5;
