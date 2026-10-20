@@ -955,6 +955,20 @@
 
 .sl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* A row: photo and name on the left, the size chips on the right. When
+   they don't fit side by side (a phone, a long name) the chips drop under
+   the name instead of running over it. */
+.sl-row { flex-wrap: wrap; gap: 10px 14px; }
+.sl-row .sl-who { flex: 1 1 200px; }
+.sl-row .sl-who > div { min-width: 0; }
+.sl-row .stock-chips { justify-content: flex-end; }
+
+@media (max-width: 760px) {
+  .sl-row .sl-who { flex-basis: 100%; }
+  /* Under the name, lined up with it (past the 40px photo and its gap). */
+  .sl-row .stock-chips { flex-basis: 100%; justify-content: flex-start; padding-left: 52px; }
+}
+
 .stock-chips {
   display: flex;
   flex-wrap: wrap;

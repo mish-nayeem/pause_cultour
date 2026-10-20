@@ -1665,7 +1665,7 @@ export default function Admin() {
             {trackedProducts.map((p) => {
               const map = stockMap(p)
               return (
-                <div className="mini-row" key={p.id}>
+                <div className="mini-row sl-row" key={p.id}>
                   <div className="sl-who">
                     <span className="sl-thumb">
                       {p.images?.[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" loading="lazy" />}
