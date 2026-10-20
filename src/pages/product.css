@@ -707,34 +707,71 @@
     scroll-snap-align: start;
   }
 
+  /* Over the photo: the layer lets taps through to the photo (full screen)
+     except on its own arrows and blocks. */
+  .gallery-wrap { position: relative; }
+
   .rail-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    margin-top: 12px;
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
-  .rail-nav button {
+  .rail-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     width: 34px;
     height: 34px;
-    border: 1px solid var(--steel-line);
-    background: transparent;
-    color: var(--ink);
-    font-size: 18px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.78);
+    color: #16160f;
+    font-size: 20px;
     line-height: 1;
+    display: grid;
+    place-items: center;
+    padding: 0 0 2px;
     cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.2s;
   }
 
-  .rail-nav button:disabled { color: var(--steel-line); cursor: default; }
+  .rail-arrow.prev { left: 10px; }
+  .rail-arrow.next { right: 10px; }
+  /* At either end its arrow fades out instead of sitting there greyed. */
+  .rail-arrow:disabled { opacity: 0; pointer-events: none; }
 
-  .rail-count {
-    font-size: 11.5px;
-    letter-spacing: 0.08em;
-    color: var(--steel);
-    min-width: 62px;
-    text-align: center;
+  /* One thin block per photo along the bottom; the showing one solid. */
+  .rail-bar {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 4px;
+    display: flex;
+    gap: 4px;
+    pointer-events: auto;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
   }
+
+  .rail-bar button {
+    flex: 1;
+    padding: 0;
+    border: none;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background 0.25s;
+    /* A taller hit area than the 3px line itself. */
+    background-clip: content-box;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    height: 19px;
+  }
+
+  .rail-bar button.on { background-color: #fff; }
 
   /* Pulled to the top of the detail column, which lands it directly under the
      photo rail rather than further down the column. */

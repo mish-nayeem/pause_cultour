@@ -381,27 +381,40 @@ export default function Product() {
             ))}
           </div>
 
-          {/* Phone only. The arrows are what tell you there are more frames
-              either side — a rail with no handles reads as a single photo. */}
+          {/* Phone only, over the photo: ‹ › at its sides and a thin line of
+              blocks along its bottom, one per photo, the showing one solid —
+              so it's clear there are more to swipe through. A block tapped
+              jumps to that photo. */}
           {product.images.length > 1 && (
-            <div className="rail-nav mono">
+            <div className="rail-nav">
               <button
+                className="rail-arrow prev"
                 onClick={() => stepShot(-1)}
                 disabled={shot === 0}
                 aria-label="Previous photo"
               >
                 ‹
               </button>
-              <span className="rail-count">
-                {String(shot + 1).padStart(2, '0')} / {String(product.images.length).padStart(2, '0')}
-              </span>
               <button
+                className="rail-arrow next"
                 onClick={() => stepShot(1)}
                 disabled={shot >= product.images.length - 1}
                 aria-label="Next photo"
               >
                 ›
               </button>
+              <div className="rail-bar" role="tablist" aria-label="Photos">
+                {product.images.map((img, i) => (
+                  <button
+                    key={img}
+                    role="tab"
+                    aria-selected={i === shot}
+                    aria-label={`Photo ${i + 1} of ${product.images.length}`}
+                    className={i === shot ? 'on' : ''}
+                    onClick={() => stepShot(i - shot)}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
