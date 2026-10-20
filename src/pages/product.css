@@ -473,12 +473,27 @@
 .colour-chip:hover { border-color: var(--ink); }
 .colour-chip.on { border-color: var(--ink); border-width: 2px; }
 
-.colour-name {
-  font-size: 11px;
-  color: var(--steel);
-  margin-top: 9px;
-  letter-spacing: 0.04em;
+/* A chip with, for the colour showing, its name right under it. */
+.colour-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 58px;
 }
+
+.colour-name {
+  font-size: 10.5px;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  animation: colour-name-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes colour-name-in { from { opacity: 0; transform: translateY(-3px); } }
 
 .back-link {
   display: inline-block;
@@ -775,13 +790,14 @@
 
   /* Pulled to the top of the detail column, which lands it directly under the
      photo rail rather than further down the column. */
+  /* Under the name and price, as on a PC. */
   .colours {
-    order: -1;
     margin-top: 0;
     margin-bottom: 26px;
   }
 
   .colour-chip { width: 50px; height: 50px; }
+  .colour-opt { width: 50px; }
 
   .sheet-back { padding: 16px; }
 
