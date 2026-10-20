@@ -12,7 +12,10 @@ const SWIPE_PX = 30
 // lose its sides to the crop — shoes and chair cut off. Those show whole
 // instead, over a blurred, filled copy of themselves so the card has no
 // empty bars. Portrait photos fill the card as before.
-function FitPhoto({ src, alt = '', loading, shimmer = false }) {
+// `under`: a photo already on screen (the card's first) shown behind this
+// one until it has loaded — so a swipe onto a photo still on its way shows
+// a photo, never a blank frame.
+function FitPhoto({ src, alt = '', loading, shimmer = false, under }) {
   const box = useRef(null)
   const [wide, setWide] = useState(false)
   function check(img) {
@@ -25,7 +28,11 @@ function FitPhoto({ src, alt = '', loading, shimmer = false }) {
   }, [src])
   const Img = shimmer ? ShimmerImage : 'img'
   return (
-    <span className={`card-fit ${wide ? 'wide' : ''}`} ref={box}>
+    <span
+      className={`card-fit ${wide ? 'wide' : ''}`}
+      ref={box}
+      style={under ? { backgroundImage: `url("${under}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+    >
       {wide && <img className="card-fit-bg" src={src} alt="" aria-hidden="true" />}
       <Img className="card-fit-main" src={src} alt={alt} loading={loading} onLoad={(e) => check(e.currentTarget)} />
     </span>
@@ -67,10 +74,19 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
     el.style.transition = ease === 'hover' ? '' : ease === 'touch' ? TOUCH_EASE : 'none'
     el.style.transform = dx ? `translate3d(calc(${-n * 100}% + ${dx}px), 0, 0)` : `translate3d(${-n * 100}%, 0, 0)`
   }
+  const landTimer = useRef(0)
   function go(n, ease = 'hover') {
     at.current = n
     setIndexState(n)
     place(n, ease)
+    // Sliding onto the copy of the first: swap to the real first once the
+    // slide is done. transitionend can go missing (the tab hidden, the
+    // slide cut short), so a timer makes sure the strip never stays on the
+    // copy — staying there is what left a blank frame on the next swipe.
+    clearTimeout(landTimer.current)
+    if (n === count && ease) {
+      landTimer.current = setTimeout(() => { if (at.current === count) go(0, false) }, ease === 'hover' ? 950 : 500)
+    }
   }
   // Two frames: one to paint the jump without a transition, one to turn the
   // transition back on.
@@ -78,9 +94,18 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
     requestAnimationFrame(() => requestAnimationFrame(fn))
   }
   function forward(ease) {
-    if (at.current < count) go(at.current + 1, ease)
+    if (at.current < count) return go(at.current + 1, ease)
+    // Still on the copy of the first (the swap hadn't happened yet): jump
+    // to the real first, then on to the second — round in a circle.
+    go(0, false)
+    afterJump(() => go(1, ease))
   }
   function back(ease) {
+    if (at.current === count) {
+      go(0, false)
+      afterJump(() => back(ease))
+      return
+    }
     if (at.current > 0) return go(at.current - 1, ease)
     // From the first, jump to its copy at the end and slide back from there.
     go(count, false)
@@ -171,6 +196,14 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
       if (dx < 0) forward('touch')
       else back('touch')
     }
+    // The browser can take a touch over midway (to scroll the page) and
+    // cancel it, with no touchend — the strip springs back to its photo
+    // instead of being left halfway, showing a strip of blank.
+    function touchCancel() {
+      cancelAnimationFrame(frame)
+      if (dir === 'x') place(at.current, 'touch')
+      dir = null
+    }
     // The card is a link: a swipe mustn't open the product.
     function click(e) {
       if (!swiped) return
@@ -184,6 +217,7 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
     box.addEventListener('touchstart', touchStart, { passive: true })
     box.addEventListener('touchmove', touchMove, { passive: false })
     box.addEventListener('touchend', touchEnd)
+    box.addEventListener('touchcancel', touchCancel)
     box.addEventListener('click', click, true)
     return () => {
       clearInterval(timer.current)
@@ -192,6 +226,8 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
       box.removeEventListener('touchstart', touchStart)
       box.removeEventListener('touchmove', touchMove)
       box.removeEventListener('touchend', touchEnd)
+      box.removeEventListener('touchcancel', touchCancel)
+      clearTimeout(landTimer.current)
       box.removeEventListener('click', click, true)
     }
   }, [count])
@@ -205,10 +241,13 @@ export function CardPhoto({ images, alt, width = 500, loading }) {
       <span className="card-track" ref={track} onTransitionEnd={landed}>
         <FitPhoto shimmer src={imgUrl(list[0], { w: width })} alt={alt} loading={loading} />
         {list.slice(1).map((src) =>
-          woken ? <FitPhoto key={src} src={imgUrl(src, { w: width })} /> : <span key={src} className="card-track-wait" />
+          woken
+            ? <FitPhoto key={src} src={imgUrl(src, { w: width })} under={imgUrl(list[0], { w: width })} />
+            : <span key={src} className="card-track-wait" style={{ backgroundImage: `url("${imgUrl(list[0], { w: width })}")` }} />
         )}
-        {/* The copy of the first photo the circle slides onto. */}
-        {woken ? <FitPhoto src={imgUrl(list[0], { w: width })} /> : <span className="card-track-wait" />}
+        {/* The copy of the first photo the circle slides onto — always
+            there, so coming round from the last never shows a blank. */}
+        <FitPhoto src={imgUrl(list[0], { w: width })} under={imgUrl(list[0], { w: width })} />
       </span>
       <span className="card-dots" aria-hidden="true">
         {list.map((src, i) => <i key={src} className={i === index % count ? 'on' : ''} />)}
