@@ -12,6 +12,7 @@ import { CardPhoto } from '../components/CardPhotos.jsx'
 import ShopFilter, { sortSizes } from '../components/ShopFilter.jsx'
 import QuickAdd from '../components/QuickAdd.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
+import { dropKey } from '../lib/lookbook.js'
 import './shop.css'
 
 const PAGE_SIZE = 24
@@ -56,11 +57,16 @@ export default function Shop() {
   // upload first. A drop is its own view of the catalog, so it replaces the
   // category filter rather than narrowing it — arriving from the DROPS menu shows that drop
   // whole, not the part of it that happens to match the last category picked.
+  //
+  // Matched however it's spelt (dropKey: case and spaces aside): the menus
+  // save their names in capitals, while a product keeps its drop or
+  // category as typed — "Cityboy 2nd Installment" is the menu's
+  // "CITYBOY 2ND INSTALLMENT".
   const inView = useMemo(() => {
-    if (activeDrop) return products.filter((p) => p.drop === activeDrop)
+    if (activeDrop) return products.filter((p) => dropKey(p.drop) === dropKey(activeDrop))
     if (active === 'ALL') return queueOrder(products)
     if (active === 'NEW') return products.filter((p) => p.isNew)
-    return products.filter((p) => p.category === active)
+    return products.filter((p) => dropKey(p.category) === dropKey(active))
   }, [products, active, activeDrop])
 
   // Every size anything in this view comes in — the panel never offers one
