@@ -24,6 +24,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Nothing can make a phone's page slide sideways (which carried the nav
+   off the screen with it): anything wider than the screen is clipped.
+   clip, not hidden — hidden would stop the nav from sticking. */
+html,
+body {
+  overflow-x: clip;
+}
+
 .mono {
   font-family: 'JetBrains Mono', monospace;
 }

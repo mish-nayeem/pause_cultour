@@ -737,20 +737,22 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 34px;
-    height: 34px;
+    /* Just the arrow — no circle behind it; a soft shadow keeps it readable
+       on a light photo. */
+    width: 40px;
+    height: 48px;
     border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.78);
-    color: #16160f;
-    font-size: 20px;
+    background: none;
+    color: #fff;
+    font-size: 34px;
+    font-weight: 300;
     line-height: 1;
     display: grid;
     place-items: center;
-    padding: 0 0 2px;
+    padding: 0 0 4px;
     cursor: pointer;
     pointer-events: auto;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
     transition: opacity 0.2s;
   }
 
