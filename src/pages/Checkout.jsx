@@ -351,7 +351,13 @@ export default function Checkout() {
             <div className="label mono">FINAL STEP</div>
             <h2 className="display">Checkout</h2>
           </div>
-          {!user && (
+          {/* Signed out: a way in, so the saved details fill the form.
+              Signed in: who, and a way to the account. */}
+          {user ? (
+            <Link to="/account" className="co-signin mono" title={user.email}>
+              Signed in · <strong>Account</strong>
+            </Link>
+          ) : (
             <Link to="/login?next=/checkout" className="co-signin mono">
               Have an account? <strong>Sign in</strong>
             </Link>
