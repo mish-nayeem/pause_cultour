@@ -45,13 +45,26 @@ function readError(error, data) {
   return 'Couldn’t reach the courier. Try again in a moment.'
 }
 
+// A refusal (400) reaches supabase-js as "non-2xx status code", with the
+// function's own { error } still unread in the response — read it, so
+// "no keys yet" or what the courier said shows instead of "couldn't reach".
+async function withBody(error, data) {
+  if (data?.error || !error?.context?.json) return data
+  try {
+    return await error.context.clone().json()
+  } catch {
+    return data
+  }
+}
+
 export async function sendToCourier(orderId, courier) {
   try {
     const { data, error } = await supabase.functions.invoke('courier', {
       body: { action: 'create', orderId, courier },
     })
 
-    const message = readError(error, data)
+    const body = await withBody(error, data)
+    const message = readError(body?.error ? null : error, body)
     if (message) return { consignmentId: null, error: message }
 
     return { consignmentId: data?.consignmentId ?? null, error: null }
@@ -67,12 +80,38 @@ export async function syncCourierStatus(orderId) {
       body: { action: 'status', orderId },
     })
 
-    const message = readError(error, data)
+    const body = await withBody(error, data)
+    const message = readError(body?.error ? null : error, body)
     if (message) return { status: null, error: message }
 
     return { status: data?.status ?? null, error: null }
   } catch (err) {
     console.warn('[Courier] status unreachable:', err.message)
     return { status: null, error: readError({ message: 'NOT_DEPLOYED' }) }
+  }
+}
+
+// Orders → Courier setup: which couriers have keys, and whether they work.
+// Comes back as { couriers: { steadfast: { ok, message }, … } } or an error
+// worth showing (most often: the function hasn't been redeployed yet).
+export async function checkCouriers() {
+  try {
+    const { data, error } = await supabase.functions.invoke('courier', {
+      body: { action: 'check' },
+    })
+
+    if (data?.couriers) return { couriers: data.couriers, error: null }
+
+    // An older deploy of the function answers "orderId is required" — it
+    // doesn't know the check yet.
+    const body = await withBody(error, data)
+    if (String(body?.error || '').includes('orderId')) {
+      return { couriers: null, error: 'OLD_DEPLOY' }
+    }
+
+    return { couriers: null, error: readError(error, data) || 'Couldn’t reach the courier function.' }
+  } catch (err) {
+    console.warn('[Courier] check unreachable:', err.message)
+    return { couriers: null, error: readError({ message: 'NOT_DEPLOYED' }) }
   }
 }

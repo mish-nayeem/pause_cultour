@@ -1184,6 +1184,9 @@
     font-family: 'Inter', sans-serif;
   }
 
+  /* Several slips from Orders → Select: each on its own sheet. */
+  .slip + .slip { break-before: page; page-break-before: always; }
+
   .slip-head {
     display: flex;
     justify-content: space-between;

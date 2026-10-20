@@ -75,6 +75,11 @@ import ReturnsManager from '../components/ReturnsManager.jsx'
 import AnalyticsManager from '../components/AnalyticsManager.jsx'
 import { isNewRequest } from '../lib/support.js'
 import NoticeCenter from '../components/NoticeCenter.jsx'
+import TodayPanel from '../components/TodayPanel.jsx'
+import CommandSearch from '../components/CommandSearch.jsx'
+import CourierSetup from '../components/CourierSetup.jsx'
+import BulkBar from '../components/BulkBar.jsx'
+import InfoTip from '../components/InfoTip.jsx'
 import './admin.css'
 import './admin-theme.css'
 import './admin-mobile.css'
@@ -113,6 +118,7 @@ const SECTION_COLORS = {
 }
 
 const OVERVIEW_SUBS = [
+  { key: 'today', label: 'Today' },
   { key: 'stats', label: 'Key stats' },
   { key: 'trend', label: 'Sales trend' },
   { key: 'recent', label: 'Order sources' },
@@ -123,6 +129,7 @@ const ORDERS_SUBS = [
   { key: 'bkash', label: 'bKash check' },
   { key: 'abandoned', label: 'Abandoned cart' },
   { key: 'security', label: 'Security' },
+  { key: 'courier', label: 'Courier setup' },
 ]
 
 const PRODUCTS_SUBS = [
@@ -349,7 +356,6 @@ function PackingSlip({ order }) {
   const due = total - advance
 
   return (
-    <div className="slip-root">
       <div className="slip">
         <div className="slip-head">
           <div>
@@ -416,7 +422,6 @@ function PackingSlip({ order }) {
           Check the parcel in front of the rider · pause.bd@gmail.com
         </div>
       </div>
-    </div>
   )
 }
 
@@ -433,7 +438,16 @@ export default function Admin() {
   const [notifying, setNotifying] = useState(null)
   const [courierBusy, setCourierBusy] = useState(null)
   const [courierPick, setCourierPick] = useState({})
-  const [slipOrder, setSlipOrder] = useState(null)
+  // The orders whose packing slips are printing — one, or several from
+  // Select, each on its own page.
+  const [slips, setSlips] = useState(null)
+  // Search-everything (header button, Ctrl+K or /).
+  const [searchOpen, setSearchOpen] = useState(false)
+  // Orders → Select: ticking cards to act on many at once.
+  const [selecting, setSelecting] = useState(false)
+  const [picked, setPicked] = useState(() => new Set())
+  const [bulkBusy, setBulkBusy] = useState('')
+  const [bulkNote, setBulkNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [savingId, setSavingId] = useState(null)
@@ -453,7 +467,7 @@ export default function Admin() {
   const [newProductLaunch, setNewProductLaunch] = useState('')
   const [addingOrder, setAddingOrder] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [overviewSub, setOverviewSub] = useState('stats')
+  const [overviewSub, setOverviewSub] = useState('today')
   const [ordersSub, setOrdersSub] = useState('list')
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
@@ -768,7 +782,13 @@ export default function Admin() {
         </section>
 
         <section className="osec">
-          <div className="osec-label mono">COURIER</div>
+          <div className="osec-label mono">
+            COURIER{' '}
+            <InfoTip>
+              <p>Pick a courier and Send — the parcel is booked and its tracking number lands here. Sync status asks where it is now.</p>
+              <p>Not working yet? Orders → Courier setup shows which keys to add.</p>
+            </InfoTip>
+          </div>
           {o.consignment_id ? (
             <>
               <div className="orow">
@@ -808,7 +828,7 @@ export default function Admin() {
             <IconChat width="15" height="15" />
             WhatsApp customer
           </a>
-          <button className="courier-btn ghost mono" onClick={() => setSlipOrder(o)}>Print packing slip</button>
+          <button className="courier-btn ghost mono" onClick={() => setSlips([o])}>Print packing slip</button>
         </div>
       </>
     )
@@ -897,14 +917,14 @@ export default function Admin() {
   // afterprint rather than clearing straight away keeps the slip on the page
   // for the browsers that print asynchronously.
   useEffect(() => {
-    if (!slipOrder) return
+    if (!slips?.length) return
 
     // Chrome names a "Save as PDF" file after the document title, so the slip
     // saves as PC481203.pdf rather than whatever the admin tab was called.
     const previousTitle = document.title
-    document.title = `${slipOrder.id} · PAUSE packing slip`
+    document.title = slips.length === 1 ? `${slips[0].id} · PAUSE packing slip` : `PAUSE packing slips · ${slips.length} orders`
 
-    const done = () => setSlipOrder(null)
+    const done = () => setSlips(null)
     window.addEventListener('afterprint', done)
     window.print()
 
@@ -912,7 +932,23 @@ export default function Admin() {
       window.removeEventListener('afterprint', done)
       document.title = previousTitle
     }
-  }, [slipOrder])
+  }, [slips])
+
+  // Ctrl+K / ⌘K anywhere, or / when not typing, opens the search.
+  useEffect(() => {
+    function onKey(e) {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable
+      if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      } else if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   async function handleCourierSend(order) {
     const courier = courierPick[order.id] || COURIERS[0].key
@@ -999,6 +1035,64 @@ export default function Admin() {
   function openRequests() {
     setSupportSub('requests')
     goTab('support')
+  }
+
+  // ---- Orders → Select ----
+  function togglePick(id) {
+    setPicked((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function stopSelecting() {
+    setSelecting(false)
+    setPicked(new Set())
+    setBulkNote('')
+  }
+
+  const pickedOrders = orders.filter((o) => picked.has(o.id))
+
+  // One at a time, so each customer's status email goes out like a manual
+  // change would, and a failure stops on the order it failed on.
+  async function bulkMark(status) {
+    const list = pickedOrders.filter((o) => o.status !== status)
+    let done = 0
+    for (const o of list) {
+      setBulkBusy(`Updating ${done + 1} of ${list.length}…`)
+      await handleStatusChange(o.id, status)
+      done++
+    }
+    setBulkBusy('')
+    const skipped = pickedOrders.length - list.length
+    setBulkNote(`${done} marked ${status}${skipped ? ` · ${skipped} already were` : ''}.`)
+  }
+
+  async function bulkCourier(courier) {
+    const list = pickedOrders.filter((o) => !o.consignment_id && o.status !== 'cancelled')
+    const failed = []
+    let booked = 0
+    for (const o of list) {
+      setBulkBusy(`Booking ${booked + failed.length + 1} of ${list.length}…`)
+      const { error } = await sendToCourier(o.id, courier)
+      if (error) {
+        failed.push(`${o.id}: ${error}`)
+        // No keys / not deployed is the same for every order — stop early.
+        if (/isn.t connected|no API keys/.test(error)) break
+      } else booked++
+    }
+    setBulkBusy('')
+    const skipped = pickedOrders.length - list.length
+    setBulkNote(
+      [
+        `${booked} booked with ${courierLabel(courier)}`,
+        skipped ? `${skipped} skipped (already booked or cancelled)` : '',
+        failed.length ? `${failed.length} failed:\n${failed.slice(0, 5).join('\n')}` : '',
+      ].filter(Boolean).join(' · ')
+    )
+    if (booked) reload()
   }
 
   const navItems = [
@@ -1100,6 +1194,11 @@ export default function Admin() {
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
           <div className="top-right">
+            <button type="button" className="top-search mono" onClick={() => setSearchOpen(true)} title="Search orders, customers and products (Ctrl+K)">
+              <IconSearch width="13" height="13" />
+              Search
+              <kbd>Ctrl K</kbd>
+            </button>
             <div className="theme-picker" role="radiogroup" aria-label="Dashboard theme">
               <span className="theme-picker-label">Theme</span>
               {THEMES.map((t) => (
@@ -1147,6 +1246,19 @@ export default function Admin() {
                 </button>
               ))}
             </div>
+
+            {overviewSub === 'today' && (
+              <TodayPanel
+                orders={orders}
+                products={products}
+                returns={returns}
+                newRequests={newRequests}
+                onOpenOrders={openOrders}
+                onOpenOrder={openOrder}
+                onOpenRequests={openRequests}
+                onOpenStock={() => { setProductsSub('stock'); goTab('products') }}
+              />
+            )}
 
             {overviewSub === 'stats' && (
               <>
@@ -1339,6 +1451,16 @@ export default function Admin() {
               </div>
               <div className="orders-head-right">
                 <div className="mono dim">{filteredOrders.length} of {orders.length}</div>
+                <button
+                  className={`add-product select-toggle mono ${selecting ? 'on' : ''}`}
+                  onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+                >
+                  {selecting ? 'Done' : 'Select'}
+                </button>
+                <InfoTip>
+                  <p><b>Select</b> — tap order cards to tick them, then mark them shipped or delivered, print all their packing slips, or book them with a courier, in one go.</p>
+                  <p>Tip: filter PENDING first, then “All” to tick every pending order.</p>
+                </InfoTip>
                 <button className="add-product mono" onClick={() => setAddingOrder(true)}>
                   + New order
                 </button>
@@ -1347,20 +1469,22 @@ export default function Admin() {
 
             {filteredOrders.length === 0 && <div className="empty mono">No matching orders.</div>}
 
-            <div className="olist">
+            <div className={`olist ${selecting ? 'selecting' : ''}`}>
               {filteredOrders.map((o) => {
                 const items = o.order_items || []
                 const first = items[0]
                 const risk = lookupCustomer(customers, o.customer_phone)
                 return (
                   <div
-                    className={`ocard ${o.status} ${expanded === o.id ? 'on' : ''}`}
+                    className={`ocard ${o.status} ${expanded === o.id ? 'on' : ''} ${picked.has(o.id) ? 'picked' : ''}`}
                     key={o.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => setExpanded(o.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') setExpanded(o.id) }}
+                    aria-pressed={selecting ? picked.has(o.id) : undefined}
+                    onClick={() => (selecting ? togglePick(o.id) : setExpanded(o.id))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (selecting ? togglePick(o.id) : setExpanded(o.id)) }}
                   >
+                    {selecting && <span className="ocard-tick" aria-hidden="true">{picked.has(o.id) ? '✓' : ''}</span>}
                     <div className="ocard-name">
                       {/* A long name steps down a size so it still fits in a line or two. */}
                       <span
@@ -1435,7 +1559,22 @@ export default function Admin() {
               })}
             </div>
 
-            {expandedOrder && (
+            {selecting && (
+              <BulkBar
+                count={picked.size}
+                shown={filteredOrders.length}
+                busy={bulkBusy}
+                note={bulkNote}
+                onAll={() => setPicked(new Set(filteredOrders.map((o) => o.id)))}
+                onNone={() => setPicked(new Set())}
+                onMark={bulkMark}
+                onPrint={() => setSlips(pickedOrders)}
+                onCourier={bulkCourier}
+                onExit={stopSelecting}
+              />
+            )}
+
+            {expandedOrder && !selecting && (
               <OrderSheetFrame onClose={() => setExpanded(null)}>
                 {renderOrderSheet(expandedOrder)}
               </OrderSheetFrame>
@@ -1443,6 +1582,12 @@ export default function Admin() {
           </section>
           )}
 
+
+          {ordersSub === 'courier' && (
+            <section className="panel">
+              <CourierSetup />
+            </section>
+          )}
 
           {ordersSub === 'abandoned' && (
             <section className="panel">
@@ -2131,7 +2276,21 @@ export default function Admin() {
       </div>
       </main>
 
-      {slipOrder && <PackingSlip order={slipOrder} />}
+      {slips?.length > 0 && (
+        <div className="slip-root">
+          {slips.map((o) => <PackingSlip key={o.id} order={o} />)}
+        </div>
+      )}
+
+      <CommandSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        orders={orders}
+        products={products}
+        onOpenOrder={openOrder}
+        onOpenProduct={(p) => { setProductsSub('catalog'); goTab('products'); setEditing(p) }}
+        onOpenCustomer={(phone) => { openOrders('all'); setSearch(phone) }}
+      />
     </div>
   )
 }

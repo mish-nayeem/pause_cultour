@@ -1,0 +1,95 @@
+/* Orders → Select (BulkBar.jsx), and the tick on each order card. */
+
+.bulk-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 40;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--order-edge-strong, var(--cobalt));
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+}
+
+.bulk-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bulk-count { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.bulk-count b { font-size: 16px; }
+
+.bulk-links { display: flex; gap: 4px; }
+.admin .main .bulk-links button {
+  background: none;
+  border: none;
+  color: var(--cobalt);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.admin .main .bulk-links button:disabled { color: var(--steel); cursor: default; }
+
+.bulk-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.admin .main .bulk-btn {
+  border: 1px solid var(--order-edge, var(--steel-line));
+  background: var(--glass, transparent);
+  color: var(--ink);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.admin .main .bulk-btn:hover:not(:disabled) { border-color: var(--order-edge-strong, var(--cobalt)); }
+.admin .main .bulk-btn:disabled { opacity: 0.45; cursor: default; }
+.admin .main .bulk-btn.shipped { color: var(--pill-shipped, #1a63b0); }
+.admin .main .bulk-btn.delivered { color: var(--pill-delivered, #0b7a3b); }
+.admin .main .bulk-btn.cancelled { color: var(--signal); }
+
+.bulk-courier { display: inline-flex; gap: 6px; align-items: center; }
+.bulk-courier select {
+  border: 1px solid var(--order-edge, var(--steel-line));
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 6px 8px;
+}
+
+.bulk-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.bulk-note { font-size: 11.5px; color: var(--steel); white-space: pre-line; }
+
+/* The tick on an order card while selecting. */
+.ocard-tick {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--steel);
+  background: var(--paper);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+  color: #fff;
+  z-index: 2;
+}
+.ocard.picked .ocard-tick { background: var(--cobalt); border-color: var(--cobalt); }
+.admin .main .ocard.picked { border-color: var(--cobalt); box-shadow: 0 0 0 2px var(--cobalt) inset; }
+.olist.selecting .ocard { position: relative; }
+.olist.selecting .ocard .status-select { pointer-events: none; opacity: 0.6; }
+
+.admin .main .select-toggle.on { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
+
+@media (max-width: 860px) {
+  .bulk-bar { bottom: 8px; padding: 10px 12px; }
+  .bulk-actions { gap: 6px; }
+  .admin .main .bulk-btn { padding: 6px 10px; font-size: 11px; }
+}
