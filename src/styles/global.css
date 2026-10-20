@@ -131,7 +131,8 @@ button {
 /* The card's hover zoom would push each photo over its neighbour's edge;
    the slide is the hover effect here. */
 .card-track > img { transform: none !important; }
-.card-track-wait { background: var(--paper-dim); }
+/* A photo not loaded yet: the card's first photo stands in (set inline). */
+.card-track-wait { background: var(--paper-dim) center / cover no-repeat; }
 /* One card photo (FitPhoto): fills the card; a landscape one shows whole
    over a blurred copy of itself instead of losing its sides. */
 .card-fit { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; }
