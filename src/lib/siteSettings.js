@@ -49,3 +49,19 @@ export async function fetchHeroExtras() {
   const countdown = c.value && typeof c.value === 'object' && c.value.at ? c.value : null
   return { button, countdown, error: b.error || c.error }
 }
+
+// The footer's short "about" — its heading and the lines under it — Admin →
+// Homepage → Footer text. Stored as site_settings 'footer_about'.
+export const DEFAULT_FOOTER_ABOUT = {
+  heading: 'PAUSE',
+  text: "Everything on hold. Streetwear cut and sewn in Dhaka, released in small drops — when a drop is gone, it's gone.",
+}
+
+export async function fetchFooterAbout() {
+  const { value } = await fetchSetting('footer_about')
+  if (!value || typeof value !== 'object') return DEFAULT_FOOTER_ABOUT
+  return {
+    heading: String(value.heading ?? '').trim() || DEFAULT_FOOTER_ABOUT.heading,
+    text: String(value.text ?? '').trim() || DEFAULT_FOOTER_ABOUT.text,
+  }
+}

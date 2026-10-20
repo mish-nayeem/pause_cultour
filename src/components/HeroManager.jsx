@@ -9,7 +9,7 @@ import {
   reorderHeroSlides,
   slidesFor,
 } from '../lib/hero.js'
-import { fetchHeroExtras, saveSetting, DEFAULT_HERO_BUTTON, fetchTicker } from '../lib/siteSettings.js'
+import { fetchHeroExtras, saveSetting, fetchSetting, DEFAULT_HERO_BUTTON, DEFAULT_FOOTER_ABOUT, fetchTicker } from '../lib/siteSettings.js'
 import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
@@ -35,8 +35,10 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
   const [button, setButton] = useState(DEFAULT_HERO_BUTTON)
   const [countdown, setCountdown] = useState({ label: 'NEXT DROP', at: '' })
   const [tickerLines, setTickerLines] = useState([])
-  const [saved, setSaved] = useState({ button: '', countdown: '' })
+  const [saved, setSaved] = useState({ button: '', countdown: '', footer: '' })
   const [note, setNote] = useState({})
+  // The footer's about, as saved (empty boxes = the built-in words).
+  const [footer, setFooter] = useState({ heading: '', text: '' })
 
   async function load() {
     setLoading(true)
@@ -52,10 +54,23 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
       setButton(button)
       const cd = countdown ? { label: countdown.label || 'NEXT DROP', at: toLocal(countdown.at) } : { label: 'NEXT DROP', at: '' }
       setCountdown(cd)
-      setSaved({ button: JSON.stringify(button), countdown: JSON.stringify(cd) })
+      setSaved((s) => ({ ...s, button: JSON.stringify(button), countdown: JSON.stringify(cd) }))
     })
     fetchTicker().then(setTickerLines)
+    fetchSetting('footer_about').then(({ value }) => {
+      const f = { heading: String(value?.heading ?? ''), text: String(value?.text ?? '') }
+      setFooter(f)
+      setSaved((s) => ({ ...s, footer: JSON.stringify(f) }))
+    })
   }, [])
+
+  async function saveFooter() {
+    const clean = { heading: footer.heading.trim(), text: footer.text.trim() }
+    const { error } = await saveSetting('footer_about', clean)
+    setFooter(clean)
+    setNote((n) => ({ ...n, footer: error ? "Couldn't save — try again." : 'Saved — live in the footer.' }))
+    if (!error) setSaved((s) => ({ ...s, footer: JSON.stringify(clean) }))
+  }
 
   async function upload(file, device) {
     setBusy(true)
@@ -259,6 +274,30 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
 
       {/* ---- Ticker ---- */}
       <div className="hm-ticker">{TickerBox}</div>
+
+      {/* ---- Footer text ---- */}
+      <Box
+        title="FOOTER TEXT"
+        wide
+        tip="The short about at the bottom of every page, under Join the list: a heading (PAUSE) and a few lines about the brand. Leave a box empty to go back to the built-in words."
+      >
+        <label className="pf-field">
+          <span className="hm-flabel mono">HEADING</span>
+          <input value={footer.heading} maxLength={40} onChange={(e) => { setFooter({ ...footer, heading: e.target.value }); setNote({}) }} placeholder={DEFAULT_FOOTER_ABOUT.heading} />
+        </label>
+        <label className="pf-field">
+          <span className="hm-flabel mono">TEXT</span>
+          <textarea rows={3} value={footer.text} maxLength={400} onChange={(e) => { setFooter({ ...footer, text: e.target.value }); setNote({}) }} placeholder={DEFAULT_FOOTER_ABOUT.text} />
+        </label>
+        <div className="hm-foot-preview">
+          <b className="mono">{footer.heading.trim() || DEFAULT_FOOTER_ABOUT.heading}</b>
+          <p className="mono">{footer.text.trim() || DEFAULT_FOOTER_ABOUT.text}</p>
+        </div>
+        <div className="hm-actions">
+          <button type="button" className="courier-btn mono" onClick={saveFooter} disabled={JSON.stringify(footer) === saved.footer}>Save footer text</button>
+          {note.footer && <span className="hm-note mono">{note.footer}</span>}
+        </div>
+      </Box>
     </div>
   )
 }
