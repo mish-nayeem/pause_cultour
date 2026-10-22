@@ -126,3 +126,9 @@ const CUSTOMER_PAYS = ['Wrong size ordered', 'Wrong size', 'Other']
 export function exchangeIsFree(reason) {
   return !CUSTOMER_PAYS.includes(reason)
 }
+
+// Refunds happen for two reasons only: a faulty piece, or a wrong size we
+// sent when the right size is out of stock (otherwise it's exchanged).
+// The first delivery stays the customer's; the pickup parcel is ours.
+export const REFUND_REASONS = ['Wrong size received', 'Faulty or damaged product received']
+export const REFUND_WRONG_SIZE = 'Wrong size received'

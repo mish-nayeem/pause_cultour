@@ -355,7 +355,11 @@ export function orderMoney(o) {
   const fee = Number(o.delivery_fee) || 0
   if (o.status === 'delivered') {
     const items = itemsNet(o)
-    const codFee = Math.round(items * COD_FEE_RATE * 100) / 100
+    // The courier's 1% was taken on what the rider collected — before any
+    // refund given back later — so it's worked out on that, not on what's
+    // left after the refund.
+    const collected = items + (Number(o.refunded) || 0)
+    const codFee = Math.round(collected * COD_FEE_RATE * 100) / 100
     // An exchange's second parcel: its delivery charge is the courier's
     // too. Paid by the customer it passes straight through; paid by us
     // (exchange_fee_unpaid) it comes off what we keep.
@@ -363,6 +367,7 @@ export function orderMoney(o) {
     const exchangeUnpaid = Number(o.exchange_fee_unpaid) || 0
     return {
       items,
+      collected,
       delivery: fee,
       codFee,
       exchange,
