@@ -209,3 +209,20 @@
   .rm-actions { justify-content: stretch; }
   .rm-actions .courier-btn { flex: 1; }
 }
+
+/* Exchange: the second parcel's delivery charge and who pays it. */
+.rm-fee { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; font-size: 12px; }
+.rm-fee .rm-amount { margin: 0; }
+.rm-fee-head { display: inline-flex; align-items: center; gap: 6px; }
+.rm-fee-pick { display: inline-flex; gap: 6px; }
+.admin .main .rm-fee-pick button {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.admin .main .rm-fee-pick button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.rm-fee .dim { color: var(--steel); }

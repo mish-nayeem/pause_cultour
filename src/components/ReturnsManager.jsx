@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import InfoTip from './InfoTip.jsx'
 import { imgUrl } from '../lib/images.js'
 import { createReturn, processReturn } from '../lib/admin.js'
 import { isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
@@ -216,6 +217,9 @@ function OrderSummary({ order }) {
 
 // Matches what the customer asked for to the order's own lines, so the
 // form starts ticked the way they asked.
+// The exchange parcel's delivery charge, by zone. The courier keeps it.
+const EXCHANGE_FEE = { inside: 80, outside: 150 }
+
 function askedFor(r, it) {
   return (r.items || []).find((x) => x.product_name === it.product_name && x.size === it.size)
 }
@@ -232,6 +236,10 @@ function Complete({ r, order, productsById, onReload }) {
     return init
   })
   const [refund, setRefund] = useState('')
+  // The exchange parcel's delivery charge: the same zone's rate — 80 in
+  // Dhaka, 150 outside — unless typed otherwise.
+  const [fee, setFee] = useState(() => String(order?.delivery_zone === 'inside' || order?.customer_area === 'Dhaka' ? EXCHANGE_FEE.inside : EXCHANGE_FEE.outside))
+  const [feePaid, setFeePaid] = useState(true)
   const [note, setNote] = useState(r.admin_note || '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -257,16 +265,17 @@ function Complete({ r, order, productsById, onReload }) {
       if (action === 'exchange' && items.some((x) => !x.to_size)) return setError('Pick the new size for every ticked piece.')
     }
     const amount = action === 'refund' ? (refund === '' ? suggested : Number(refund) || 0) : 0
+    const feeAmount = action === 'exchange' ? Math.max(0, Number(fee) || 0) : 0
     const ask =
       action === 'reject'
         ? 'Reject this request? Nothing in stock or sales changes.'
         : action === 'exchange'
-          ? 'Complete the exchange? The old sizes go back into stock and the new sizes come out.'
+          ? `Complete the exchange? The order changes to the new sizes, the old sizes go back into stock and the new ones come out.${feeAmount ? ` Delivery ${taka(feeAmount)} — ${feePaid ? 'paid by the customer' : 'paid by us, off revenue'}.` : ''}`
           : `Complete the refund of ${taka(amount)}? The pieces go back into stock and the money comes off sales.`
     if (!window.confirm(ask)) return
 
     setBusy(true)
-    const { error } = await processReturn({ id: r.id, action, items, refund: amount, note: note.trim() })
+    const { error } = await processReturn({ id: r.id, action, items, refund: amount, note: note.trim(), fee: feeAmount, feePaid })
     setBusy(false)
     if (error) {
       const msg = error.message || ''
@@ -357,6 +366,30 @@ function Complete({ r, order, productsById, onReload }) {
         </div>
       )}
 
+      {mode === 'exchange' && (
+        <div className="rm-fee mono">
+          <label className="rm-amount">
+            <span className="rm-fee-head">
+              Exchange delivery charge (৳)
+              <InfoTip>
+                <p>The new size goes out in a second parcel, and the courier keeps its delivery charge — {taka(EXCHANGE_FEE.inside)} in Dhaka, {taka(EXCHANGE_FEE.outside)} outside, filled in from the order's district. Change it if the courier charged something else; 0 if there's no parcel.</p>
+                <p><b>Customer pays</b> — the rider collects it, the courier keeps it: no change to your revenue.</p>
+                <p><b>We pay</b> — our mistake (wrong item, a fault): it comes off your revenue.</p>
+              </InfoTip>
+            </span>
+            <input inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value.replace(/[^\d.]/g, ''))} />
+          </label>
+          <div className="rm-fee-pick" role="radiogroup" aria-label="Who pays the exchange delivery">
+            {[[true, 'Customer pays'], [false, 'We pay']].map(([v, label]) => (
+              <button key={label} type="button" role="radio" aria-checked={feePaid === v} className={feePaid === v ? 'on' : ''} onClick={() => setFeePaid(v)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="dim">The order changes to the new size; the old size goes back into stock, the new one comes out.</span>
+        </div>
+      )}
+
       {mode === 'refund' && (
         <label className="rm-amount mono">
           Refund amount (৳)
@@ -408,7 +441,10 @@ function Resolution({ r }) {
       {res?.action === 'reject' && <div className="mono">Rejected · {when(res.at)}</div>}
       {res?.action === 'exchange' && (
         <>
-          <div className="mono rm-done-head">Exchanged · {when(res.at)}</div>
+          <div className="mono rm-done-head">
+            Exchanged · {when(res.at)}
+            {Number(res.fee) > 0 && ` · delivery ${taka(res.fee)} ${res.fee_paid === false ? 'paid by us' : 'paid by customer'}`}
+          </div>
           {(res.items || []).map((x, i) => (
             <div key={i} className="rm-done-line">
               {x.product_name}: <b className="mono">{x.from_size} → {x.to_size}</b> × {x.qty}

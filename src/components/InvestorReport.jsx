@@ -87,7 +87,8 @@ function summarise(orders, start, end, firstSeen) {
     revenue += m.toShop
     courier += m.courier
     if (o.status === 'delivered') {
-      deliveredValue += Number(o.total ?? o.subtotal ?? 0)
+      // What the customer paid, an exchange's delivery charge included.
+      deliveredValue += Number(o.total ?? o.subtotal ?? 0) + (m.exchange || 0) - (m.exchangeUnpaid || 0)
       deliveredCourier += m.courier
     }
     if (o.status === 'returned' && m.toShop < 0) returnLoss -= m.toShop

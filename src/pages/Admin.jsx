@@ -665,6 +665,12 @@ export default function Admin() {
           </div>
           <div className="orow dim"><span>Courier · delivery</span><span className="mono">− {taka(m.delivery)}</span></div>
           <div className="orow dim"><span>Courier · {Math.round(COD_FEE_RATE * 100)}% of {taka(m.items)}</span><span className="mono">− {taka(m.codFee)}</span></div>
+          {m.exchange > 0 && (
+            <div className="orow dim">
+              <span>Courier · exchange delivery {taka(m.exchange)} ({m.exchangeUnpaid ? `${taka(m.exchangeUnpaid)} paid by us` : 'customer paid'})</span>
+              <span className="mono">− {taka(m.exchangeUnpaid)}</span>
+            </div>
+          )}
           <div className="orow osplit-you"><span>You get</span><span className="mono">{taka(m.toShop)}</span></div>
         </div>
       )
@@ -764,6 +770,7 @@ export default function Admin() {
                   {it.product_name}
                   <span className="mono dim">
                     {' '}· {it.size} × {ordered}
+                    {it.exchanged_from && <span className="ditem-swap"> · exchanged from {it.exchanged_from}</span>}
                     {refundedBack > 0 && <span className="ditem-back"> · {refundedBack} refunded</span>}
                     {door > 0 && <span className="ditem-back"> · returned at door, back in stock</span>}
                   </span>
