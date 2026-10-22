@@ -254,3 +254,21 @@
   .rp-photo { min-height: 220px; }
   .rp-body { padding: 26px 20px; }
 }
+
+/* Exchange: what the second parcel costs, before the request goes in. */
+.rp-fee {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--signal);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+.rp-fee > b { font-size: 11px; letter-spacing: 0.08em; color: var(--signal); }
+.rp-fee.free { border-color: #0b7a3b; }
+.rp-fee.free > b { color: #0b7a3b; }
+.rp-fee-ok { display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; }
+.rp-fee-ok input { margin-top: 3px; accent-color: var(--ink); }
