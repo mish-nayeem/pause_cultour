@@ -15,6 +15,7 @@ import { availableSizes, isSoldOut, left, soldOutSizes } from '../lib/stock.js'
 import { joinWishlist, hasJoined, savedEmail } from '../lib/wishlist.js'
 import { currentUser } from '../lib/auth.js'
 import { parseDetails } from '../lib/details.js'
+import { isScheduled, launchLabel } from '../lib/schedule.js'
 import { rememberViewed } from '../lib/recent.js'
 import { isAdminEmail } from '../lib/admin.js'
 import { fetchReviews, submitReview } from '../lib/reviews.js'
@@ -482,6 +483,13 @@ export default function Product() {
             </button>
           </div>
           <ProductPrice product={product} />
+          {/* Only a member (signed in, inside the early window) or the admin
+              can see a product before its launch time — say so. */}
+          {isScheduled(product) && (
+            <div className="early-tag mono">
+              MEMBERS' EARLY ACCESS · OPENS TO EVERYONE {launchLabel(product.publish_at).toUpperCase()}
+            </div>
+          )}
           <p className="desc">{product.description}</p>
 
           {/* The colours, under the name and price and above size and add to

@@ -1,0 +1,81 @@
+/* Admin → Customers → Accounts (AccountsManager.jsx). Boxes from admin-box.css. */
+
+.acm { display: flex; flex-direction: column; gap: 12px; }
+
+.acm-tools { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.acm-search { max-width: 360px; }
+.acm-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.acm-list { display: flex; flex-direction: column; gap: 6px; }
+
+.acm-row {
+  border: 1px solid var(--order-edge, var(--steel-line));
+  border-radius: 12px;
+  overflow: hidden;
+}
+.acm-row.open { border-color: var(--order-edge-strong, var(--cobalt)); }
+
+.admin .main .acm-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.acm-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.acm-who b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acm-who span { font-size: 11px; color: var(--steel); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.acm-nums { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.acm-nums b { font-size: 12.5px; }
+.acm-nums span { font-size: 10.5px; color: var(--steel); }
+
+.acm-tag { flex: none; color: var(--cobalt); font-size: 14px; }
+
+.acm-more {
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--steel-line);
+}
+.acm-facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11px; color: var(--steel); padding-top: 8px; }
+.acm-addr span, .acm-orders > span { font-size: 10px; letter-spacing: 0.08em; color: var(--steel); }
+.acm-addr p { font-size: 13px; line-height: 1.5; margin-top: 4px; color: var(--ink); }
+.acm-addr p.dim { color: var(--steel); }
+
+.acm-orders { display: flex; flex-direction: column; gap: 4px; }
+.admin .main .acm-order {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr auto;
+  gap: 8px;
+  border: none;
+  background: var(--glass, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11.5px;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.admin .main .acm-order:hover { background: var(--glass-hover, var(--paper-dim)); }
+.acm-order .today-status { text-transform: uppercase; }
+
+.acm-early { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.acm-early .ab-input { width: 90px; }
+.acm-early span { font-size: 12px; color: var(--steel); }
+
+.acm-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--steel); }
+
+@media (max-width: 860px) {
+  .admin .main .acm-order { grid-template-columns: 1fr auto auto; }
+  .admin .main .acm-order span:nth-child(2) { display: none; }
+}

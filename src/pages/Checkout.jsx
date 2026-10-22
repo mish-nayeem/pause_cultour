@@ -12,6 +12,7 @@ import { checkCoupon, couponMessage } from '../lib/coupons.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import { imgUrl } from '../lib/images.js'
 import { watchUser } from '../lib/auth.js'
+import { fetchProfile, saveProfile, PROFILE_FIELDS } from '../lib/account.js'
 import { Sentry } from '../lib/sentry.js'
 import './checkout.css'
 
@@ -109,9 +110,19 @@ export default function Checkout() {
 
   // Signed in: no need to offer the sign-in link, and the email is the
   // account's — filled in and fixed, nothing to type.
+  // Their saved details (customer_profiles) fill whatever is still empty.
   useEffect(() => watchUser((u) => {
     setUser(u)
-    if (u?.email) setForm((prev) => ({ ...prev, email: u.email }))
+    if (!u?.email) return
+    setForm((prev) => ({ ...prev, email: u.email }))
+    fetchProfile(u.id).then(({ profile }) => {
+      if (!profile) return
+      setForm((prev) => {
+        const next = { ...prev }
+        for (const k of PROFILE_FIELDS) if (!String(next[k] ?? '').trim() && profile[k]) next[k] = profile[k]
+        return next
+      })
+    })
   }), [])
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -345,6 +356,10 @@ export default function Checkout() {
       const { error } = await supabase.from('subscribers').insert({ email: form.email.trim().toLowerCase() })
       if (error && error.code !== '23505') console.error('[Supabase] subscribe failed:', error.message)
     }
+
+    // Signed in: these details are saved on the account, so the next
+    // checkout — on any device — fills itself.
+    if (user) saveProfile(user, form)
 
     try {
       if (saveInfo) {

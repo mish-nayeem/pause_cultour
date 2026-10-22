@@ -52,7 +52,6 @@ export default function Login() {
   const [step, setStep] = useState('email') // email | code
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [remember, setRememberMe] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -81,7 +80,8 @@ export default function Login() {
 
   async function handleGoogle() {
     setError('')
-    setRemember(remember)
+    // Signed in stays signed in on this device until Sign out.
+    setRemember(true)
     const { error: err } = await signInWithGoogle()
     if (err) setError("Google sign-in isn't available right now.")
   }
@@ -120,7 +120,8 @@ export default function Login() {
       setError(verifyMessage(err))
       return
     }
-    setRemember(remember)
+    // Signed in stays signed in on this device until Sign out.
+    setRemember(true)
     landOn(isAdmin)
   }
 
@@ -202,14 +203,7 @@ export default function Login() {
             </button>
 
             <div className="auth-row">
-              <label className="auth-check">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span>Remember me</span>
-              </label>
+              <span className="auth-stay mono">You stay signed in on this device until you sign out.</span>
               {step === 'code' && (
                 <button type="button" className="auth-link mono" onClick={send} disabled={wait > 0 || submitting}>
                   {wait > 0 ? `Resend in ${wait}s` : 'Send a new code'}
