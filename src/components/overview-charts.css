@@ -173,3 +173,6 @@
   .ovc-box { padding: 14px; }
   .ovc-hero strong { font-size: 22px; }
 }
+
+/* Download PDF, at the right of the range picker. */
+.ovc-pdf { display: flex; align-items: center; gap: 6px; align-self: flex-end; margin-bottom: -6px; }

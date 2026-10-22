@@ -3,6 +3,8 @@ import InfoTip from './InfoTip.jsx'
 import { orderMoney, phoneKey, unsold } from '../lib/admin.js'
 import { listDrops } from '../lib/dropMoney.js'
 import { DAY, PRESETS, rangeFor, bucketsFor, bucketLabel, toInput } from '../lib/periods.js'
+import { openPrintPage } from '../lib/printPage.js'
+import './investor-report.css'
 import './overview-charts.css'
 
 function taka(n) {
@@ -45,9 +47,15 @@ function useRange(initial, orders) {
   return { preset, setPreset, from, setFrom, to, setTo, range }
 }
 
-function RangeBar({ r, note }) {
+function RangeBar({ r, note, onPdf }) {
   return (
     <div className="ovc-range">
+      {onPdf && (
+        <div className="ovc-pdf">
+          <button type="button" className="ab-btn" onClick={onPdf}>Download PDF</button>
+          <InfoTip>A PDF of this range: the figures against the period before, the chart, and a day-by-day (or week / month) table of orders, pieces, sales and revenue. It opens in a new tab — choose Save as PDF there.</InfoTip>
+        </div>
+      )}
       <div className="chips mono" role="radiogroup" aria-label="Date range">
         {PRESETS.map((p) => (
           <button key={p.key} type="button" role="radio" aria-checked={r.preset === p.key} className={`chip ${r.preset === p.key ? 'on' : ''}`} onClick={() => r.setPreset(p.key)}>
@@ -150,10 +158,167 @@ const STATUS_ORDER = [
   ['cancelled', 'Cancelled'],
 ]
 
+// ======================= The PDF sheet =======================
+
+// A fixed-size chart for paper: plain colours (the print page has none of
+// the admin's theme), this range solid, the range before dashed.
+function StaticTrend({ points, format }) {
+  const w = 700
+  const h = 220
+  const pad = { l: 46, r: 10, t: 12, b: 26 }
+  const iw = w - pad.l - pad.r
+  const ih = h - pad.t - pad.b
+  const nice = niceMax(Math.max(1, ...points.map((p) => Math.max(p.value, p.prev ?? 0))))
+  const x = (i) => pad.l + (points.length === 1 ? iw / 2 : (i / (points.length - 1)) * iw)
+  const y = (v) => pad.t + ih - (v / nice) * ih
+  const line = (k) => points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[k] ?? 0).toFixed(1)}`).join(' ')
+  const every = Math.max(1, Math.ceil(points.length / 9))
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: 'block' }} role="img" aria-label="Chart">
+      {[0, 0.25, 0.5, 0.75, 1].map((t) => (
+        <g key={t}>
+          <line x1={pad.l} x2={w - pad.r} y1={y(t * nice)} y2={y(t * nice)} stroke="#e2e2dd" />
+          <text x={pad.l - 8} y={y(t * nice)} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#6b6b66" fontFamily="JetBrains Mono, monospace">{short(t * nice)}</text>
+        </g>
+      ))}
+      {points.map((p, i) => (i % every === 0 || (i === points.length - 1 && i % every >= every / 2)) && (
+        <text key={i} x={x(i)} y={h - 8} textAnchor={i === points.length - 1 ? 'end' : i === 0 ? 'start' : 'middle'} fontSize="10" fill="#6b6b66" fontFamily="JetBrains Mono, monospace">{p.label}</text>
+      ))}
+      <path d={line('prev')} fill="none" stroke="#9a9a94" strokeWidth="1.5" strokeDasharray="4 4" />
+      <path d={`${line('value')} L${x(points.length - 1)},${pad.t + ih} L${x(0)},${pad.t + ih} Z`} fill="#2a4dff" opacity="0.1" />
+      <path d={line('value')} fill="none" stroke="#2a4dff" strokeWidth="2" strokeLinejoin="round" />
+      <title>{format(points.reduce((n, p) => n + p.value, 0))}</title>
+    </svg>
+  )
+}
+
+// The Overview as a printable page, for the range picked.
+function OverviewSheet({ orders, range, metricKey = 'sales', title }) {
+  const firstSeen = firstSeenMap(orders)
+  const now = summarise(orders, range.start, range.end, firstSeen)
+  const prev = summarise(orders, range.prevStart, range.prevEnd, firstSeen)
+  const M = METRICS.find((m) => m.key === metricKey) || METRICS[0]
+  const { unit, buckets } = bucketsFor(range.start, range.end)
+  const shift = range.start - range.prevStart
+  const rows = buckets.map((b) => {
+    const list = orders.filter((o) => at(o) >= b.start && at(o) < b.end)
+    const before = orders.filter((o) => at(o) >= b.start - shift && at(o) < b.end - shift)
+    return {
+      label: bucketLabel(b.start, unit),
+      long: bucketLabel(b.start, unit, true),
+      value: M.of(list),
+      prev: M.of(before),
+      orders: METRICS[2].of(list),
+      pieces: METRICS[3].of(list),
+      sales: METRICS[0].of(list),
+      revenue: METRICS[1].of(list),
+    }
+  })
+  const best = new Map()
+  for (const o of now.live) for (const it of o.order_items || []) {
+    const e = best.get(it.product_name) || { pieces: 0, value: 0 }
+    e.pieces += Number(it.qty)
+    e.value += Number(it.price) * Number(it.qty)
+    best.set(it.product_name, e)
+  }
+  const top = [...best.entries()].sort((a, b) => b[1].value - a[1].value).slice(0, 8)
+  const kpis = [
+    ['Orders', now.orders, prev.orders, (v) => v],
+    ['Sales', now.sales, prev.sales, taka],
+    ['Revenue (after courier)', now.revenue, prev.revenue, taka],
+    ['Average order', now.aov, prev.aov, taka],
+    ['Pieces sold', now.pieces, prev.pieces, (v) => v],
+    ['Customers', now.customers, prev.customers, (v) => v],
+  ]
+  return (
+    <div className="ir-paper">
+      <header className="ir-head">
+        <div>
+          <div className="ir-brand">PAUSE</div>
+          <div className="ir-title">{title} · {rangeText(range)}</div>
+        </div>
+        <div className="ir-meta">
+          <div>Prepared {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+          <div>Compared with {rangeText({ start: range.prevStart, end: range.prevEnd })}</div>
+        </div>
+      </header>
+
+      <section className="ir-kpis">
+        {kpis.map(([label, v, p, f]) => {
+          const ch = change(v, p)
+          return (
+            <div className="ir-kpi" key={label}>
+              <div className="ir-kpi-label">{label}</div>
+              <div className="ir-kpi-value">{f(v)}</div>
+              <div className={`ir-kpi-change ${ch.good ? 'up' : 'down'}`}>{ch.text} <span>vs {f(p)}</span></div>
+            </div>
+          )
+        })}
+      </section>
+
+      <section className="ir-block">
+        <div className="ir-label">{M.label.toUpperCase()} BY {unit.toUpperCase()} · SOLID THIS RANGE, DASHED THE ONE BEFORE</div>
+        <StaticTrend points={rows} format={M.f} />
+      </section>
+
+      <div className="ir-cols">
+        <section className="ir-block">
+          <div className="ir-label">ORDER STATUS</div>
+          <table className="ir-table">
+            <tbody>
+              {STATUS_ORDER.map(([k, label]) => <tr key={k}><td>{label}</td><td>{now.status[k]}</td></tr>)}
+              <tr><td>Still to collect (after the courier)</td><td>{taka(now.toCollect)}</td></tr>
+              <tr><td>Return &amp; cancel rate</td><td>{Math.round(now.lossRate * 100)}%</td></tr>
+              <tr><td>New customers · came back</td><td>{now.fresh} · {now.customers - now.fresh}</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section className="ir-block">
+          <div className="ir-label">BEST SELLERS</div>
+          {top.length === 0 ? <p className="ir-empty">No sales in this range.</p> : (
+            <table className="ir-table">
+              <thead><tr><th>Product</th><th>Pieces</th><th>Sales</th></tr></thead>
+              <tbody>{top.map(([n, e]) => <tr key={n}><td>{n}</td><td>{e.pieces}</td><td>{taka(e.value)}</td></tr>)}</tbody>
+            </table>
+          )}
+        </section>
+      </div>
+
+      <section className="ir-block ir-long">
+        <div className="ir-label">{unit === 'day' ? 'DAY BY DAY' : unit === 'week' ? 'WEEK BY WEEK' : 'MONTH BY MONTH'}</div>
+        <table className="ir-table">
+          <thead><tr><th>{unit === 'day' ? 'Date' : unit === 'week' ? 'Week of' : 'Month'}</th><th>Orders</th><th>Pieces</th><th>Sales</th><th>Revenue</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.long}><td>{r.long}</td><td>{r.orders}</td><td>{r.pieces}</td><td>{taka(r.sales)}</td><td>{taka(r.revenue)}</td></tr>
+            ))}
+            <tr><td><b>Total</b></td><td><b>{now.orders}</b></td><td><b>{now.pieces}</b></td><td><b>{taka(now.sales)}</b></td><td><b>{taka(now.revenue)}</b></td></tr>
+          </tbody>
+        </table>
+        <p className="ir-fine">Sales = orders placed (delivery included), cancelled and returned left out. Revenue = what reached the shop from delivered orders, after the courier.</p>
+      </section>
+
+      <footer className="ir-foot">PAUSE · Dhaka · figures from the shop's own order records</footer>
+    </div>
+  )
+}
+
+// Renders the sheet out of sight and prints it on its own page.
+function useSheetPdf() {
+  const ref = useRef(null)
+  const [err, setErr] = useState('')
+  function print(title) {
+    const ok = openPrintPage({ title, html: ref.current?.innerHTML })
+    setErr(ok ? '' : 'Your browser blocked the new tab — allow pop-ups for this site, then try again.')
+  }
+  return { ref, err, print }
+}
+
 // ======================= Overview → Key stats =======================
 
 export function KeyStats({ orders, onOpenOrders }) {
   const r = useRange('30d', orders)
+  const pdf = useSheetPdf()
   const { range } = r
   const firstSeen = useMemo(() => firstSeenMap(orders), [orders])
   const now = useMemo(() => summarise(orders, range.start, range.end, firstSeen), [orders, range, firstSeen])
@@ -199,7 +364,13 @@ export function KeyStats({ orders, onOpenOrders }) {
 
   return (
     <div className="ovc">
-      <RangeBar r={r} note={`${rangeText(range)} · compared with the ${r.preset === 'month' || r.preset === 'last-month' ? 'month' : 'same length'} just before`} />
+      <RangeBar
+        r={r}
+        note={`${rangeText(range)} · compared with the ${r.preset === 'month' || r.preset === 'last-month' ? 'month' : 'same length'} just before`}
+        onPdf={() => pdf.print(`PAUSE overview · ${rangeText(range)}`)}
+      />
+      {pdf.err && <div className="ab-warn mono">{pdf.err}</div>}
+      <div hidden ref={pdf.ref}><OverviewSheet orders={orders} range={range} title="Overview" /></div>
 
       <div className="ovc-cards">
         {cards.map((c) => {
@@ -482,6 +653,7 @@ function Weekdays({ orders, range }) {
 
 export function SalesTrend({ orders, products }) {
   const r = useRange('30d', orders)
+  const pdf = useSheetPdf()
   const { range } = r
   const [metric, setMetric] = useState('sales')
   const M = METRICS.find((m) => m.key === metric)
@@ -506,7 +678,9 @@ export function SalesTrend({ orders, products }) {
 
   return (
     <div className="ovc">
-      <RangeBar r={r} note={rangeText(range)} />
+      <RangeBar r={r} note={rangeText(range)} onPdf={() => pdf.print(`PAUSE ${M.label.toLowerCase()} trend · ${rangeText(range)}`)} />
+      {pdf.err && <div className="ab-warn mono">{pdf.err}</div>}
+      <div hidden ref={pdf.ref}><OverviewSheet orders={orders} range={range} metricKey={metric} title={`${M.label} trend`} /></div>
 
       <section className="ovc-box">
         <div className="ovc-box-top">
