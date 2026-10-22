@@ -78,19 +78,6 @@ function readSavedInfo() {
   }
 }
 
-// Suggestions for Area / thana when the district is Dhaka — typed freely
-// anywhere else (and here too, if it isn't in the list).
-const DHAKA_THANAS = [
-  'Adabor', 'Badda', 'Banani', 'Bangshal', 'Bhashantek', 'Bhatara', 'Bimanbandar', 'Cantonment',
-  'Chawkbazar', 'Dakshinkhan', 'Darus Salam', 'Demra', 'Dhamrai', 'Dhanmondi', 'Dohar', 'Gendaria',
-  'Gulshan', 'Hatirjheel', 'Hazaribagh', 'Jatrabari', 'Kadamtali', 'Kafrul', 'Kalabagan',
-  'Kamrangirchar', 'Keraniganj', 'Khilgaon', 'Khilkhet', 'Kotwali', 'Lalbagh', 'Mirpur', 'Mohammadpur',
-  'Motijheel', 'Mugda', 'Nawabganj', 'New Market', 'Pallabi', 'Paltan', 'Ramna', 'Rampura', 'Rupnagar',
-  'Sabujbagh', 'Savar', 'Shah Ali', 'Shahbagh', 'Shahjahanpur', 'Sher-e-Bangla Nagar', 'Shyampur',
-  'Sutrapur', 'Tejgaon', 'Tejgaon Industrial Area', 'Turag', 'Uttara East', 'Uttara West', 'Uttarkhan',
-  'Vatara', 'Wari',
-]
-
 // The order keeps one address line: the area / thana and postal code go on
 // the end of it, so the packing slip, the courier and the admin panel all
 // see them without a change anywhere else.
@@ -456,15 +443,9 @@ export default function Checkout() {
                   name="thana"
                   value={form.thana}
                   onChange={handleChange}
-                  placeholder={form.district === 'Dhaka' ? 'e.g. Jatrabari' : 'Your area or thana'}
-                  list={form.district === 'Dhaka' ? 'dhaka-thanas' : undefined}
-                  autoComplete="address-level3"
+                  placeholder="e.g. Jatrabari"
+                  autoComplete="off"
                 />
-                {form.district === 'Dhaka' && (
-                  <datalist id="dhaka-thanas">
-                    {DHAKA_THANAS.map((t) => <option key={t} value={t} />)}
-                  </datalist>
-                )}
                 {errors.thana && <em className="err mono">{errors.thana}</em>}
               </label>
               <label className="field">
