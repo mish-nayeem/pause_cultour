@@ -892,27 +892,25 @@
 }
 
 /* ---------- Phones: the add-to-cart bar along the bottom ----------
-   The nav's black pill — the same height and about the same width — at the
-   foot of the screen, while the page's own button is off screen; gone once
-   the shopper reaches "You may like". */
+   The nav's black pill, at the foot of the screen, while the page's own
+   button is off screen — gone once the shopper reaches "You may like". */
 .buy-bar { display: none; }
 
 @media (max-width: 860px) {
   .buy-bar {
     display: block;
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     z-index: 60;
-    width: fit-content;
-    max-width: calc(100% - 24px);
+    max-width: 480px;
     margin: 0 auto;
     background: var(--ink);
     color: var(--paper);
-    border-radius: 29px;
-    padding: 0 7px 0 7px;
-    box-shadow: 0 8px 24px rgba(22, 22, 15, 0.25);
+    border-radius: 30px;
+    padding: 7px 7px 7px 8px;
+    box-shadow: 0 10px 30px rgba(22, 22, 15, 0.28);
     transform: translateY(calc(100% + 30px));
     opacity: 0;
     pointer-events: none;
@@ -921,7 +919,7 @@
 
   .buy-bar.on { transform: none; opacity: 1; pointer-events: auto; }
 
-  .buy-row { display: flex; align-items: center; gap: 8px; min-height: 58px; }
+  .buy-row { display: flex; align-items: center; gap: 10px; }
 
   .buy-thumb {
     flex: none;
@@ -932,15 +930,15 @@
     background: #2a2a22;
   }
 
-  .buy-what { min-width: 0; max-width: 96px; display: flex; flex-direction: column; gap: 1px; }
+  .buy-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .buy-name {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .buy-price { font-size: 11px; color: rgba(255, 255, 255, 0.7); }
+  .buy-price { font-size: 11.5px; color: rgba(255, 255, 255, 0.7); }
 
   .buy-chosen {
     flex: none;
@@ -948,8 +946,8 @@
     border: 1px solid rgba(255, 255, 255, 0.35);
     color: var(--paper);
     border-radius: 999px;
-    font-size: 11.5px;
-    padding: 7px 9px;
+    font-size: 12px;
+    padding: 8px 10px;
     cursor: pointer;
   }
   .buy-chosen span { font-size: 9px; opacity: 0.7; }
@@ -960,12 +958,11 @@
     color: var(--ink);
     border: none;
     border-radius: 999px;
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.05em;
-    padding: 12px 14px;
+    padding: 13px 16px;
     cursor: pointer;
-    white-space: nowrap;
     transition: background 0.2s ease, color 0.2s ease;
   }
   .buy-go.done { background: #4b9bff; color: #fff; }
@@ -976,24 +973,25 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 10px 4px 8px;
+    padding: 6px 4px 10px;
+    margin-bottom: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   .buy-size {
-    min-width: 38px;
-    padding: 7px 9px;
+    min-width: 42px;
+    padding: 9px 10px;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.35);
     background: none;
     color: var(--paper);
-    font-size: 11.5px;
+    font-size: 12px;
     cursor: pointer;
   }
   .buy-size.on { background: var(--paper); color: var(--ink); border-color: var(--paper); }
   .buy-size.out { opacity: 0.4; text-decoration: line-through; }
 
-  .buy-note { font-size: 11px; color: rgba(255, 255, 255, 0.75); padding: 0 8px 8px; }
+  .buy-note { font-size: 11px; color: rgba(255, 255, 255, 0.75); padding: 6px 8px 2px; }
 }
 
 @media (max-width: 860px) and (prefers-reduced-motion: reduce) {

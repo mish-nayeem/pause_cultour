@@ -330,6 +330,51 @@ export function unsold(o) {
   return UNSOLD.includes(o?.status)
 }
 
+// ---------- What reaches the shop ----------
+// The courier (Steadfast, RedX…) keeps the whole delivery charge, and takes
+// COD_FEE_RATE of the product amount it collects — on a 1000 taka piece with
+// 80 delivery, the rider collects 1080, the courier keeps 80 + 10, and 990
+// is ours. Change the rate here if the courier's does.
+export const COD_FEE_RATE = 0.01
+
+// A returned parcel still costs its delivery charge. Paid (the bKash advance
+// covered it, or the customer paid it after): costs us nothing. Unpaid: it
+// comes off our revenue. Set by the admin on the order; until then, paid
+// when the advance was enough to cover the charge.
+export function returnFeePaid(o) {
+  if (o.return_fee_paid != null) return Boolean(o.return_fee_paid)
+  return (Number(o.advance_amount) || 0) >= (Number(o.delivery_fee) || 0)
+}
+
+// One order's money, split three ways: what the customer paid for the
+// products, what the courier keeps, and what's left for us. Only delivered
+// and returned orders have any — the rest haven't settled yet.
+export function orderMoney(o) {
+  const fee = Number(o.delivery_fee) || 0
+  if (o.status === 'delivered') {
+    const items = itemsNet(o)
+    const codFee = Math.round(items * COD_FEE_RATE * 100) / 100
+    return { items, delivery: fee, codFee, courier: fee + codFee, toShop: items - codFee }
+  }
+  if (o.status === 'returned') {
+    const paid = returnFeePaid(o)
+    return { items: 0, delivery: fee, codFee: 0, courier: fee, toShop: paid ? 0 : -fee, returnFeePaid: paid }
+  }
+  return { items: 0, delivery: 0, codFee: 0, courier: 0, toShop: 0 }
+}
+
+// The returned order's delivery charge: paid by the customer or not.
+// See supabase-migration-courier-money.sql.
+export async function setReturnFeePaid(orderId, paid) {
+  const { error } = await supabase.rpc('admin_set_return_fee', { p_order_id: orderId, p_paid: paid })
+  if (error) {
+    console.error('[Supabase] setReturnFeePaid failed:', error.message)
+    if ((error.message || '').includes('admin_set_return_fee')) return { error: 'Run supabase-migration-courier-money.sql in Supabase first.' }
+    return { error: "Couldn't save that. Try again." }
+  }
+  return { error: null }
+}
+
 // Everything here is computed from the orders already fetched, so the
 // dashboard never needs a second round trip for its summary numbers.
 export function computeStats(orders) {
@@ -342,8 +387,19 @@ export function computeStats(orders) {
   // Anything still owed to us: placed but not yet delivered or cancelled.
   const open = [...pending, ...shipped]
 
-  // Revenue counts delivered orders only — COD money isn't real until it lands.
-  const revenue = delivered.reduce((sum, o) => sum + itemsNet(o), 0)
+  // Revenue is what reaches us: delivered orders' products less the
+  // courier's COD fee (the delivery charge was never ours — the courier keeps
+  // it), less the delivery charge of any returned parcel nobody paid for.
+  // COD money isn't real until it lands, so nothing open counts.
+  let revenue = 0
+  let courierTook = 0
+  let returnLoss = 0
+  for (const o of [...delivered, ...returned]) {
+    const m = orderMoney(o)
+    revenue += m.toShop
+    courierTook += m.courier
+    if (m.toShop < 0) returnLoss -= m.toShop
+  }
   const openValue = open.reduce((sum, o) => sum + itemsNet(o), 0)
 
   // Pieces, not orders — one order can carry several units of several products.
@@ -365,6 +421,8 @@ export function computeStats(orders) {
     shipped: shipped.length,
     open: open.length,
     revenue,
+    courierTook,
+    returnLoss,
     openValue,
   }
 }
