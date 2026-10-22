@@ -86,6 +86,7 @@ import BulkBar from '../components/BulkBar.jsx'
 import AccountsManager from '../components/AccountsManager.jsx'
 import InvestorReport from '../components/InvestorReport.jsx'
 import DropProfit from '../components/DropProfit.jsx'
+import { KeyStats, SalesTrend } from '../components/OverviewCharts.jsx'
 import InfoTip from '../components/InfoTip.jsx'
 import './admin.css'
 import './admin-theme.css'
@@ -1400,106 +1401,9 @@ export default function Admin() {
               />
             )}
 
-            {overviewSub === 'stats' && (
-              <>
-            <div className="stat-row three">
-              <StatCard
-                icon={<IconBox />}
-                label="TOTAL ORDERS"
-                value={stats.totalOrders}
-                onClick={() => openOrders('all')}
-                cta="All orders"
-              />
-              <StatCard
-                icon={<IconTag />}
-                label="PIECES SOLD"
-                value={stats.unitsSold}
-                note="Units across every order that wasn't cancelled"
-              />
-              <StatCard
-                icon={<IconCash />}
-                tone="good"
-                label="REVENUE COLLECTED"
-                value={taka(stats.revenue)}
-                note={`After courier ${taka(stats.courierTook)}${stats.returnLoss ? ` · returns −${taka(stats.returnLoss)}` : ''} · ${taka(stats.openValue)} still to collect`}
-                tip={
-                  <>
-                    <p>What actually reaches you, from delivered orders only.</p>
-                    <p>The courier keeps the whole <b>delivery charge</b>, plus <b>1%</b> of the product amount it collects. A ৳1,000 piece with ৳80 delivery: the rider collects ৳1,080, the courier keeps ৳80 + ৳10, you get ৳990.</p>
-                    <p>A <b>returned</b> parcel whose delivery charge the customer didn't pay comes off it (set Paid / Unpaid on the order).</p>
-                  </>
-                }
-              />
-            </div>
+            {overviewSub === 'stats' && <KeyStats orders={orders} onOpenOrders={openOrders} />}
 
-            <div className="stat-row four">
-              <StatCard
-                icon={<IconClock />}
-                tone="warn"
-                label="PENDING"
-                value={stats.pending}
-                onClick={() => openOrders('pending')}
-              />
-              <StatCard
-                icon={<IconTruck />}
-                tone="warn"
-                label="SHIPPED"
-                value={stats.shipped}
-                onClick={() => openOrders('shipped')}
-              />
-              <StatCard
-                icon={<IconCheck />}
-                tone="good"
-                label="DELIVERED"
-                value={stats.delivered}
-                onClick={() => openOrders('delivered')}
-              />
-              <StatCard
-                icon={<IconX />}
-                tone="bad"
-                label="CANCELLED"
-                value={stats.cancelled}
-                onClick={() => openOrders('cancelled')}
-              />
-            </div>
-              </>
-            )}
-
-            {overviewSub === 'trend' && (
-              <>
-            <section className="panel">
-              <div className="panel-head">
-                <div>
-                  <div className="panel-label mono"><IconTrend width="13" height="13" />SALES BY MONTH</div>
-                  <div className="panel-note" style={{ marginTop: '6px' }}>
-                    {monthMetric === 'units'
-                      ? 'Pieces sold each month, last 6 months.'
-                      : 'Value of the orders placed each month, last 6 months.'}
-                  </div>
-                </div>
-                <div className="toggle mono">
-                  <button
-                    className={monthMetric === 'units' ? 'on' : ''}
-                    onClick={() => setMonthMetric('units')}
-                  >
-                    PIECES
-                  </button>
-                  <button
-                    className={monthMetric === 'value' ? 'on' : ''}
-                    onClick={() => setMonthMetric('value')}
-                  >
-                    REVENUE
-                  </button>
-                </div>
-              </div>
-              <MonthBars
-                series={months}
-                metric={monthMetric}
-                format={(v) => (monthMetric === 'value' ? taka(v) : `${v} pcs`)}
-              />
-            </section>
-              </>
-            )}
+            {overviewSub === 'trend' && <SalesTrend orders={orders} products={products} />}
 
             {overviewSub === 'recent' && (
             <section className="panel">
@@ -1520,25 +1424,6 @@ export default function Admin() {
             </section>
             )}
 
-            {overviewSub === 'trend' && (
-            <section className="panel">
-              <div className="panel-head">
-                <div>
-                  <div className="panel-label mono"><IconCash width="13" height="13" />DAILY MOMENTUM</div>
-                  <div className="panel-note" style={{ marginTop: '6px' }}>
-                    {windowOrders} order{windowOrders === 1 ? '' : 's'} placed in the last 14 days ·{' '}
-                    {taka(windowValue)}
-                  </div>
-                </div>
-                <div className="panel-tag mono"><IconTrend width="13" height="13" />14 DAYS</div>
-              </div>
-              <Sparkline series={series} />
-              <div className="spark-axis mono">
-                <span>{shortDate(series[0].date.toISOString())}</span>
-                <span>{shortDate(series[series.length - 1].date.toISOString())}</span>
-              </div>
-            </section>
-            )}
 
           </div>
         )}
