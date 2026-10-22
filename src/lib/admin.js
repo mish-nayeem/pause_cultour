@@ -194,13 +194,15 @@ export async function createReturn({ orderId, reason, kind = 'exchange' }) {
 // Completes a request: an exchange swaps the sizes in stock, a refund puts
 // the pieces back and takes the money off the order's revenue, a reject
 // just closes it. See supabase-migration-returns-processing.sql.
-export async function processReturn({ id, action, items = [], refund = 0, note = '' }) {
+export async function processReturn({ id, action, items = [], refund = 0, note = '', fee = 0, feePaid = true }) {
   const { data, error } = await supabase.rpc('admin_process_return', {
     p_return_id: id,
     p_action: action,
     p_items: items,
     p_refund: refund,
     p_note: note,
+    p_fee: fee,
+    p_fee_paid: feePaid,
   })
   if (error) {
     console.error('[Supabase] processReturn failed:', error.message)
@@ -354,7 +356,20 @@ export function orderMoney(o) {
   if (o.status === 'delivered') {
     const items = itemsNet(o)
     const codFee = Math.round(items * COD_FEE_RATE * 100) / 100
-    return { items, delivery: fee, codFee, courier: fee + codFee, toShop: items - codFee }
+    // An exchange's second parcel: its delivery charge is the courier's
+    // too. Paid by the customer it passes straight through; paid by us
+    // (exchange_fee_unpaid) it comes off what we keep.
+    const exchange = Number(o.exchange_fees) || 0
+    const exchangeUnpaid = Number(o.exchange_fee_unpaid) || 0
+    return {
+      items,
+      delivery: fee,
+      codFee,
+      exchange,
+      exchangeUnpaid,
+      courier: fee + codFee + exchange,
+      toShop: items - codFee - exchangeUnpaid,
+    }
   }
   if (o.status === 'returned') {
     const paid = returnFeePaid(o)
