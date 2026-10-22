@@ -16,12 +16,40 @@
 -- And for Orders → bKash check: admin_mark_confirmed clears a verified
 -- order that has no email to send (the admin calls the customer instead).
 --
--- Run after supabase-migration-returns-processing.sql (it uses
--- adjust_size_stock and returned_qty from there).
+-- Safe to run whether or not supabase-migration-returns-processing.sql has
+-- been run, and safe to run twice.
 
 begin;
 
 alter table order_items add column if not exists rejected_qty int not null default 0;
+-- From supabase-migration-returns-processing.sql, repeated so this file runs
+-- on its own too. Both are no-ops if that one was run already.
+alter table order_items add column if not exists returned_qty int not null default 0;
+
+create or replace function public.adjust_size_stock(p_product_id text, p_size text, p_delta int)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cur jsonb;
+  next_n int;
+begin
+  select stock into cur from products where id::text = p_product_id for update;
+  if cur is null or not (cur ? p_size) then
+    return null;
+  end if;
+  next_n := coalesce((cur ->> p_size)::int, 0) + p_delta;
+  if next_n < 0 then
+    raise exception 'Not enough stock: only % left in size %.', coalesce((cur ->> p_size)::int, 0), p_size;
+  end if;
+  update products set stock = jsonb_set(stock, array[p_size], to_jsonb(next_n)) where id::text = p_product_id;
+  return next_n;
+end;
+$$;
+
+revoke all on function public.adjust_size_stock(text, text, int) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- update_order_status — cancelled AND returned give the stock back
