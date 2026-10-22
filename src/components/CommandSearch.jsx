@@ -56,7 +56,7 @@ export default function CommandSearch({ open, onClose, orders, products, onOpenO
       if (!hit) continue
       const c = people.get(phone) || { phone: o.customer_phone, name: o.customer_name, count: 0, spent: 0, area: o.customer_area }
       c.count++
-      if (o.status !== 'cancelled') c.spent += Number(o.total ?? o.subtotal ?? 0)
+      if (o.status !== 'cancelled' && o.status !== 'returned') c.spent += Number(o.total ?? o.subtotal ?? 0)
       people.set(phone, c)
     }
     const cust = [...people.values()]

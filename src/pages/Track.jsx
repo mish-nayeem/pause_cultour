@@ -48,6 +48,7 @@ export default function Track() {
   }
 
   const cancelled = order?.status === 'cancelled'
+  const returned = order?.status === 'returned'
   const stageIndex = order ? STAGES.findIndex((s) => s.key === order.status) : -1
 
   return (
@@ -100,7 +101,12 @@ export default function Track() {
               <div className="tr-total mono">{taka(order.total ?? order.subtotal)}</div>
             </div>
 
-            {cancelled ? (
+            {returned ? (
+              <div className="tr-cancelled mono">
+                This parcel came back to us — the courier couldn't reach you.
+                To have it sent again, <Link to="/support/contact">get in touch</Link>.
+              </div>
+            ) : cancelled ? (
               <div className="tr-cancelled mono">
                 This order was cancelled. Nothing has been charged. If that
                 wasn't expected, <Link to="/support/contact">get in touch</Link>.

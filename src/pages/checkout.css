@@ -434,3 +434,15 @@
   .bkash-number { flex-wrap: wrap; gap: 8px; }
   .bkash-digits { margin-left: 0; }
 }
+
+/* Area / thana beside the postal code, like the reference: the thana takes
+   the room, the 4-digit code a narrow box. Stacked on the narrowest phones. */
+.co-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 14px;
+}
+
+@media (max-width: 380px) {
+  .co-pair { grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; }
+}

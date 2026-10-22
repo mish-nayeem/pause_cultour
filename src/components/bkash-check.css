@@ -105,3 +105,30 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+/* Verified, waiting on the admin's Confirm. */
+.bk-count.go { background: var(--pill-delivered, #0b7a3b); }
+.bk-ready { background: color-mix(in srgb, var(--pill-delivered, #0b7a3b) 7%, transparent); }
+.bk-row.bk-focus {
+  background: color-mix(in srgb, var(--cobalt) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--cobalt);
+  opacity: 1;
+  animation: bk-flash 1.2s ease 2;
+}
+@keyframes bk-flash { 50% { background: color-mix(in srgb, var(--cobalt) 30%, transparent); } }
+.bk-ready, .bk-focus { padding-left: 10px; padding-right: 10px; border-radius: 10px; }
+
+.bk-confirm {
+  border: none;
+  background: var(--pill-delivered, #0b7a3b);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bk-confirm:disabled { opacity: 0.6; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) { .bk-row.bk-focus { animation: none; } }

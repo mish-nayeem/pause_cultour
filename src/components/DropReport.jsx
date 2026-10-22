@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { unsold } from '../lib/admin.js'
 import { imgUrl } from '../lib/images.js'
 import { dropKey } from '../lib/lookbook.js'
 import { totalStock, starSizes } from '../lib/stock.js'
@@ -49,7 +50,7 @@ export default function DropReport({ products, orders }) {
     let soldUnits = 0
     let soldValue = 0
     for (const o of orders) {
-      if (o.status === 'cancelled') continue
+      if (unsold(o)) continue
       for (const it of o.order_items || []) {
         const id = String(it.product_id)
         const row = sold.get(id) || { units: 0, value: 0 }
