@@ -446,3 +446,22 @@
 @media (max-width: 380px) {
   .co-pair { grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; }
 }
+
+/* Contact → Delivery details: the second heading gets room above it. */
+.checkout-form .field-label.co-section { margin-top: 14px; }
+
+/* The email box with its ⓘ inside, on the right. */
+.co-input-wrap { position: relative; display: flex; }
+.co-input-wrap input { flex: 1; min-width: 0; padding-right: 44px; }
+.co-input-wrap input[readonly] { background: var(--paper-dim); color: var(--steel); cursor: default; }
+.co-q {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+}
+.co-signed { font-style: normal; font-size: 11px; color: var(--steel); margin-top: 6px; }
+/* .field span styles the field's label — not the ⓘ's own pieces. */
+.co-input-wrap .co-q span { margin-bottom: 0; font-size: 12.5px; letter-spacing: 0; }
+.co-input-wrap .co-q .itip-pop { line-height: 1.5; color: var(--paper); }
