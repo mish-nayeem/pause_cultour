@@ -74,6 +74,8 @@ export default function Product() {
   const [notFound, setNotFound] = useState(false)
   const [activeSize, setActiveSize] = useState(null)
   const [justAdded, setJustAdded] = useState(false)
+  // Add to cart pressed before a size was picked: "Select a size" shows.
+  const [needSize, setNeedSize] = useState(false)
   // The photo open full screen (its index), or null.
   const [zoom, setZoom] = useState(null)
   const [capped, setCapped] = useState(false)
@@ -134,7 +136,9 @@ export default function Product() {
       } else {
         setProduct(product)
         if (product) rememberViewed(product.id)
-        setActiveSize(availableSizes(product)[0] || null)
+        // No size is picked for the shopper — they choose their own.
+        setActiveSize(null)
+        setNeedSize(false)
         if (wantsNotify) setNotifyOpen(true)
       }
       setLoading(false)
@@ -306,7 +310,11 @@ export default function Product() {
   }, [product])
 
   function handleAddToCart(size = activeSize) {
-    if (!product || !size || isSoldOut(product, size)) return
+    if (product && !size) {
+      setNeedSize(true)
+      return
+    }
+    if (!product || isSoldOut(product, size)) return
 
     // The cart holds pieces that haven't been ordered yet, so they aren't off
     // the count in the database — the check has to include them or someone can
@@ -381,7 +389,9 @@ export default function Product() {
   const hasChart = Boolean(chart?.columns?.length && chart?.rows?.length)
   const chartNotes = (chart?.notes || []).map((n) => n.trim()).filter(Boolean)
 
-  const unavailable = !activeSize || isSoldOut(product, activeSize)
+  // Nothing to buy: every size sold out, or the size picked is.
+  const allOut = availableSizes(product).length === 0
+  const unavailable = allOut || Boolean(activeSize && isSoldOut(product, activeSize))
   const inCartCount = items.filter((i) => i.id === product.id).reduce((sum, i) => sum + i.qty, 0)
 
   const onList = Boolean(activeSize && (wishDone === activeSize || joined))
@@ -502,7 +512,7 @@ export default function Product() {
           )}
 
           <div className="field-label mono">SIZE</div>
-          <div className="sizes">
+          <div className={`sizes ${needSize && !activeSize ? 'want' : ''}`}>
             {product.sizes.map((s) => {
               const out = isSoldOut(product, s)
 
@@ -516,6 +526,7 @@ export default function Product() {
                   onClick={() => {
                     setActiveSize(s)
                     setWishState('idle')
+                    setNeedSize(false)
                   }}
                 >
                   {s}
@@ -529,6 +540,9 @@ export default function Product() {
                 <button type="button" key={s} className="size-opt disabled" disabled>{s}</button>
               ))}
           </div>
+          {needSize && !activeSize && (
+            <div className="need-size mono" role="alert">Select a size first.</div>
+          )}
 
           {/* Nothing to buy here, so the button becomes the way to ask for it
               back: it opens the email box below. */}
@@ -721,6 +735,7 @@ export default function Product() {
                   onClick={() => {
                     setActiveSize(s)
                     setWishState('idle')
+                    setNeedSize(false)
                     setBarPick(false)
                     // Picking a size here is the add — one tap, not two.
                     if (!out) handleAddToCart(s)
