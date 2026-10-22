@@ -369,7 +369,15 @@ export function orderMoney(o) {
       exchangeUnpaid,
       courier: fee + codFee + exchange,
       toShop: items - codFee - exchangeUnpaid,
+      receivable: items - codFee - exchangeUnpaid,
     }
+  }
+  // Not delivered yet: what will reach us once it is — the receivable.
+  // Nothing counts toward revenue until then.
+  if (o.status === 'pending' || o.status === 'shipped') {
+    const items = itemsNet(o)
+    const codFee = Math.round(items * COD_FEE_RATE * 100) / 100
+    return { items, delivery: fee, codFee, courier: 0, toShop: 0, receivable: items - codFee, expected: true }
   }
   if (o.status === 'returned') {
     const paid = returnFeePaid(o)
@@ -415,7 +423,8 @@ export function computeStats(orders) {
     courierTook += m.courier
     if (m.toShop < 0) returnLoss -= m.toShop
   }
-  const openValue = open.reduce((sum, o) => sum + itemsNet(o), 0)
+  // Still to collect: what those orders will bring in after the courier.
+  const openValue = open.reduce((sum, o) => sum + orderMoney(o).receivable, 0)
 
   // Pieces, not orders — one order can carry several units of several products.
   // Cancelled orders never counted as a sale, so they're left out.

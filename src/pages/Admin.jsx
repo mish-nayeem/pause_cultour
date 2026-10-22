@@ -656,12 +656,15 @@ export default function Admin() {
   // Returned: the delivery charge, Paid / Unpaid.
   function renderMoneySplit(o) {
     const m = orderMoney(o)
-    if (o.status === 'delivered') {
+    if (o.status === 'delivered' || m.expected) {
       return (
         <div className="osplit">
           <div className="osplit-head mono">
             AFTER THE COURIER
-            <InfoTip>The courier keeps the delivery charge and {Math.round(COD_FEE_RATE * 100)}% of the product amount it collected. What's left is yours and is what Revenue counts.</InfoTip>
+            <InfoTip>
+              <p>The courier keeps the delivery charge and {Math.round(COD_FEE_RATE * 100)}% of the product price it collects.</p>
+              <p><b>Receivable amount</b> = product price − {Math.round(COD_FEE_RATE * 100)}%: what reaches you. {m.expected ? 'It is added to Revenue once this order is delivered.' : 'This order is delivered, so it is in Revenue.'}</p>
+            </InfoTip>
           </div>
           <div className="orow dim"><span>Courier · delivery</span><span className="mono">− {taka(m.delivery)}</span></div>
           <div className="orow dim"><span>Courier · {Math.round(COD_FEE_RATE * 100)}% of {taka(m.items)}</span><span className="mono">− {taka(m.codFee)}</span></div>
@@ -671,7 +674,10 @@ export default function Admin() {
               <span className="mono">− {taka(m.exchangeUnpaid)}</span>
             </div>
           )}
-          <div className="orow osplit-you"><span>You get</span><span className="mono">{taka(m.toShop)}</span></div>
+          <div className="orow osplit-you">
+            <span>Receivable amount{m.expected ? ' · after delivery' : ' · in revenue'}</span>
+            <span className="mono">{taka(m.receivable)}</span>
+          </div>
         </div>
       )
     }
