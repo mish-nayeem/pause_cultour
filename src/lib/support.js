@@ -105,3 +105,13 @@ export async function updateRequest(id, status, adminNote) {
   if (error) console.error('[Supabase] updateRequest failed:', error.message)
   return { error }
 }
+
+// An exchange's second parcel: its delivery charge, by zone. The courier
+// keeps it. The customer pays it for their own reasons (wrong size…); it's
+// free when the mistake was ours.
+export const EXCHANGE_FEE = { inside: 80, outside: 150 }
+export const FREE_EXCHANGE_REASONS = ['Wrong item sent', 'Faulty / damaged']
+
+export function exchangeIsFree(reason) {
+  return FREE_EXCHANGE_REASONS.includes(reason)
+}

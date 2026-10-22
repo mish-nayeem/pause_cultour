@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { DEFAULT_PORTAL, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
+import { DEFAULT_PORTAL, EXCHANGE_FEE, exchangeIsFree, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
 import { imgUrl } from '../lib/images.js'
 import './return-portal.css'
 
@@ -38,6 +38,9 @@ export default function ReturnPortal() {
   const [picked, setPicked] = useState({}) // index → { on, exchange_size }
   const [reason, setReason] = useState('')
   const [details, setDetails] = useState('')
+  // A size exchange for the customer's own reason costs the second
+  // parcel's delivery — they say they understand before sending.
+  const [feeOk, setFeeOk] = useState(false)
   const [sent, setSent] = useState(null)
 
   useEffect(() => {
@@ -92,6 +95,9 @@ export default function ReturnPortal() {
     }
     if (!reason) return setError('Choose a reason.')
     if (reason === 'Other' && !details.trim()) return setError('Tell us a little about what happened.')
+    if (kind === 'exchange' && !exchangeIsFree(reason) && !feeOk) {
+      return setError('Tick the box to confirm you will pay the exchange delivery charge.')
+    }
 
     setBusy(true)
     setError('')
@@ -105,7 +111,7 @@ export default function ReturnPortal() {
     })
     setBusy(false)
     if (error) return setError(error)
-    setSent({ id, kind })
+    setSent({ id, kind, fee: kind === 'exchange' && !exchangeIsFree(reason) })
   }
 
   const open = order?.open_request
@@ -232,7 +238,7 @@ export default function ReturnPortal() {
 
                   <label className="rp-field">
                     <span className="mono">REASON</span>
-                    <select value={reason} onChange={(e) => { setReason(e.target.value); setError('') }}>
+                    <select value={reason} onChange={(e) => { setReason(e.target.value); setFeeOk(false); setError('') }}>
                       <option value="">Choose a reason</option>
                       {REASONS[kind].map((r) => (
                         <option key={r} value={r}>{r}</option>
@@ -240,6 +246,29 @@ export default function ReturnPortal() {
                     </select>
                   </label>
 
+                  {kind === 'exchange' && (
+                    reason && exchangeIsFree(reason) ? (
+                      <div className="rp-fee free mono">
+                        <b>NO DELIVERY CHARGE</b>
+                        <span>Our mistake, so the exchange is free. Keep the tags on — we may ask for a photo on WhatsApp.</span>
+                      </div>
+                    ) : (
+                      <div className="rp-fee mono">
+                        <b>EXCHANGE DELIVERY CHARGE</b>
+                        <span>
+                          The new size comes in a second parcel: <b>৳{EXCHANGE_FEE.inside}</b> inside Dhaka,
+                          {' '}<b>৳{EXCHANGE_FEE.outside}</b> outside Dhaka — paid to the rider when it arrives.
+                          It's free only if we sent the wrong item or a faulty piece.
+                        </span>
+                        {reason && (
+                          <label className="rp-fee-ok">
+                            <input type="checkbox" checked={feeOk} onChange={(e) => { setFeeOk(e.target.checked); setError('') }} />
+                            <span>I understand and will pay the delivery charge.</span>
+                          </label>
+                        )}
+                      </div>
+                    )
+                  )}
                   <label className="rp-field">
                     <span className="mono">DETAILS (OPTIONAL)</span>
                     <textarea
@@ -270,6 +299,7 @@ export default function ReturnPortal() {
               <p>
                 Your {sent.kind} request for {order.id} is with us. We'll call or message you within one
                 working day to arrange the {sent.kind === 'exchange' ? 'swap' : 'pickup'}.
+                {sent.fee && ` Keep the delivery charge ready for the rider: ৳${EXCHANGE_FEE.inside} inside Dhaka, ৳${EXCHANGE_FEE.outside} outside.`}
               </p>
               <Link to="/shop" className="rp-btn mono">Back to shop</Link>
             </div>

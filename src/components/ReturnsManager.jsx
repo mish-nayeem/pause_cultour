@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import InfoTip from './InfoTip.jsx'
 import { imgUrl } from '../lib/images.js'
 import { createReturn, processReturn } from '../lib/admin.js'
-import { isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
+import { EXCHANGE_FEE, exchangeIsFree, isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
 import { stockMap } from '../lib/stock.js'
 import './returns-manager.css'
 
@@ -217,9 +217,6 @@ function OrderSummary({ order }) {
 
 // Matches what the customer asked for to the order's own lines, so the
 // form starts ticked the way they asked.
-// The exchange parcel's delivery charge, by zone. The courier keeps it.
-const EXCHANGE_FEE = { inside: 80, outside: 150 }
-
 function askedFor(r, it) {
   return (r.items || []).find((x) => x.product_name === it.product_name && x.size === it.size)
 }
@@ -239,7 +236,9 @@ function Complete({ r, order, productsById, onReload }) {
   // The exchange parcel's delivery charge: the same zone's rate — 80 in
   // Dhaka, 150 outside — unless typed otherwise.
   const [fee, setFee] = useState(() => String(order?.delivery_zone === 'inside' || order?.customer_area === 'Dhaka' ? EXCHANGE_FEE.inside : EXCHANGE_FEE.outside))
-  const [feePaid, setFeePaid] = useState(true)
+  // Customer pays for their own reason; we pay for our mistake (wrong item,
+  // faulty) — the reason they gave picks the default.
+  const [feePaid, setFeePaid] = useState(() => !exchangeIsFree(r.reason))
   const [note, setNote] = useState(r.admin_note || '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
