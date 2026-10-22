@@ -81,6 +81,32 @@
   html.printing-report .ir-paper { box-shadow: none; border-radius: 0; max-width: none; min-width: 0; padding: 0; }
   html.printing-report body { background: #fff !important; }
   html.printing-report .ir-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* The site's overflow-x: clip and the smooth-scroll's clip can make
+     Chrome cut the printout off — none of it while printing the report. */
+  html.printing-report,
+  html.printing-report body {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* No box split across two pages: a section that won't fit moves whole to
+     the next page; long tables break between rows, headings stay with them. */
+  html.printing-report .ir-head,
+  html.printing-report .ir-note,
+  html.printing-report .ir-kpis,
+  html.printing-report .ir-kpi,
+  html.printing-report .ir-block,
+  html.printing-report .ir-cols { break-inside: avoid; page-break-inside: avoid; }
+  html.printing-report .ir-orders { break-inside: auto; page-break-inside: auto; }
+  html.printing-report .ir-table tr { break-inside: avoid; page-break-inside: avoid; }
+  html.printing-report .ir-table thead { display: table-header-group; }
+  html.printing-report .ir-label { break-after: avoid; page-break-after: avoid; }
+  html.printing-report .ir-block { margin-top: 16px; }
 }
+
+.ir-drop-pick { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+.ir-drop-pick select { font: inherit; }
 .ir-table tr.ir-sub td { color: var(--ir-soft); padding-left: 12px; }
 .ir-table tr.ir-sub td:not(:first-child) { padding-left: 10px; }

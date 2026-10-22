@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import AdminBox from './AdminBox.jsx'
 import InfoTip from './InfoTip.jsx'
 import { orderMoney, phoneKey, unsold } from '../lib/admin.js'
+import { dropKey } from '../lib/lookbook.js'
+import { totalStock } from '../lib/stock.js'
 import './investor-report.css'
 
 const DAY = 86400e3
@@ -52,6 +54,7 @@ function periodRange(key, from, to) {
     start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     end = new Date(now.getFullYear(), now.getMonth(), 1)
   } else {
+    // Custom, or a drop: the dates as typed.
     start = midnight(from ? new Date(from) : now)
     end = new Date(midnight(to ? new Date(to) : now).getTime() + DAY)
   }
@@ -67,7 +70,39 @@ const PERIODS = [
   { key: 'this-month', label: 'This month' },
   { key: 'last-month', label: 'Last month' },
   { key: 'custom', label: 'Custom' },
+  { key: 'drop', label: 'One drop' },
 ]
+
+// Each drop (products.drop_name), with its products and when it started:
+// the earliest launch time, or when its first product was added.
+function listDrops(products) {
+  const map = new Map()
+  for (const p of products) {
+    const name = String(p.drop_name || '').trim()
+    if (!name) continue
+    const k = dropKey(name)
+    const d = map.get(k) || { key: k, name, ids: new Set(), products: [], start: Infinity }
+    d.ids.add(String(p.id))
+    d.products.push(p)
+    const t = new Date(p.publish_at || p.created_at).getTime()
+    if (t < d.start) d.start = t
+    map.set(k, d)
+  }
+  return [...map.values()].sort((a, b) => b.start - a.start)
+}
+
+// Orders cut down to one drop's pieces: only its lines, valued on their
+// own — delivery left out, since one parcel can carry several drops.
+function scopeToDrop(orders, ids) {
+  const out = []
+  for (const o of orders) {
+    const items = (o.order_items || []).filter((it) => ids.has(String(it.product_id)))
+    if (!items.length) continue
+    const sub = items.reduce((n, it) => n + Number(it.price) * Number(it.qty), 0)
+    out.push({ ...o, order_items: items, subtotal: sub, discount_amount: 0, delivery_fee: 0, total: sub, exchange_fees: 0, exchange_fee_unpaid: 0 })
+  }
+  return out
+}
 
 // Everything the report says about one stretch of time.
 function summarise(orders, start, end, firstSeen) {
@@ -145,7 +180,7 @@ function top(map, n = 6) {
 // report as it will print, and Download PDF opens the print dialog with
 // only the report on the page — "Save as PDF" there makes the file. No
 // customer names, phones or addresses are on it.
-export default function InvestorReport({ orders }) {
+export default function InvestorReport({ orders: allOrders, products = [] }) {
   const [period, setPeriod] = useState('last-week')
   const [from, setFrom] = useState(() => toInput(new Date(Date.now() - 6 * DAY)))
   const [to, setTo] = useState(() => toInput(new Date()))
@@ -154,6 +189,23 @@ export default function InvestorReport({ orders }) {
   })
   const [withOrders, setWithOrders] = useState(false)
   const [printing, setPrinting] = useState(false)
+  const drops = useMemo(() => listDrops(products), [products])
+  const [dropPick, setDropPick] = useState('')
+  const drop = period === 'drop' ? drops.find((d) => d.key === dropPick) || null : null
+
+  // Picking a drop starts the range on its launch day, up to today —
+  // either end can then be moved.
+  function chooseDrop(k) {
+    setDropPick(k)
+    const d = drops.find((x) => x.key === k)
+    if (d && Number.isFinite(d.start)) {
+      setFrom(toInput(new Date(d.start)))
+      setTo(toInput(new Date()))
+    }
+  }
+
+  const orders = useMemo(() => (drop ? scopeToDrop(allOrders, drop.ids) : allOrders), [allOrders, drop])
+  const compare = period !== 'drop'
 
   useEffect(() => {
     try { localStorage.setItem('pause_report_note', note) } catch { /* not kept */ }
@@ -172,14 +224,26 @@ export default function InvestorReport({ orders }) {
     const now = summarise(orders, range.start.getTime(), range.end.getTime(), firstSeen)
     const prev = summarise(orders, range.prevStart.getTime(), range.prevEnd.getTime(), firstSeen)
 
-    // Sales per day.
+    // Sales per day — per week once the range is longer than ~6 weeks,
+    // so the bars stay readable.
+    const step = (range.end - range.start) / DAY > 45 ? 7 * DAY : DAY
     const days = []
-    for (let t = range.start.getTime(); t < range.end.getTime(); t += DAY) {
+    for (let t = range.start.getTime(); t < range.end.getTime(); t += step) {
       const d = new Date(t)
-      const next = t + DAY
+      const next = t + step
       const list = now.live.filter((o) => { const x = new Date(o.created_at).getTime(); return x >= t && x < next })
-      days.push({ d, value: list.reduce((n, o) => n + Number(o.total ?? o.subtotal ?? 0), 0), count: list.length })
+      days.push({ d, value: list.reduce((n, o) => n + Number(o.total ?? o.subtotal ?? 0), 0), count: list.length, weekly: step > DAY })
     }
+
+    // A drop: how much of each piece has sold — sold in this range against
+    // what's still on the shelf.
+    const sellThrough = drop
+      ? drop.products.map((p) => {
+          const sold = now.live.reduce((n, o) => n + (o.order_items || []).filter((it) => String(it.product_id) === String(p.id)).reduce((m, it) => m + Number(it.qty || 0), 0), 0)
+          const left = totalStock(p)
+          return { name: `${p.name}${p.variant ? ` — ${p.variant}` : ''}`, sold, left, rate: left == null || sold + left === 0 ? null : sold / (sold + left) }
+        }).sort((a, b) => b.sold - a.sold)
+      : []
 
     const products = new Map()
     const districts = new Map()
@@ -203,8 +267,8 @@ export default function InvestorReport({ orders }) {
       sources.set(sk, se)
     }
 
-    return { now, prev, days, products: top(products, 8), districts: top(districts), sources: top(sources) }
-  }, [orders, range])
+    return { now, prev, days, sellThrough, products: top(products, 8), districts: top(districts), sources: top(sources) }
+  }, [orders, range, drop])
 
   // Print just the report: it's a direct child of <body> (portal), and the
   // html class hides everything else while printing.
@@ -212,7 +276,7 @@ export default function InvestorReport({ orders }) {
     if (!printing) return
     const previous = document.title
     const label = `${fmt(range.start, false)}–${fmt(new Date(range.end - DAY))}`
-    document.title = `PAUSE report · ${label}`
+    document.title = drop ? `PAUSE ${drop.name} report · ${label}` : `PAUSE report · ${label}`
     document.documentElement.classList.add('printing-report')
     const done = () => setPrinting(false)
     window.addEventListener('afterprint', done)
@@ -224,12 +288,17 @@ export default function InvestorReport({ orders }) {
       document.documentElement.classList.remove('printing-report')
       document.title = previous
     }
-  }, [printing, range])
+  }, [printing, range, drop])
 
   const { now, prev, days } = data
   const maxDay = Math.max(1, ...days.map((d) => d.value))
   const periodLabel = PERIODS.find((p) => p.key === period)?.label
-  const title = period.includes('month')
+  const rangeLabel = `${fmt(range.start, false)} – ${fmt(new Date(range.end - DAY))}`
+  const title = drop
+    ? `Drop report · ${drop.name} · ${rangeLabel}`
+    : period === 'drop'
+      ? 'Drop report · pick a drop'
+      : period.includes('month')
     ? `Monthly report · ${range.start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`
     : `${period.includes('week') ? 'Weekly' : 'Sales'} report · ${fmt(range.start, false)} – ${fmt(new Date(range.end - DAY))}`
 
@@ -242,7 +311,11 @@ export default function InvestorReport({ orders }) {
         </div>
         <div className="ir-meta">
           <div>Prepared {fmt(new Date())}</div>
-          <div>Compared with {fmt(range.prevStart, false)} – {fmt(new Date(range.prevEnd - DAY))}</div>
+          {compare ? (
+            <div>Compared with {fmt(range.prevStart, false)} – {fmt(new Date(range.prevEnd - DAY))}</div>
+          ) : drop && Number.isFinite(drop.start) ? (
+            <div>Drop launched {fmt(new Date(drop.start))}</div>
+          ) : null}
         </div>
       </header>
 
@@ -265,23 +338,44 @@ export default function InvestorReport({ orders }) {
           <div className="ir-kpi" key={label}>
             <div className="ir-kpi-label">{label}</div>
             <div className="ir-kpi-value">{f(v)}</div>
-            <div className={`ir-kpi-change ${v >= p ? 'up' : 'down'}`}>{change(v, p)} <span>vs {f(p)}</span></div>
+            {compare && <div className={`ir-kpi-change ${v >= p ? 'up' : 'down'}`}>{change(v, p)} <span>vs {f(p)}</span></div>}
           </div>
         ))}
       </section>
 
       <section className="ir-block">
-        <div className="ir-label">SALES PER DAY</div>
+        <div className="ir-label">{days[0]?.weekly ? 'SALES PER WEEK' : 'SALES PER DAY'}</div>
         <div className="ir-bars" style={{ '--n': days.length }}>
           {days.map((d) => (
             <div className="ir-bar" key={d.d.getTime()} title={`${fmt(d.d, false)} · ${taka(d.value)} · ${d.count} orders`}>
               <span className="ir-bar-v">{d.value ? Math.round(d.value / 1000) + 'k' : ''}</span>
               <i style={{ height: `${(d.value / maxDay) * 100}%` }} />
-              <span className="ir-bar-d">{days.length > 10 ? d.d.getDate() : d.d.toLocaleDateString('en-GB', { weekday: 'short' })}</span>
+              <span className="ir-bar-d">
+                {d.weekly ? fmt(d.d, false) : days.length > 10 ? d.d.getDate() : d.d.toLocaleDateString('en-GB', { weekday: 'short' })}
+              </span>
             </div>
           ))}
         </div>
       </section>
+
+      {drop && data.sellThrough.length > 0 && (
+        <section className="ir-block">
+          <div className="ir-label">SELL-THROUGH · HOW MUCH OF THE DROP HAS SOLD</div>
+          <table className="ir-table">
+            <thead><tr><th>Piece</th><th>Sold</th><th>Left</th><th>Sold %</th></tr></thead>
+            <tbody>
+              {data.sellThrough.map((r) => (
+                <tr key={r.name}>
+                  <td>{r.name}</td>
+                  <td>{r.sold}</td>
+                  <td>{r.left == null ? '—' : r.left}</td>
+                  <td>{r.rate == null ? '—' : `${Math.round(r.rate * 100)}%`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       <div className="ir-cols">
         <section className="ir-block">
@@ -350,15 +444,18 @@ export default function InvestorReport({ orders }) {
         <div className="ir-label">MONEY</div>
         <table className="ir-table">
           <tbody>
-            <tr><td>Sales — every order placed (delivery included)</td><td>{taka(now.sales)}</td></tr>
+            <tr><td>{drop ? `Sales — ${drop.name} pieces, every order placed` : 'Sales — every order placed (delivery included)'}</td><td>{taka(now.sales)}</td></tr>
             <tr className="ir-sub"><td>Still on the way or being packed</td><td>{taka(now.onTheWay)}</td></tr>
             <tr><td>Delivered and collected</td><td>{taka(now.deliveredValue)}</td></tr>
-            <tr className="ir-sub"><td>Courier — delivery charge + 1% COD</td><td>− {taka(now.deliveredCourier)}</td></tr>
+            <tr className="ir-sub"><td>{drop ? 'Courier — 1% COD' : 'Courier — delivery charge + 1% COD'}</td><td>− {taka(now.deliveredCourier)}</td></tr>
             {now.returnLoss > 0 && <tr className="ir-sub"><td>Returned parcels' unpaid delivery</td><td>− {taka(now.returnLoss)}</td></tr>}
             <tr><td><b>Revenue — reached the shop</b></td><td><b>{taka(now.revenue)}</b></td></tr>
           </tbody>
         </table>
-        <p className="ir-fine">Revenue counts this period's delivered orders after the courier's cut. Orders still on the way add to it once they're delivered.</p>
+        <p className="ir-fine">
+          Revenue counts this period's delivered orders after the courier's cut. Orders still on the way add to it once they're delivered.
+          {drop && ' A drop report counts only this drop\'s pieces; delivery charges are left out, since one parcel can carry pieces from several drops.'}
+        </p>
       </section>
 
       {withOrders && (
@@ -396,6 +493,7 @@ export default function InvestorReport({ orders }) {
             <p>A clean report of one week or one month, to send to an investor as a PDF.</p>
             <p><b>How:</b> pick the period → write a few lines under Highlights (what went well, what's next) → <b>Download PDF</b> → in the print window choose <b>Save as PDF</b> → Save.</p>
             <p>Weeks run Saturday to Friday. Every number is compared with the period just before.</p>
+            <p><b>One drop:</b> pick a drop — the report shows only its pieces, from its launch day to today (change the dates if you like), with how much of each piece has sold.</p>
             <p>No customer names, phone numbers or addresses go on the report.</p>
           </>
         }
@@ -408,7 +506,19 @@ export default function InvestorReport({ orders }) {
               </button>
             ))}
           </div>
-          {period === 'custom' && (
+          {period === 'drop' && (
+            <label className="ab-label mono ir-drop-pick">
+              DROP
+              <select className="ab-input" value={dropPick} onChange={(e) => chooseDrop(e.target.value)}>
+                <option value="">Pick a drop</option>
+                {drops.map((d) => (
+                  <option key={d.key} value={d.key}>{d.name}{Number.isFinite(d.start) ? ` · since ${fmt(new Date(d.start))}` : ''}</option>
+                ))}
+              </select>
+              <InfoTip>The dates start on the drop's launch day (its earliest launch time, or when its first piece was added) and run to today. Change either one — e.g. just the first week of the drop.</InfoTip>
+            </label>
+          )}
+          {(period === 'custom' || (period === 'drop' && drop)) && (
             <div className="ir-dates mono">
               <label>From <input type="date" className="ab-input" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
               <label>To <input type="date" className="ab-input" value={to} onChange={(e) => setTo(e.target.value)} /></label>
@@ -424,7 +534,7 @@ export default function InvestorReport({ orders }) {
             Add the full order list (order number, date, district, total, status)
           </label>
           <div className="ir-go">
-            <button type="button" className="ab-btn" onClick={() => setPrinting(true)}>Download PDF</button>
+            <button type="button" className="ab-btn" disabled={period === 'drop' && !drop} onClick={() => setPrinting(true)}>Download PDF</button>
             <span className="mono dim">{periodLabel} · {now.placed} order{now.placed === 1 ? '' : 's'}</span>
           </div>
         </div>
