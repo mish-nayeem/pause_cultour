@@ -1638,3 +1638,6 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 }
 .admin .main .osplit-opt.on.paid { background: var(--pill-delivered, #0b7a3b); border-color: var(--pill-delivered, #0b7a3b); color: #fff; }
 .admin .main .osplit-opt.on.unpaid { background: var(--signal); border-color: var(--signal); color: #fff; }
+
+/* Products → Cost & margin: Per product · Drop profit. */
+.margin-views { display: flex; gap: 8px; margin-bottom: 14px; }

@@ -3,44 +3,10 @@ import { createPortal } from 'react-dom'
 import AdminBox from './AdminBox.jsx'
 import InfoTip from './InfoTip.jsx'
 import { orderMoney, phoneKey, unsold } from '../lib/admin.js'
-import { dropKey } from '../lib/lookbook.js'
 import { totalStock } from '../lib/stock.js'
 import './investor-report.css'
-import reportCss from './investor-report.css?raw'
-
-// The report printed on its own page: A4, 12 mm margins, nothing of the
-// admin's layout around it (the admin's own styles could crop it). On
-// screen the page shows the report with a Save as PDF button over it.
-const PAGE_CSS = `
-@page { size: A4; margin: 12mm; }
-html, body { margin: 0; background: #fff; }
-body { font-family: 'Inter', sans-serif; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.ir-paper { max-width: none !important; min-width: 0 !important; width: auto !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
-.ir-tools { font-family: 'Inter', sans-serif; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 14px 16px; background: #111; color: #fff; font-size: 13px; position: sticky; top: 0; z-index: 2; }
-.ir-tools button { background: #2a4dff; color: #fff; border: 0; border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 700; cursor: pointer; }
-@media screen {
-  body { background: #ececea; }
-  .ir-sheet { max-width: 794px; margin: 16px auto; background: #fff; padding: 12mm; box-sizing: border-box; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-}
-@media screen and (max-width: 600px) {
-  .ir-sheet { margin: 0; padding: 16px; }
-  .ir-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  .ir-cols { grid-template-columns: 1fr !important; }
-}
-@media print {
-  .ir-tools { display: none !important; }
-  .ir-sheet { padding: 0; margin: 0; }
-  .ir-head, .ir-note, .ir-kpis, .ir-kpi, .ir-block, .ir-cols { break-inside: avoid; page-break-inside: avoid; }
-  .ir-orders { break-inside: auto; page-break-inside: auto; }
-  .ir-table tr { break-inside: avoid; page-break-inside: avoid; }
-  .ir-table thead { display: table-header-group; }
-  .ir-label { break-after: avoid; page-break-after: avoid; }
-}
-`
-
-function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
+import { openPrintPage } from '../lib/printPage.js'
+import { listDrops } from '../lib/dropMoney.js'
 
 const DAY = 86400e3
 
@@ -107,24 +73,6 @@ const PERIODS = [
   { key: 'custom', label: 'Custom' },
   { key: 'drop', label: 'One drop' },
 ]
-
-// Each drop (products.drop_name), with its products and when it started:
-// the earliest launch time, or when its first product was added.
-function listDrops(products) {
-  const map = new Map()
-  for (const p of products) {
-    const name = String(p.drop_name || '').trim()
-    if (!name) continue
-    const k = dropKey(name)
-    const d = map.get(k) || { key: k, name, ids: new Set(), products: [], start: Infinity }
-    d.ids.add(String(p.id))
-    d.products.push(p)
-    const t = new Date(p.publish_at || p.created_at).getTime()
-    if (t < d.start) d.start = t
-    map.set(k, d)
-  }
-  return [...map.values()].sort((a, b) => b.start - a.start)
-}
 
 // Orders cut down to one drop's pieces: only its lines, valued on their
 // own — delivery left out, since one parcel can carry several drops.
@@ -332,35 +280,7 @@ export default function InvestorReport({ orders: allOrders, products = [] }) {
   function downloadPdf() {
     const label = `${fmt(range.start, false)}–${fmt(new Date(range.end - DAY))}`
     const docTitle = drop ? `PAUSE ${drop.name} report · ${label}` : `PAUSE report · ${label}`
-    const html = previewRef.current?.innerHTML
-    const w = html ? window.open('', '_blank') : null
-    if (!w) {
-      setPrinting(true)
-      return
-    }
-    const fonts = [...document.querySelectorAll('link[rel="stylesheet"][href*="fonts.googleapis"]')]
-      .map((l) => `<link rel="stylesheet" href="${l.href}">`)
-      .join('')
-    w.document.open()
-    w.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(docTitle)}</title>${fonts}
-<style>${reportCss}${PAGE_CSS}</style></head>
-<body><div class="ir-tools"><span>Press the button, then choose “Save as PDF”.</span><button type="button" onclick="window.print()">Save as PDF</button></div>
-<div class="ir-sheet">${html}</div></body></html>`)
-    w.document.close()
-    // Print once the fonts are in, so the PDF isn't set in a fallback face.
-    let fired = false
-    const go = () => {
-      if (fired) return
-      fired = true
-      w.focus()
-      w.print()
-    }
-    const ready = () => (w.document.fonts?.ready || Promise.resolve()).then(() => setTimeout(go, 200))
-    if (w.document.readyState === 'complete') ready()
-    else w.addEventListener('load', ready)
-    setTimeout(go, 3000)
+    if (!openPrintPage({ title: docTitle, html: previewRef.current?.innerHTML })) setPrinting(true)
   }
 
   const { now, prev, days } = data

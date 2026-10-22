@@ -85,6 +85,7 @@ import CourierSetup from '../components/CourierSetup.jsx'
 import BulkBar from '../components/BulkBar.jsx'
 import AccountsManager from '../components/AccountsManager.jsx'
 import InvestorReport from '../components/InvestorReport.jsx'
+import DropProfit from '../components/DropProfit.jsx'
 import InfoTip from '../components/InfoTip.jsx'
 import './admin.css'
 import './admin-theme.css'
@@ -494,6 +495,8 @@ export default function Admin() {
   const [analyticsSub, setAnalyticsSub] = useState('summary')
   const [supportSub, setSupportSub] = useState('requests')
   const [productsSub, setProductsSub] = useState('catalog')
+  // Products → Cost & margin: per product, or a drop's profit.
+  const [marginView, setMarginView] = useState('product')
   const [customersSub, setCustomersSub] = useState('accounts')
   const [allReviews, setAllReviews] = useState([])
   const [marketingSub, setMarketingSub] = useState('audience')
@@ -2025,6 +2028,16 @@ export default function Admin() {
           {productsSub === 'drops' && <DropReport products={products} orders={orders} />}
 
           {productsSub === 'margin' && (
+            <div className="margin-views mono" role="tablist">
+              {[['product', 'Per product'], ['drop', 'Drop profit']].map(([k, label]) => (
+                <button key={k} type="button" role="tab" aria-selected={marginView === k} className={`chip ${marginView === k ? 'on' : ''}`} onClick={() => setMarginView(k)}>
+                  {label.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
+          {productsSub === 'margin' && marginView === 'drop' && <DropProfit orders={orders} products={products} />}
+          {productsSub === 'margin' && marginView === 'product' && (
           <section className="panel">
             <div className="panel-label mono" style={{ marginBottom: '6px' }}>COST &amp; MARGIN</div>
             <div className="panel-note" style={{ marginBottom: '18px' }}>
