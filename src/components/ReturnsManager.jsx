@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import InfoTip from './InfoTip.jsx'
 import { imgUrl } from '../lib/images.js'
 import { createReturn, processReturn } from '../lib/admin.js'
-import { EXCHANGE_FEE, exchangeIsFree, isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
+import { EXCHANGE_FEE, EXCHANGE_REASONS, exchangeIsFree, isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
 import { stockMap } from '../lib/stock.js'
 import './returns-manager.css'
 
@@ -236,8 +236,8 @@ function Complete({ r, order, productsById, onReload }) {
   // The exchange parcel's delivery charge: the same zone's rate — 80 in
   // Dhaka, 150 outside — unless typed otherwise.
   const [fee, setFee] = useState(() => String(order?.delivery_zone === 'inside' || order?.customer_area === 'Dhaka' ? EXCHANGE_FEE.inside : EXCHANGE_FEE.outside))
-  // Customer pays for their own reason; we pay for our mistake (wrong item,
-  // faulty) — the reason they gave picks the default.
+  // Only "Wrong size ordered" is the customer's to pay; every other reason
+  // is our mistake, so we carry it — the reason they gave picks the default.
   const [feePaid, setFeePaid] = useState(() => !exchangeIsFree(r.reason))
   const [note, setNote] = useState(r.admin_note || '')
   const [busy, setBusy] = useState(false)
@@ -508,12 +508,23 @@ function LogForm({ orders, onDone }) {
           ['exchange', 'Exchange'],
           ['refund', 'Return & refund'],
         ].map(([k, label]) => (
-          <button key={k} type="button" className={`${kind === k ? 'on' : ''} m-${k}`} onClick={() => setKind(k)}>{label}</button>
+          <button key={k} type="button" className={`${kind === k ? 'on' : ''} m-${k}`} onClick={() => { setKind(k); setReason('') }}>{label}</button>
         ))}
       </div>
       <label className="pf-field">
         <span className="mono">REASON</span>
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Wrong size, faulty, wrong item…" />
+        {/* An exchange's reason decides who pays its delivery, so it's one
+            of the portal's four; a refund's is typed freely. */}
+        {kind === 'exchange' ? (
+          <select value={reason} onChange={(e) => setReason(e.target.value)}>
+            <option value="">Choose a reason</option>
+            {EXCHANGE_REASONS.map((x) => (
+              <option key={x} value={x}>{x}{exchangeIsFree(x) ? ' — we pay delivery' : ' — customer pays delivery'}</option>
+            ))}
+          </select>
+        ) : (
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Faulty, wrong item, missing piece…" />
+        )}
       </label>
       {error && <div className="rm-error mono">{error}</div>}
       <button type="submit" className="courier-btn mono" disabled={busy}>{busy ? 'Saving…' : 'Add request'}</button>

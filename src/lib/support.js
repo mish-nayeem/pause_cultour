@@ -107,11 +107,22 @@ export async function updateRequest(id, status, adminNote) {
 }
 
 // An exchange's second parcel: its delivery charge, by zone. The courier
-// keeps it. The customer pays it for their own reasons (wrong size…); it's
-// free when the mistake was ours.
+// keeps it. Only "Wrong size ordered" — the customer's own pick — is theirs
+// to pay; every other reason is our mistake, so the shop carries the charge
+// and it comes off revenue.
 export const EXCHANGE_FEE = { inside: 80, outside: 150 }
-export const FREE_EXCHANGE_REASONS = ['Wrong item sent', 'Faulty / damaged']
+
+export const EXCHANGE_REASONS = [
+  'Wrong size ordered',
+  'Wrong size received',
+  'Wrong item received',
+  'Faulty or damaged product received',
+]
+
+// Reasons the customer pays the delivery for — including the wording older
+// requests were sent with.
+const CUSTOMER_PAYS = ['Wrong size ordered', 'Wrong size', 'Other']
 
 export function exchangeIsFree(reason) {
-  return FREE_EXCHANGE_REASONS.includes(reason)
+  return !CUSTOMER_PAYS.includes(reason)
 }

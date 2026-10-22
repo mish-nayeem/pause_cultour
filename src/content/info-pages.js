@@ -238,7 +238,7 @@ export const INFO_PAGES = {
         type: 'text',
         heading: 'Delivery charges',
         body:
-          'A size exchange goes out as a second parcel, and its delivery charge is paid by the customer to the rider: ৳80 inside Dhaka, ৳150 outside Dhaka. If we sent the wrong item or a faulty piece, the exchange is free.',
+          'A size exchange goes out as a second parcel, and its delivery charge is paid by the customer to the rider: ৳80 inside Dhaka, ৳150 outside Dhaka. If we sent the wrong size, the wrong item or a faulty or damaged piece, we pay the delivery and the exchange is free.',
       },
       {
         type: 'text',

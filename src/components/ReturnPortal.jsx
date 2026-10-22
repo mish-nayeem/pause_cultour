@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { DEFAULT_PORTAL, EXCHANGE_FEE, exchangeIsFree, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
+import { DEFAULT_PORTAL, EXCHANGE_FEE, EXCHANGE_REASONS, exchangeIsFree, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
 import { imgUrl } from '../lib/images.js'
 import './return-portal.css'
 
 const REASONS = {
-  exchange: ['Wrong size', 'Wrong item sent', 'Faulty / damaged', 'Other'],
+  exchange: EXCHANGE_REASONS,
   refund: ['Wrong item sent', 'Faulty / damaged', 'Missing item', 'Other'],
 }
 
@@ -250,7 +250,7 @@ export default function ReturnPortal() {
                     reason && exchangeIsFree(reason) ? (
                       <div className="rp-fee free mono">
                         <b>NO DELIVERY CHARGE</b>
-                        <span>Our mistake, so the exchange is free. Keep the tags on — we may ask for a photo on WhatsApp.</span>
+                        <span>Our mistake, so we pay the delivery for the exchange. Keep the tags on — we may ask for a photo on WhatsApp.</span>
                       </div>
                     ) : (
                       <div className="rp-fee mono">
@@ -258,7 +258,7 @@ export default function ReturnPortal() {
                         <span>
                           The new size comes in a second parcel: <b>৳{EXCHANGE_FEE.inside}</b> inside Dhaka,
                           {' '}<b>৳{EXCHANGE_FEE.outside}</b> outside Dhaka — paid to the rider when it arrives.
-                          It's free only if we sent the wrong item or a faulty piece.
+                          Free if we sent the wrong size, the wrong item or a faulty piece.
                         </span>
                         {reason && (
                           <label className="rp-fee-ok">
