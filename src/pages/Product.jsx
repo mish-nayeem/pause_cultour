@@ -101,6 +101,13 @@ export default function Product() {
   const [showReviews, setShowReviews] = useState(false)
   const [writing, setWriting] = useState(false) // the leave-a-review form
   const wishRef = useRef(null)
+  // Phones: the add-to-cart bar along the bottom of the screen. Hidden while
+  // the page's own button is on screen, and gone for good once the shopper
+  // has scrolled down to "You may like".
+  const addRef = useRef(null)
+  const endRef = useRef(null)
+  const [barOn, setBarOn] = useState(false)
+  const [barPick, setBarPick] = useState(false) // the bar's size row open
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' })
   const [reviewState, setReviewState] = useState('idle') // idle | saving | error | done
 
@@ -264,17 +271,51 @@ export default function Product() {
     }
   }
 
-  function handleAddToCart() {
-    if (!product || !activeSize || isSoldOut(product, activeSize)) return
+  // Read straight off the page on every scroll — two rects, no re-render
+  // unless the answer changes.
+  useEffect(() => {
+    if (!product) return
+    let frame = 0
+    function check() {
+      frame = 0
+      const vh = window.innerHeight
+      const btn = addRef.current?.getBoundingClientRect()
+      const end = endRef.current?.getBoundingClientRect()
+      const btnShowing = btn && btn.top < vh && btn.bottom > 0
+      const pastEnd = end && end.top < vh
+      const on = !btnShowing && !pastEnd
+      setBarOn(on)
+      if (!on) setBarPick(false)
+    }
+    function onScroll() {
+      if (!frame) frame = requestAnimationFrame(check)
+    }
+    // The page keeps growing as photos and reviews arrive, moving both
+    // marks — check again whenever its height changes, not only on scroll.
+    const grow = 'ResizeObserver' in window ? new ResizeObserver(onScroll) : null
+    grow?.observe(document.body)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      grow?.disconnect()
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [product])
+
+  function handleAddToCart(size = activeSize) {
+    if (!product || !size || isSoldOut(product, size)) return
 
     // The cart holds pieces that haven't been ordered yet, so they aren't off
     // the count in the database — the check has to include them or someone can
     // fill their cart past what exists and only find out at checkout.
-    const remaining = left(product, activeSize)
+    const remaining = left(product, size)
 
     if (remaining !== null) {
       const inCart = items
-        .filter((i) => i.id === product.id && i.size === activeSize)
+        .filter((i) => i.id === product.id && i.size === size)
         .reduce((sum, i) => sum + i.qty, 0)
 
       if (inCart >= remaining) {
@@ -284,7 +325,7 @@ export default function Product() {
       }
     }
 
-    addItem(product, activeSize, 1)
+    addItem(product, size, 1)
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 1600)
   }
@@ -492,8 +533,9 @@ export default function Product() {
           {/* Nothing to buy here, so the button becomes the way to ask for it
               back: it opens the email box below. */}
           <button
+            ref={addRef}
             className={`add-cart mono ${unavailable ? 'notify' : ''} ${onList ? 'listed' : ''}`}
-            onClick={unavailable ? handleNotifyClick : handleAddToCart}
+            onClick={unavailable ? handleNotifyClick : () => handleAddToCart()}
             aria-expanded={unavailable ? notifyOpen : undefined}
           >
             {onList
@@ -662,7 +704,75 @@ export default function Product() {
         )}
       </div>
 
+      {/* Where the bottom bar stops: reaching "You may like". */}
+      <div ref={endRef} aria-hidden="true" />
       <YouMayLike currentId={product.id} />
+
+      <div className={`buy-bar ${barOn ? 'on' : ''}`} aria-hidden={!barOn} inert={barOn ? undefined : ''}>
+        {barPick && (
+          <div className="buy-sizes">
+            {product.sizes.map((s) => {
+              const out = isSoldOut(product, s)
+              return (
+                <button
+                  type="button"
+                  key={s}
+                  className={`buy-size mono ${out ? 'out' : ''} ${activeSize === s ? 'on' : ''}`}
+                  onClick={() => {
+                    setActiveSize(s)
+                    setWishState('idle')
+                    setBarPick(false)
+                    // Picking a size here is the add — one tap, not two.
+                    if (!out) handleAddToCart(s)
+                  }}
+                >
+                  {s}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        <div className="buy-row">
+          {product.images?.[0] && (
+            <img className="buy-thumb" src={imgUrl(product.images[0], { w: 120 })} alt="" />
+          )}
+          <div className="buy-what">
+            <span className="buy-name">{product.name}</span>
+            <span className="buy-price mono">৳ {Number(product.price).toLocaleString()}</span>
+          </div>
+          {activeSize && (
+            <button type="button" className="buy-chosen mono" onClick={() => setBarPick((v) => !v)} aria-label="Change size">
+              {activeSize} <span aria-hidden="true">▾</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={`buy-go mono ${justAdded ? 'done' : ''}`}
+            disabled={onList}
+            onClick={() => {
+              if (!activeSize) return setBarPick((v) => !v)
+              if (isSoldOut(product, activeSize)) {
+                // The email box lives under the page's own button.
+                addRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                if (!notifyOpen) handleNotifyClick()
+                return
+              }
+              handleAddToCart()
+            }}
+          >
+            {onList
+              ? 'ON THE LIST ✓'
+              : !activeSize
+                ? 'SELECT SIZE'
+                : isSoldOut(product, activeSize)
+                  ? 'NOTIFY ME'
+                  : justAdded
+                    ? 'ADDED ✓'
+                    : 'ADD TO CART'}
+          </button>
+        </div>
+        {capped && <div className="buy-note mono">That's every piece we have left in {activeSize}.</div>}
+      </div>
       <RecentlyViewed currentId={product.id} />
 
       {zoom !== null && (

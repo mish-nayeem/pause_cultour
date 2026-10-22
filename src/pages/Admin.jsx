@@ -6,6 +6,7 @@ import {
   fetchOrders,
   fetchAdminProducts,
   updateOrderStatus,
+  rejectOrderItem,
   computeStats,
   dailySeries,
   monthlySeries,
@@ -84,7 +85,9 @@ import './admin.css'
 import './admin-theme.css'
 import './admin-mobile.css'
 
-const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
+// returned: the courier brought the parcel back — the customer couldn't be
+// reached or refused it. Stock goes back, like a cancel.
+const STATUSES = ['pending', 'shipped', 'delivered', 'returned', 'cancelled']
 
 const TAB_LABELS = {
   overview: 'Overview',
@@ -448,6 +451,10 @@ export default function Admin() {
   const [picked, setPicked] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState('')
   const [bulkNote, setBulkNote] = useState('')
+  // ✕ on an order's item: the line asking "returned at the door?" and the
+  // one being saved.
+  const [rejectAsk, setRejectAsk] = useState(null)
+  const [rejectBusy, setRejectBusy] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [savingId, setSavingId] = useState(null)
@@ -667,21 +674,64 @@ export default function Admin() {
         </header>
 
         <section className="osec">
-          <div className="osec-label mono">ITEMS · {(o.order_items || []).reduce((n, it) => n + Number(it.ordered_qty ?? it.qty), 0)} pcs</div>
+          <div className="osec-label mono">
+            ITEMS · {(o.order_items || []).reduce((n, it) => n + Number(it.ordered_qty ?? it.qty), 0)} pcs{' '}
+            <InfoTip>
+              <p><b>✕ on an item</b> — the customer kept the rest but handed this one back to the rider. It goes back into stock, comes off the cash to collect and stops counting as sold. Then set the order to <b>delivered</b> for the rest.</p>
+              <p>Tap ✕ again (Undo) if it was a mistake.</p>
+              <p>Whole parcel came back (couldn't reach the customer, or refused)? Set the status to <b>returned</b> instead — every piece goes back into stock.</p>
+            </InfoTip>
+          </div>
           {(o.order_items || []).map((it) => {
             const ordered = it.ordered_qty ?? it.qty
+            const door = Number(it.rejected_qty) || 0
+            const refundedBack = Number(it.returned_qty) || 0
             const src = productsById.get(String(it.product_id))?.images?.[0]
+            const canCross = !['cancelled', 'returned'].includes(o.status)
             return (
-              <div className="oitem" key={it.id}>
+              <div className={`oitem ${door ? 'crossed' : ''}`} key={it.id}>
                 <span className="oitem-thumb">{src && <img src={imgUrl(src, { w: 100 })} alt="" />}</span>
                 <span className="oitem-name">
                   {it.product_name}
                   <span className="mono dim">
                     {' '}· {it.size} × {ordered}
-                    {ordered !== it.qty && <span className="ditem-back"> · {ordered - it.qty} returned</span>}
+                    {refundedBack > 0 && <span className="ditem-back"> · {refundedBack} refunded</span>}
+                    {door > 0 && <span className="ditem-back"> · returned at door, back in stock</span>}
                   </span>
+                  {rejectAsk === it.id && (
+                    <span className="oitem-ask mono">
+                      {door ? 'Undo — this piece was delivered after all?' : 'Customer handed this back to the rider?'}
+                      <button
+                        type="button"
+                        className="ab-yes"
+                        disabled={rejectBusy === it.id}
+                        onClick={async () => {
+                          setRejectBusy(it.id)
+                          const { error } = await rejectOrderItem(it.id, door > 0)
+                          setRejectBusy(null)
+                          setRejectAsk(null)
+                          if (error) setLoadError(error)
+                          else reload()
+                        }}
+                      >
+                        {rejectBusy === it.id ? '…' : 'Yes'}
+                      </button>
+                      <button type="button" className="ab-no" onClick={() => setRejectAsk(null)}>No</button>
+                    </span>
+                  )}
                 </span>
-                <span className="mono">{taka(it.price * ordered)}</span>
+                <span className="mono oitem-price">{taka(it.price * ordered)}</span>
+                {canCross && (
+                  <button
+                    type="button"
+                    className={`oitem-x ${door ? 'on' : ''}`}
+                    title={door ? 'Undo — put it back on the order' : 'Returned at the door — back into stock'}
+                    aria-label={door ? `Undo return of ${it.product_name}` : `${it.product_name} returned at the door`}
+                    onClick={() => setRejectAsk(rejectAsk === it.id ? null : it.id)}
+                  >
+                    {door ? '↺' : '✕'}
+                  </button>
+                )}
               </div>
             )
           })}
@@ -719,12 +769,15 @@ export default function Admin() {
               <span className="mono">− {taka(advance)}</span>
             </div>
           )}
+          {o.rejected_value > 0 && (
+            <div className="orow ditem-refund"><span>Returned at door</span><span className="mono">− {taka(o.rejected_value)}</span></div>
+          )}
           {o.refunded > 0 && (
             <div className="orow ditem-refund"><span>Refunded</span><span className="mono">− {taka(o.refunded)}</span></div>
           )}
           <div className="orow ototal">
             <span>{advance > 0 ? 'Cash to collect' : 'Total (COD)'}</span>
-            <span className="mono">{taka((o.paid_total ?? o.total ?? o.subtotal) - advance)}</span>
+            <span className="mono">{taka((o.paid_total ?? o.total ?? o.subtotal) - (o.rejected_value || 0) - advance)}</span>
           </div>
         </section>
 
@@ -1015,6 +1068,7 @@ export default function Admin() {
     shipped: stats.shipped,
     delivered: stats.delivered,
     cancelled: stats.cancelled,
+    returned: stats.returned,
   }
 
   // Refund / exchange requests customers sent from the Support page that the

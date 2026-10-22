@@ -42,7 +42,7 @@ export default function TodayPanel({ orders, products, returns, newRequests = 0,
   const t = useMemo(() => {
     const today = startOfToday()
     const yesterday = today - DAY
-    const live = orders.filter((o) => o.status !== 'cancelled')
+    const live = orders.filter((o) => o.status !== 'cancelled' && o.status !== 'returned')
     const at = (o) => new Date(o.created_at).getTime()
     const todays = live.filter((o) => at(o) >= today)
     const yesterdays = live.filter((o) => at(o) >= yesterday && at(o) < today)

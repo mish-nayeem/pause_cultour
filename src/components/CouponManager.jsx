@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { unsold } from '../lib/admin.js'
 import { fetchCoupons, createCoupon, setCouponActive, deleteCoupon, describeCoupon } from '../lib/coupons.js'
 import './coupon-manager.css'
 
@@ -52,7 +53,7 @@ export default function CouponManager({ orders }) {
   const usage = useMemo(() => {
     const map = {}
     for (const o of orders) {
-      if (!o.coupon_code || o.status === 'cancelled') continue
+      if (!o.coupon_code || unsold(o)) continue
       const u = (map[o.coupon_code] ||= { uses: 0, given: 0, sales: 0 })
       u.uses += 1
       u.given += Number(o.discount_amount) || 0

@@ -78,6 +78,27 @@ function readSavedInfo() {
   }
 }
 
+// Suggestions for Area / thana when the district is Dhaka — typed freely
+// anywhere else (and here too, if it isn't in the list).
+const DHAKA_THANAS = [
+  'Adabor', 'Badda', 'Banani', 'Bangshal', 'Bhashantek', 'Bhatara', 'Bimanbandar', 'Cantonment',
+  'Chawkbazar', 'Dakshinkhan', 'Darus Salam', 'Demra', 'Dhamrai', 'Dhanmondi', 'Dohar', 'Gendaria',
+  'Gulshan', 'Hatirjheel', 'Hazaribagh', 'Jatrabari', 'Kadamtali', 'Kafrul', 'Kalabagan',
+  'Kamrangirchar', 'Keraniganj', 'Khilgaon', 'Khilkhet', 'Kotwali', 'Lalbagh', 'Mirpur', 'Mohammadpur',
+  'Motijheel', 'Mugda', 'Nawabganj', 'New Market', 'Pallabi', 'Paltan', 'Ramna', 'Rampura', 'Rupnagar',
+  'Sabujbagh', 'Savar', 'Shah Ali', 'Shahbagh', 'Shahjahanpur', 'Sher-e-Bangla Nagar', 'Shyampur',
+  'Sutrapur', 'Tejgaon', 'Tejgaon Industrial Area', 'Turag', 'Uttara East', 'Uttara West', 'Uttarkhan',
+  'Vatara', 'Wari',
+]
+
+// The order keeps one address line: the area / thana and postal code go on
+// the end of it, so the packing slip, the courier and the admin panel all
+// see them without a change anywhere else.
+function fullAddress(f) {
+  const tail = [f.thana.trim(), f.postcode.trim()].filter(Boolean).join(' - ')
+  return tail ? `${f.address.trim()}, ${tail}` : f.address.trim()
+}
+
 export default function Checkout() {
   const { items, subtotal, clearCart, refreshPrices } = useCart()
   const navigate = useNavigate()
@@ -89,6 +110,8 @@ export default function Checkout() {
     email: saved?.email || '',
     address: saved?.address || '',
     district: saved?.district || '',
+    thana: saved?.thana || '',
+    postcode: saved?.postcode || '',
     note: '',
     trxId: '',
   })
@@ -216,6 +239,8 @@ export default function Checkout() {
     }
     if (!form.address.trim()) errs.address = 'Address is required'
     if (!form.district) errs.district = 'Select your district'
+    if (!form.thana.trim()) errs.thana = 'Enter your area or thana'
+    if (form.postcode.trim() && !/^\d{4}$/.test(form.postcode.trim())) errs.postcode = '4 digits, e.g. 1204'
 
     // Outside Dhaka the advance is the order — without a transaction id there
     // is nothing to check against bKash, so the order isn't accepted.
@@ -256,7 +281,7 @@ export default function Checkout() {
           customer_name: form.name,
           customer_phone: form.phone,
           customer_email: form.email.trim() || null,
-          customer_address: form.address,
+          customer_address: fullAddress(form),
           customer_area: form.district,
           customer_note: form.note || null,
           subtotal,
@@ -334,8 +359,8 @@ export default function Checkout() {
 
     try {
       if (saveInfo) {
-        const { name, phone, email, address, district } = form
-        localStorage.setItem(SAVED_INFO_KEY, JSON.stringify({ name, phone, email, address, district }))
+        const { name, phone, email, address, district, thana, postcode } = form
+        localStorage.setItem(SAVED_INFO_KEY, JSON.stringify({ name, phone, email, address, district, thana, postcode }))
       } else {
         localStorage.removeItem(SAVED_INFO_KEY)
       }
@@ -423,6 +448,39 @@ export default function Checkout() {
               </select>
               {errors.district && <em className="err mono">{errors.district}</em>}
             </label>
+
+            <div className="co-pair">
+              <label className="field">
+                <span className="mono">Area / thana <i className="req">*</i></span>
+                <input
+                  name="thana"
+                  value={form.thana}
+                  onChange={handleChange}
+                  placeholder={form.district === 'Dhaka' ? 'e.g. Jatrabari' : 'Your area or thana'}
+                  list={form.district === 'Dhaka' ? 'dhaka-thanas' : undefined}
+                  autoComplete="address-level3"
+                />
+                {form.district === 'Dhaka' && (
+                  <datalist id="dhaka-thanas">
+                    {DHAKA_THANAS.map((t) => <option key={t} value={t} />)}
+                  </datalist>
+                )}
+                {errors.thana && <em className="err mono">{errors.thana}</em>}
+              </label>
+              <label className="field">
+                <span className="mono">Postal code</span>
+                <input
+                  name="postcode"
+                  value={form.postcode}
+                  onChange={handleChange}
+                  placeholder="1204"
+                  inputMode="numeric"
+                  maxLength={4}
+                  autoComplete="postal-code"
+                />
+                {errors.postcode && <em className="err mono">{errors.postcode}</em>}
+              </label>
+            </div>
 
             <label className="field">
               <span className="mono">Full address <i className="req">*</i></span>

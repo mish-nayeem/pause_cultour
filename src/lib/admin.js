@@ -69,23 +69,44 @@ export async function getSession() {
 // (ordered_qty, paid_subtotal, paid_total) for the order's own details.
 function netOfRefunds(o) {
   const refunded = Number(o.refunded_amount) || 0
+  // Pieces handed back to the rider at the door (✕ on the item): never
+  // paid for, so they come off what's collected as well as what's sold.
+  let rejectedValue = 0
   let changed = refunded > 0
   const items = (o.order_items || []).map((it) => {
-    const back = Number(it.returned_qty) || 0
-    if (!back) return it
+    const refundedBack = Number(it.returned_qty) || 0
+    const doorBack = Number(it.rejected_qty) || 0
+    if (!refundedBack && !doorBack) return it
     changed = true
-    return { ...it, ordered_qty: it.qty, qty: Math.max(0, Number(it.qty) - back) }
+    rejectedValue += Number(it.price) * doorBack
+    return { ...it, ordered_qty: it.qty, qty: Math.max(0, Number(it.qty) - refundedBack - doorBack) }
   })
   if (!changed) return o
+  const off = refunded + rejectedValue
   return {
     ...o,
     order_items: items,
     refunded,
+    rejected_value: rejectedValue,
     paid_subtotal: o.subtotal,
     paid_total: o.total,
-    subtotal: Number(o.subtotal) - refunded,
-    total: o.total == null ? o.total : Number(o.total) - refunded,
+    subtotal: Number(o.subtotal) - off,
+    total: o.total == null ? o.total : Number(o.total) - off,
   }
+}
+
+// ✕ on one line of an order: the customer handed those pieces back to the
+// rider. They go back into stock and stop counting as sold; `undo` reverses
+// it. See supabase-migration-returned-status.sql.
+export async function rejectOrderItem(itemId, undo = false) {
+  const { error } = await supabase.rpc('admin_reject_item', { p_item_id: itemId, p_undo: undo })
+  if (error) {
+    console.error('[Supabase] rejectOrderItem failed:', error.message)
+    const m = error.message || ''
+    if (m.includes('admin_reject_item')) return { error: 'Run supabase-migration-returned-status.sql in Supabase first.' }
+    return { error: m.startsWith('Not enough stock') || m.startsWith('This order') ? m : "Couldn't update that item. Try again." }
+  }
+  return { error: null }
 }
 
 export async function fetchOrders() {
@@ -300,6 +321,15 @@ export async function fetchAdminProducts() {
 
 // ---------- Derived stats ----------
 
+// Orders that never became a sale: cancelled, or returned by the courier
+// (the customer couldn't be reached or refused at the door). Neither counts
+// toward units, sales or revenue, and both put the stock back.
+export const UNSOLD = ['cancelled', 'returned']
+
+export function unsold(o) {
+  return UNSOLD.includes(o?.status)
+}
+
 // Everything here is computed from the orders already fetched, so the
 // dashboard never needs a second round trip for its summary numbers.
 export function computeStats(orders) {
@@ -307,6 +337,7 @@ export function computeStats(orders) {
   const cancelled = orders.filter((o) => o.status === 'cancelled')
   const pending = orders.filter((o) => o.status === 'pending')
   const shipped = orders.filter((o) => o.status === 'shipped')
+  const returned = orders.filter((o) => o.status === 'returned')
 
   // Anything still owed to us: placed but not yet delivered or cancelled.
   const open = [...pending, ...shipped]
@@ -318,7 +349,7 @@ export function computeStats(orders) {
   // Pieces, not orders — one order can carry several units of several products.
   // Cancelled orders never counted as a sale, so they're left out.
   const unitsSold = orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .reduce(
       (sum, o) => sum + (o.order_items || []).reduce((s, it) => s + Number(it.qty), 0),
       0
@@ -329,6 +360,7 @@ export function computeStats(orders) {
     unitsSold,
     delivered: delivered.length,
     cancelled: cancelled.length,
+    returned: returned.length,
     pending: pending.length,
     shipped: shipped.length,
     open: open.length,
@@ -367,7 +399,7 @@ export function topProducts(orders, limit = 5) {
   const tally = new Map()
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       ;(o.order_items || []).forEach((item) => {
         // Grouped by id rather than name — two products sharing a name (a
@@ -404,7 +436,7 @@ export function monthlySeries(orders, months = 6) {
   const byKey = new Map(buckets.map((b) => [b.key, b]))
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       const d = new Date(o.created_at)
       const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`)
@@ -430,7 +462,7 @@ function groupSales(orders, products, column, fallback) {
   const tally = new Map()
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       ;(o.order_items || []).forEach((it) => {
         const product = catalog.get(String(it.product_id))
@@ -465,7 +497,7 @@ export function salesByAttribution(orders, fallback = 'Direct / no link') {
   const tally = new Map()
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       const label = o.utm_source || fallback
       const prev = tally.get(label) || { name: label, orders: 0, value: 0 }
@@ -543,7 +575,9 @@ export function customerIndex(orders) {
     if (o.status === 'delivered') {
       entry.delivered += 1
       entry.collected += Number(o.total ?? o.subtotal)
-    } else if (o.status === 'cancelled') {
+    } else if (unsold(o)) {
+      // Returned (couldn't be reached, refused at the door) costs the same
+      // return fare as a cancel, so it weighs the same.
       entry.cancelled += 1
     } else {
       entry.open += 1
@@ -597,7 +631,7 @@ export function customerList(orders) {
       entry.delivered += 1
       entry.totalSpent += Number(o.total ?? o.subtotal)
     }
-    if (o.status === 'cancelled') entry.cancelled += 1
+    if (unsold(o)) entry.cancelled += 1
     if (o.created_at < entry.firstAt) entry.firstAt = o.created_at
     if (o.created_at > entry.lastAt) {
       entry.lastAt = o.created_at

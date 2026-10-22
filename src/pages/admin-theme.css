@@ -653,3 +653,13 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
   background: var(--glass);
   box-shadow: var(--glass-shine);
 }
+
+/* Returned — the courier brought the parcel back (customer unreachable or
+   refused). Purple, so it reads apart from a cancel. */
+.admin { --pill-returned: #7b4fd6; }
+.admin[data-theme='dark'] { --pill-returned: #b493ff; }
+.admin .pill.returned { background: color-mix(in srgb, var(--pill-returned) 16%, transparent); color: var(--pill-returned); }
+.admin .status-select.returned { border-color: var(--pill-returned); color: var(--pill-returned); }
+.admin .chip.on.returned { background: var(--pill-returned); border-color: var(--pill-returned); }
+.admin .ocard.returned { opacity: 0.7; }
+.admin .cs-status.returned, .admin .today-status.returned, .admin .main .bulk-btn.returned { color: var(--pill-returned) !important; }

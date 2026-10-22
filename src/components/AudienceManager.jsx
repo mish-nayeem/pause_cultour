@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { unsold } from '../lib/admin.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { dropKey } from '../lib/lookbook.js'
 import './audience-manager.css'
@@ -50,7 +51,7 @@ export default function AudienceManager({ orders, products }) {
       }
       if (o.customer_email && !row.email) row.email = o.customer_email.trim().toLowerCase()
       if (!row.last || o.created_at > row.last) { row.last = o.created_at; row.name = o.customer_name || row.name }
-      if (o.status !== 'cancelled') {
+      if (!unsold(o)) {
         row.orders += 1
         row.spent += Number(o.total ?? o.subtotal) || 0
         for (const it of o.order_items || []) {

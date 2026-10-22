@@ -6,6 +6,7 @@ import './bulk-bar.css'
 const MARKS = [
   { key: 'shipped', label: 'Mark shipped' },
   { key: 'delivered', label: 'Mark delivered' },
+  { key: 'returned', label: 'Mark returned' },
   { key: 'cancelled', label: 'Cancel' },
 ]
 
@@ -26,6 +27,7 @@ export default function BulkBar({ count, shown, busy, note, onAll, onNone, onMar
           <InfoTip>
             <p>Tap order cards to tick them, then act on all of them at once.</p>
             <p><b>Mark shipped / delivered / Cancel</b> — changes each one's status and emails the customer, the same as changing it by hand.</p>
+            <p><b>Mark returned</b> — the courier brought the parcels back (customer unreachable or refused). The pieces go back into stock; no email.</p>
             <p><b>Print slips</b> — one packing slip per order, each on its own page.</p>
             <p><b>Courier</b> — books every ticked order that isn't booked yet. Works once the courier's API keys are added (Orders → Courier setup).</p>
           </InfoTip>
@@ -44,7 +46,7 @@ export default function BulkBar({ count, shown, busy, note, onAll, onNone, onMar
           <span>
             {asking === 'courier'
               ? `Book ${count} order${count === 1 ? '' : 's'} with ${COURIERS.find((c) => c.key === courier)?.label}?`
-              : `${label} — ${count} order${count === 1 ? '' : 's'}? Each customer gets an email.`}
+              : `${label} — ${count} order${count === 1 ? '' : 's'}?${asking === 'returned' ? ' Their pieces go back into stock.' : ' Each customer gets an email.'}`}
           </span>
           <button
             type="button"
