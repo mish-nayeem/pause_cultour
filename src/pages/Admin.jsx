@@ -667,16 +667,16 @@ export default function Admin() {
             </InfoTip>
           </div>
           <div className="orow dim"><span>Courier · delivery</span><span className="mono">− {taka(m.delivery)}</span></div>
-          <div className="orow dim"><span>Courier · {Math.round(COD_FEE_RATE * 100)}% of {taka(m.items)}</span><span className="mono">− {taka(m.codFee)}</span></div>
+          <div className="orow dim"><span>Courier · {Math.round(COD_FEE_RATE * 100)}% of {taka(m.collected ?? m.items)}</span><span className="mono">− {taka(m.codFee)}</span></div>
           {m.exchange > 0 && (
             <div className="orow dim">
-              <span>Courier · exchange delivery {taka(m.exchange)} ({m.exchangeUnpaid ? `${taka(m.exchangeUnpaid)} paid by us` : 'customer paid'})</span>
+              <span title="The exchange parcel or the return pickup">Courier · 2nd parcel {taka(m.exchange)} · {m.exchangeUnpaid ? 'paid by us' : 'customer paid'}</span>
               <span className="mono">− {taka(m.exchangeUnpaid)}</span>
             </div>
           )}
           <div className="orow osplit-you">
             <span>Receivable amount{m.expected ? ' · after delivery' : ' · in revenue'}</span>
-            <span className="mono">{taka(m.receivable)}</span>
+            <span className="mono">{m.receivable < 0 ? `− ${taka(-m.receivable)}` : taka(m.receivable)}</span>
           </div>
         </div>
       )

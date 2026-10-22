@@ -201,7 +201,7 @@ export const INFO_PAGES = {
         type: 'text',
         heading: 'When we refund',
         body:
-          'If we sent the wrong item, or it arrived with a manufacturing fault, we refund the full amount including delivery. Send us photos within 3 days of delivery and we will arrange a pickup.',
+          'Two cases only: the piece arrived faulty or damaged, or we sent the wrong size and the right size is out of stock (if it is in stock, we exchange it instead). Tell us within 3 days of delivery — we call you, collect the piece at our cost and refund the price of the piece. The first delivery charge is not refunded.',
       },
       {
         type: 'text',

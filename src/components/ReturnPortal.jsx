@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { DEFAULT_PORTAL, EXCHANGE_FEE, EXCHANGE_REASONS, exchangeIsFree, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
+import { DEFAULT_PORTAL, EXCHANGE_FEE, EXCHANGE_REASONS, REFUND_REASONS, REFUND_WRONG_SIZE, exchangeIsFree, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
 import { imgUrl } from '../lib/images.js'
 import './return-portal.css'
 
 const REASONS = {
   exchange: EXCHANGE_REASONS,
-  refund: ['Wrong item sent', 'Faulty / damaged', 'Missing item', 'Other'],
+  refund: REFUND_REASONS,
 }
 
 const STATUS_NOTE = {
@@ -77,6 +77,9 @@ export default function ReturnPortal() {
     setError('')
   }
 
+  // The size box shows for an exchange, and for a wrong-size refund.
+  const needsSize = kind === 'exchange' || (kind === 'refund' && reason === REFUND_WRONG_SIZE)
+
   async function handleSend(e) {
     e.preventDefault()
     const items = order.items
@@ -86,7 +89,9 @@ export default function ReturnPortal() {
         product_name: it.product_name,
         size: it.size,
         qty: it.qty,
-        exchange_size: kind === 'exchange' ? (p.exchange_size || '').trim() : '',
+        // Exchange: the size wanted. Refund for a wrong size: the size they
+        // needed, so we can check it's really out of stock.
+        exchange_size: needsSize ? (p.exchange_size || '').trim() : '',
       }))
 
     if (!items.length) return setError('Pick at least one item.')
@@ -94,6 +99,9 @@ export default function ReturnPortal() {
       return setError('Write the size you want for every piece you are exchanging.')
     }
     if (!reason) return setError('Choose a reason.')
+    if (kind === 'refund' && reason === REFUND_WRONG_SIZE && items.some((it) => !it.exchange_size)) {
+      return setError('Write the size you needed for every piece.')
+    }
     if (reason === 'Other' && !details.trim()) return setError('Tell us a little about what happened.')
     if (kind === 'exchange' && !exchangeIsFree(reason) && !feeOk) {
       return setError('Tick the box to confirm you will pay the exchange delivery charge.')
@@ -220,9 +228,9 @@ export default function ReturnPortal() {
                             </span>
                             <span className="mono rp-price">{taka(it.price * it.qty)}</span>
                           </label>
-                          {p.on && kind === 'exchange' && (
+                          {p.on && needsSize && (
                             <label className="rp-swap mono">
-                              SIZE YOU WANT
+                              {kind === 'exchange' ? 'SIZE YOU WANT' : 'SIZE YOU NEEDED'}
                               <input
                                 value={p.exchange_size || ''}
                                 onChange={(e) => toggle(i, { exchange_size: e.target.value.toUpperCase() })}
@@ -246,6 +254,16 @@ export default function ReturnPortal() {
                     </select>
                   </label>
 
+                  {kind === 'refund' && (
+                    <div className="rp-fee free mono">
+                      <b>HOW A REFUND WORKS</b>
+                      <span>
+                        We call you first. A refund is only for a faulty or damaged piece, or a wrong size we sent
+                        when your size is out of stock — if it's in stock we exchange it instead. We collect the piece
+                        at our cost; the first delivery charge isn't refunded.
+                      </span>
+                    </div>
+                  )}
                   {kind === 'exchange' && (
                     reason && exchangeIsFree(reason) ? (
                       <div className="rp-fee free mono">
@@ -299,6 +317,7 @@ export default function ReturnPortal() {
               <p>
                 Your {sent.kind} request for {order.id} is with us. We'll call or message you within one
                 working day to arrange the {sent.kind === 'exchange' ? 'swap' : 'pickup'}.
+                {sent.kind === 'refund' && ' If the size you needed is in stock, we will offer an exchange instead.'}
                 {sent.fee && ` Keep the delivery charge ready for the rider: ৳${EXCHANGE_FEE.inside} inside Dhaka, ৳${EXCHANGE_FEE.outside} outside.`}
               </p>
               <Link to="/shop" className="rp-btn mono">Back to shop</Link>

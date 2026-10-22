@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import InfoTip from './InfoTip.jsx'
 import { imgUrl } from '../lib/images.js'
 import { createReturn, processReturn } from '../lib/admin.js'
-import { EXCHANGE_FEE, EXCHANGE_REASONS, exchangeIsFree, isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
+import { EXCHANGE_FEE, EXCHANGE_REASONS, REFUND_WRONG_SIZE, exchangeIsFree, isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
 import { stockMap } from '../lib/stock.js'
 import './returns-manager.css'
 
@@ -249,6 +249,19 @@ function Complete({ r, order, productsById, onReload }) {
   }
 
   const chosen = lines.filter((it) => pick[it.id]?.on)
+
+  // A wrong-size refund is only for a size we can't send: if the size the
+  // customer needed is in stock, the policy is to exchange instead.
+  const inStockInstead = r.reason === REFUND_WRONG_SIZE
+    ? chosen
+        .map((it) => {
+          const want = askedFor(r, it)?.exchange_size
+          const product = productsById.get(String(it.product_id))
+          const n = want && product ? stockMap(product)?.[want] : null
+          return n > 0 ? `${it.product_name} ${want} (${n} in stock)` : null
+        })
+        .filter(Boolean)
+    : []
   const suggested = chosen.reduce((sum, it) => sum + Number(it.price) * Number(pick[it.id].qty || 0), 0)
 
   async function run(action) {
@@ -264,17 +277,18 @@ function Complete({ r, order, productsById, onReload }) {
       if (action === 'exchange' && items.some((x) => !x.to_size)) return setError('Pick the new size for every ticked piece.')
     }
     const amount = action === 'refund' ? (refund === '' ? suggested : Number(refund) || 0) : 0
-    const feeAmount = action === 'exchange' ? Math.max(0, Number(fee) || 0) : 0
+    // Exchange: the new size's parcel. Refund: the pickup parcel — always ours.
+    const feeAmount = action === 'exchange' || action === 'refund' ? Math.max(0, Number(fee) || 0) : 0
     const ask =
       action === 'reject'
         ? 'Reject this request? Nothing in stock or sales changes.'
         : action === 'exchange'
           ? `Complete the exchange? The order changes to the new sizes, the old sizes go back into stock and the new ones come out.${feeAmount ? ` Delivery ${taka(feeAmount)} — ${feePaid ? 'paid by the customer' : 'paid by us, off revenue'}.` : ''}`
-          : `Complete the refund of ${taka(amount)}? The pieces go back into stock and the money comes off sales.`
+          : `Complete the refund of ${taka(amount)}? The pieces go back into stock and the money comes off revenue.${feeAmount ? ` Pickup delivery ${taka(feeAmount)} — paid by us, off revenue.` : ''}`
     if (!window.confirm(ask)) return
 
     setBusy(true)
-    const { error } = await processReturn({ id: r.id, action, items, refund: amount, note: note.trim(), fee: feeAmount, feePaid })
+    const { error } = await processReturn({ id: r.id, action, items, refund: amount, note: note.trim(), fee: feeAmount, feePaid: action === 'refund' ? false : feePaid })
     setBusy(false)
     if (error) {
       const msg = error.message || ''
@@ -389,6 +403,27 @@ function Complete({ r, order, productsById, onReload }) {
         </div>
       )}
 
+      {mode === 'refund' && inStockInstead.length > 0 && (
+        <div className="rm-error mono">
+          The size they needed is in stock: {inStockInstead.join(', ')}. Our policy is to exchange a wrong size when the right one is available — switch to Exchange, unless you've agreed otherwise on the call.
+        </div>
+      )}
+
+      {mode === 'refund' && (
+        <div className="rm-fee mono">
+          <label className="rm-amount">
+            <span className="rm-fee-head">
+              Pickup delivery charge (৳) — we pay
+              <InfoTip>
+                <p>The courier charges for the parcel that brings the piece back — {taka(EXCHANGE_FEE.inside)} in Dhaka, {taka(EXCHANGE_FEE.outside)} outside, filled in from the order's district. We always pay this one, so it comes off revenue.</p>
+                <p>The customer's first delivery charge is not refunded — it stays with the courier.</p>
+              </InfoTip>
+            </span>
+            <input inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value.replace(/[^\d.]/g, ''))} />
+          </label>
+        </div>
+      )}
+
       {mode === 'refund' && (
         <label className="rm-amount mono">
           Refund amount (৳)
@@ -397,7 +432,7 @@ function Complete({ r, order, productsById, onReload }) {
             value={refund === '' ? String(suggested) : refund}
             onChange={(e) => setRefund(e.target.value.replace(/[^\d.]/g, ''))}
           />
-          <span className="dim">Ticked pieces come to {taka(suggested)} — add the delivery charge if you're refunding that too.</span>
+          <span className="dim">Ticked pieces come to {taka(suggested)}. The first delivery charge isn't refunded.</span>
         </label>
       )}
 
@@ -456,7 +491,10 @@ function Resolution({ r }) {
       )}
       {res?.action === 'refund' && (
         <>
-          <div className="mono rm-done-head">Refunded {taka(res.refund)} · {when(res.at)}</div>
+          <div className="mono rm-done-head">
+            Refunded {taka(res.refund)} · {when(res.at)}
+            {Number(res.fee) > 0 && ` · pickup ${taka(res.fee)} paid by us`}
+          </div>
           {(res.items || []).map((x, i) => (
             <div key={i} className="rm-done-line">
               {x.product_name} · <span className="mono">{x.size} × {x.qty}</span> back in stock
