@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { DEFAULT_PORTAL, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
 import { imgUrl } from '../lib/images.js'
 import './return-portal.css'
@@ -13,6 +13,7 @@ const STATUS_NOTE = {
   pending: "This order hasn't left us yet. Need a change? Contact us and we'll fix it before it ships.",
   shipped: "This order is on the way. Check it in front of the rider — refuse it if anything is wrong. Requests open once it's delivered.",
   cancelled: 'This order was cancelled, so there is nothing to return.',
+  returned: 'This parcel came back to us before it reached you. To have it sent again, contact us.',
 }
 
 function taka(n) {
@@ -23,9 +24,12 @@ function taka(n) {
 // order was placed with → the order's pieces → pick refund or exchange, the
 // pieces and the reason → a request in Admin → Support.
 export default function ReturnPortal() {
+  // From My account → an order's Return / Exchange: the order and email
+  // arrive in the link, and the order is looked up straight away.
+  const [params] = useSearchParams()
   const [portal, setPortal] = useState(DEFAULT_PORTAL)
-  const [orderId, setOrderId] = useState('')
-  const [contact, setContact] = useState('')
+  const [orderId, setOrderId] = useState(() => (params.get('order') || '').toUpperCase())
+  const [contact, setContact] = useState(() => params.get('contact') || '')
   const [order, setOrder] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -40,8 +44,14 @@ export default function ReturnPortal() {
     fetchPortal().then(({ portal }) => setPortal(portal))
   }, [])
 
+  useEffect(() => {
+    if (orderId && contact) handleCheck()
+    // Once, for the link's own values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function handleCheck(e) {
-    e.preventDefault()
+    e?.preventDefault()
     if (!orderId.trim() || !contact.trim()) {
       setError('Enter your order number and the email or phone number you ordered with.')
       return

@@ -36,8 +36,12 @@ export function clearRemember() {
   store((ls) => ls.removeItem(FLAG))
 }
 
-// Called once when the app starts.
+// Called once when the app starts. A login now always stays until Sign out
+// (the Login page no longer offers "Remember me"), so a session-only flag
+// left by an older login is dropped instead of ending that session.
 export function startSessionPolicy() {
+  clearRemember()
+
   const sessionOnly = () => store((ls) => ls.getItem(FLAG) === '1')
 
   if (sessionOnly()) {

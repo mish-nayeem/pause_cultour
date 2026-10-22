@@ -193,3 +193,115 @@
   .acct-thumb { width: 60px; height: 76px; }
   .acct-name { font-size: 17px; }
 }
+
+/* ---------- Tabs: My orders · My details · Wishlist ---------- */
+
+.acct-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.acct-tabs button {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.acct-tabs button span {
+  font-size: 10.5px;
+  background: var(--paper-dim);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+.acct-tabs button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.acct-tabs button.on span { background: rgba(255, 255, 255, 0.18); }
+
+/* ---------- My orders ---------- */
+
+.acct-orders { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.acct-order { border: 1px solid var(--steel-line); border-radius: 16px; padding: 16px 18px; }
+.acct-order-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.acct-order-id { font-size: 13px; font-weight: 600; }
+.acct-order-when { font-size: 11px; color: var(--steel); margin-top: 3px; }
+
+.acct-pill {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--paper-dim);
+  white-space: nowrap;
+}
+.acct-pill.pending { color: #a8690b; background: #fdf3e2; }
+.acct-pill.shipped { color: #1a63b0; background: #e6f0fb; }
+.acct-pill.delivered { color: #0b7a3b; background: #e3f4ea; }
+.acct-pill.returned, .acct-pill.cancelled { color: var(--signal); background: #fde9e5; }
+
+.acct-order-items { list-style: none; margin: 14px 0 10px; display: flex; flex-direction: column; gap: 8px; }
+.acct-order-items li { display: flex; align-items: center; gap: 12px; font-size: 13.5px; }
+.acct-order-thumb { flex: none; width: 40px; height: 50px; border-radius: 6px; overflow: hidden; background: var(--paper-dim); display: block; }
+.acct-order-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.acct-order-what { flex: 1; min-width: 0; }
+.acct-order-what .mono { font-size: 12px; color: var(--steel); }
+
+.acct-order-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--steel-line);
+}
+.acct-order-note { font-size: 12.5px; color: #3a3a30; }
+.acct-order-total { font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+.acct-order-actions { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 11.5px; letter-spacing: 0.06em; }
+.acct-order-actions a,
+.acct-order-actions button {
+  background: none;
+  border: none;
+  padding: 0 0 2px;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ink);
+  cursor: pointer;
+}
+.acct-order-actions a:hover,
+.acct-order-actions button:hover { color: var(--cobalt); border-bottom-color: var(--cobalt); }
+.acct-order-msg { margin-top: 8px; font-size: 11.5px; color: var(--cobalt); }
+
+/* ---------- My details ---------- */
+
+.acct-details { max-width: 520px; }
+.acct-field { display: flex; flex-direction: column; margin-bottom: 16px; }
+.acct-field span { font-size: 11px; letter-spacing: 0.06em; color: var(--steel); margin-bottom: 7px; }
+.acct-field input,
+.acct-field select,
+.acct-field textarea {
+  border: 1px solid var(--steel-line);
+  border-radius: 12px;
+  background: var(--paper);
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  resize: vertical;
+  min-width: 0;
+}
+.acct-field input:focus,
+.acct-field select:focus,
+.acct-field textarea:focus { outline: none; border-color: var(--ink); }
+.acct-pair { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 12px; }
+.acct-details .acct-shop { border: none; cursor: pointer; }
+.acct-saved { margin-top: 12px; font-size: 12px; color: var(--cobalt); }
+
+@media (max-width: 380px) {
+  .acct-pair { grid-template-columns: minmax(0, 1fr) 104px; }
+}

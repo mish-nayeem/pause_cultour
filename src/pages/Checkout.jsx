@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
+import InfoTip from '../components/InfoTip.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { sendOrderConfirmation } from '../lib/email.js'
@@ -11,6 +12,7 @@ import { checkCoupon, couponMessage } from '../lib/coupons.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import { imgUrl } from '../lib/images.js'
 import { watchUser } from '../lib/auth.js'
+import { fetchProfile, saveProfile, PROFILE_FIELDS } from '../lib/account.js'
 import { Sentry } from '../lib/sentry.js'
 import './checkout.css'
 
@@ -106,11 +108,21 @@ export default function Checkout() {
   const [saveInfo, setSaveInfo] = useState(Boolean(saved))
   const [user, setUser] = useState(null)
 
-  // Signed in: no need to offer the sign-in link, and their email fills the
-  // box if it's still empty.
+  // Signed in: no need to offer the sign-in link, and the email is the
+  // account's — filled in and fixed, nothing to type.
+  // Their saved details (customer_profiles) fill whatever is still empty.
   useEffect(() => watchUser((u) => {
     setUser(u)
-    if (u?.email) setForm((prev) => (prev.email ? prev : { ...prev, email: u.email }))
+    if (!u?.email) return
+    setForm((prev) => ({ ...prev, email: u.email }))
+    fetchProfile(u.id).then(({ profile }) => {
+      if (!profile) return
+      setForm((prev) => {
+        const next = { ...prev }
+        for (const k of PROFILE_FIELDS) if (!String(next[k] ?? '').trim() && profile[k]) next[k] = profile[k]
+        return next
+      })
+    })
   }), [])
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -227,7 +239,8 @@ export default function Checkout() {
     if (!form.address.trim()) errs.address = 'Address is required'
     if (!form.district) errs.district = 'Select your district'
     if (!form.thana.trim()) errs.thana = 'Enter your area or thana'
-    if (form.postcode.trim() && !/^\d{4}$/.test(form.postcode.trim())) errs.postcode = '4 digits, e.g. 1204'
+    if (!form.postcode.trim()) errs.postcode = 'Postal code is required'
+    else if (!/^\d{4}$/.test(form.postcode.trim())) errs.postcode = '4 digits, e.g. 1204'
 
     // Outside Dhaka the advance is the order — without a transaction id there
     // is nothing to check against bKash, so the order isn't accepted.
@@ -344,6 +357,10 @@ export default function Checkout() {
       if (error && error.code !== '23505') console.error('[Supabase] subscribe failed:', error.message)
     }
 
+    // Signed in: these details are saved on the account, so the next
+    // checkout — on any device — fills itself.
+    if (user) saveProfile(user, form)
+
     try {
       if (saveInfo) {
         const { name, phone, email, address, district, thana, postcode } = form
@@ -383,44 +400,60 @@ export default function Checkout() {
 
         <div className="checkout-body">
           <form className="checkout-form" onSubmit={handleSubmit} noValidate>
-            <div className="field-label mono">DELIVERY DETAILS</div>
+            {/* Contact first, then where it's going — the email the order
+                confirmation goes to, the number the rider calls. */}
+            <div className="field-label mono">CONTACT</div>
 
-            <label className="field">
-              <span className="mono">Full name <i className="req">*</i></span>
-              <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" />
-              {errors.name && <em className="err mono">{errors.name}</em>}
-            </label>
-
-            <label className="field">
-              <span className="mono">Phone number <i className="req">*</i></span>
-              <input name="phone" value={form.phone} onChange={handleChange} placeholder="017XXXXXXXX" />
-              {errors.phone && <em className="err mono">{errors.phone}</em>}
-            </label>
-
-            <label className="field">
+            <div className="field">
               <span className="mono">Email <i className="req">*</i></span>
-              <input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-              />
+              <div className="co-input-wrap">
+                <input
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  readOnly={Boolean(user?.email)}
+                  aria-label="Email"
+                  autoComplete="email"
+                />
+                <span className="co-q">
+                  <InfoTip label="Why we need your email" glyph="?">Used for your order confirmation and cart reminders.</InfoTip>
+                </span>
+              </div>
+              {user?.email && <em className="co-signed mono">Signed in — your account's email is used.</em>}
               {errors.email && <em className="err mono">{errors.email}</em>}
-            </label>
+            </div>
 
-            {/* Outside the email's label, so ticking a box doesn't put the
-                cursor in the email field. */}
+            {/* Outside the email's box, so ticking it doesn't put the cursor
+                in the email field. */}
             <div className="co-checks">
               <label className="co-check">
                 <input type="checkbox" checked={newsOptIn} onChange={(e) => setNewsOptIn(e.target.checked)} />
                 <span>Email me with news and offers</span>
               </label>
+            </div>
+
+            <label className="field">
+              <span className="mono">Phone number <i className="req">*</i></span>
+              <input name="phone" value={form.phone} onChange={handleChange} placeholder="017XXXXXXXX" inputMode="tel" autoComplete="tel" />
+              {errors.phone && <em className="err mono">{errors.phone}</em>}
+            </label>
+
+            <div className="co-checks">
               <label className="co-check">
                 <input type="checkbox" checked={saveInfo} onChange={(e) => setSaveInfo(e.target.checked)} />
                 <span>Save this information for next time</span>
               </label>
             </div>
+
+            <div className="field-label mono co-section">DELIVERY DETAILS</div>
+
+            <label className="field">
+              <span className="mono">Full name <i className="req">*</i></span>
+              <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" autoComplete="name" />
+              {errors.name && <em className="err mono">{errors.name}</em>}
+            </label>
 
             {/* District sits above the address because it sets the delivery
                 charge — the customer settles where before they write out
@@ -449,7 +482,7 @@ export default function Checkout() {
                 {errors.thana && <em className="err mono">{errors.thana}</em>}
               </label>
               <label className="field">
-                <span className="mono">Postal code</span>
+                <span className="mono">Postal code <i className="req">*</i></span>
                 <input
                   name="postcode"
                   value={form.postcode}

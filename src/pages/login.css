@@ -262,3 +262,5 @@
 
   .auth-rule { width: 100%; max-width: 350px; height: 1px; }
 }
+
+.auth-stay { font-size: 11px; color: var(--steel); line-height: 1.5; }

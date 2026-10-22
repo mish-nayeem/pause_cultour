@@ -83,6 +83,7 @@ import TodayPanel from '../components/TodayPanel.jsx'
 import CommandSearch from '../components/CommandSearch.jsx'
 import CourierSetup from '../components/CourierSetup.jsx'
 import BulkBar from '../components/BulkBar.jsx'
+import AccountsManager from '../components/AccountsManager.jsx'
 import InfoTip from '../components/InfoTip.jsx'
 import './admin.css'
 import './admin-theme.css'
@@ -148,6 +149,7 @@ const PRODUCTS_SUBS = [
 ]
 
 const CUSTOMERS_SUBS = [
+  { key: 'accounts', label: 'Accounts' },
   { key: 'repeat', label: 'Repeat vs new' },
   { key: 'reviews', label: 'Reviews' },
   { key: 'wishlist', label: 'Wishlist' },
@@ -490,7 +492,7 @@ export default function Admin() {
   const [analyticsSub, setAnalyticsSub] = useState('summary')
   const [supportSub, setSupportSub] = useState('requests')
   const [productsSub, setProductsSub] = useState('catalog')
-  const [customersSub, setCustomersSub] = useState('repeat')
+  const [customersSub, setCustomersSub] = useState('accounts')
   const [allReviews, setAllReviews] = useState([])
   const [marketingSub, setMarketingSub] = useState('audience')
   const [adSpend, setAdSpend] = useState([])
@@ -2043,6 +2045,8 @@ export default function Admin() {
               </button>
             ))}
           </div>
+
+          {customersSub === 'accounts' && <AccountsManager orders={orders} onOpenOrder={openOrder} />}
 
           {customersSub === 'repeat' && (
           <>

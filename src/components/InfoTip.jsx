@@ -4,7 +4,7 @@ import './info-tip.css'
 // An ⓘ beside a title: tapping it opens the explanation, tapping anywhere —
 // the note itself included — closes it again. The note is placed so it
 // always fits on the screen, however close to an edge the ⓘ sits.
-export default function InfoTip({ children, label = "What's this?" }) {
+export default function InfoTip({ children, label = "What's this?", glyph = 'i' }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState(null) // { left, width, arrow } in px, relative to the ⓘ
   const ref = useRef(null)
@@ -50,7 +50,7 @@ export default function InfoTip({ children, label = "What's this?" }) {
           setOpen((v) => !v)
         }}
       >
-        i
+        {glyph}
       </button>
       {open && (
         <span
