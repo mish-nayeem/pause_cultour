@@ -1618,3 +1618,22 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 .wish-group .low-row { flex-wrap: wrap; gap: 10px; }
 .wish-group .low-row .sl-who { flex: 1 1 200px; }
 .wish-group .low-right { margin-left: auto; }
+
+/* The order sheet's money split: the courier's cut on a delivered order,
+   Paid / Unpaid on a returned one. */
+.osplit { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--steel-line); }
+.osplit-head { display: flex; align-items: center; gap: 6px; font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); margin-bottom: 6px; }
+.osplit .orow.dim span { color: var(--steel); }
+.osplit-you { font-weight: 700; }
+.osplit-pick { display: inline-flex; gap: 6px; margin: 4px 0 8px; }
+.admin .main .osplit-opt {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.admin .main .osplit-opt.on.paid { background: var(--pill-delivered, #0b7a3b); border-color: var(--pill-delivered, #0b7a3b); color: #fff; }
+.admin .main .osplit-opt.on.unpaid { background: var(--signal); border-color: var(--signal); color: #fff; }

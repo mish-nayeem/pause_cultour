@@ -7,6 +7,9 @@ import {
   fetchAdminProducts,
   updateOrderStatus,
   rejectOrderItem,
+  orderMoney,
+  setReturnFeePaid,
+  COD_FEE_RATE,
   computeStats,
   dailySeries,
   monthlySeries,
@@ -327,12 +330,13 @@ function RankBars({ rows, empty, accent, countKey = 'units', countLabel = 'pcs' 
 }
 
 // A headline number that doubles as the way into the list it counts.
-function StatCard({ icon, tone, label, value, note, onClick, cta }) {
+function StatCard({ icon, tone, label, value, note, onClick, cta, tip }) {
   const body = (
     <>
       <div className="stat-top">
         <span className={`stat-ico ${tone || ''}`}>{icon}</span>
         <div className="stat-label mono">{label}</div>
+        {tip && <span onClick={(e) => e.stopPropagation()}><InfoTip>{tip}</InfoTip></span>}
       </div>
       <div className="stat-value display">{value}</div>
       {note && <div className="stat-note mono">{note}</div>}
@@ -644,6 +648,67 @@ export default function Admin() {
   const productsById = useMemo(() => new Map(products.map((p) => [String(p.id), p])), [products])
   const expandedOrder = useMemo(() => orders.find((o) => o.id === expanded) || null, [orders, expanded])
 
+  // Delivered: where the money went — the courier's cut and what's ours.
+  // Returned: the delivery charge, Paid / Unpaid.
+  function renderMoneySplit(o) {
+    const m = orderMoney(o)
+    if (o.status === 'delivered') {
+      return (
+        <div className="osplit">
+          <div className="osplit-head mono">
+            AFTER THE COURIER
+            <InfoTip>The courier keeps the delivery charge and {Math.round(COD_FEE_RATE * 100)}% of the product amount it collected. What's left is yours and is what Revenue counts.</InfoTip>
+          </div>
+          <div className="orow dim"><span>Courier · delivery</span><span className="mono">− {taka(m.delivery)}</span></div>
+          <div className="orow dim"><span>Courier · {Math.round(COD_FEE_RATE * 100)}% of {taka(m.items)}</span><span className="mono">− {taka(m.codFee)}</span></div>
+          <div className="orow osplit-you"><span>You get</span><span className="mono">{taka(m.toShop)}</span></div>
+        </div>
+      )
+    }
+    if (o.status === 'returned') {
+      const paid = m.returnFeePaid
+      return (
+        <div className="osplit">
+          <div className="osplit-head mono">
+            RETURN DELIVERY CHARGE · {taka(m.delivery)}
+            <InfoTip>
+              <p>The courier charges the delivery even when the parcel comes back.</p>
+              <p><b>Paid</b> — the customer paid it (or the bKash advance covered it): nothing comes off your revenue.</p>
+              <p><b>Unpaid</b> — they didn't: {taka(m.delivery)} comes off your revenue.</p>
+            </InfoTip>
+          </div>
+          <div className="osplit-pick mono" role="radiogroup" aria-label="Return delivery charge">
+            {[true, false].map((v) => (
+              <button
+                key={String(v)}
+                type="button"
+                role="radio"
+                aria-checked={paid === v}
+                className={`osplit-opt ${paid === v ? 'on' : ''} ${v ? 'paid' : 'unpaid'}`}
+                disabled={savingId === o.id}
+                onClick={async () => {
+                  if (paid === v) return
+                  setSavingId(o.id)
+                  const { error } = await setReturnFeePaid(o.id, v)
+                  setSavingId(null)
+                  if (error) setLoadError(error)
+                  else setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, return_fee_paid: v } : x)))
+                }}
+              >
+                {v ? 'Paid' : 'Unpaid'}
+              </button>
+            ))}
+          </div>
+          <div className="orow osplit-you">
+            <span>Your revenue</span>
+            <span className="mono">{m.toShop < 0 ? `− ${taka(-m.toShop)}` : taka(0)}</span>
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+
   // The open order's details, in sections: the pieces, the money, who and
   // where, this number's history, courier, and what to do next.
   function renderOrderSheet(o) {
@@ -779,6 +844,7 @@ export default function Admin() {
             <span>{advance > 0 ? 'Cash to collect' : 'Total (COD)'}</span>
             <span className="mono">{taka((o.paid_total ?? o.total ?? o.subtotal) - (o.rejected_value || 0) - advance)}</span>
           </div>
+          {renderMoneySplit(o)}
         </section>
 
         <section className="osec">
@@ -1335,7 +1401,14 @@ export default function Admin() {
                 tone="good"
                 label="REVENUE COLLECTED"
                 value={taka(stats.revenue)}
-                note={`Delivered orders only · ${taka(stats.openValue)} still to collect`}
+                note={`After courier ${taka(stats.courierTook)}${stats.returnLoss ? ` · returns −${taka(stats.returnLoss)}` : ''} · ${taka(stats.openValue)} still to collect`}
+                tip={
+                  <>
+                    <p>What actually reaches you, from delivered orders only.</p>
+                    <p>The courier keeps the whole <b>delivery charge</b>, plus <b>1%</b> of the product amount it collects. A ৳1,000 piece with ৳80 delivery: the rider collects ৳1,080, the courier keeps ৳80 + ৳10, you get ৳990.</p>
+                    <p>A <b>returned</b> parcel whose delivery charge the customer didn't pay comes off it (set Paid / Unpaid on the order).</p>
+                  </>
+                }
               />
             </div>
 
