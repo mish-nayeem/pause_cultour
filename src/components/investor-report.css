@@ -1,0 +1,86 @@
+/* Analytics → Investor report (InvestorReport.jsx). The report itself is
+   plain black on white — the same on screen (the preview) and on paper. */
+
+.ir { display: flex; flex-direction: column; gap: 14px; }
+.ir-controls { display: flex; flex-direction: column; gap: 10px; }
+.ir-dates { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; }
+.ir-dates label { display: flex; align-items: center; gap: 6px; }
+.ir-note-input { width: 100%; max-width: 640px; resize: vertical; font: inherit; }
+.ir-go { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ir-preview-label { font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); }
+.ir-preview { overflow-x: auto; }
+.ir-print { display: none; }
+
+.ir-paper {
+  --ir-ink: #111;
+  --ir-soft: #6b6b66;
+  --ir-line: #e2e2dd;
+  width: 100%;
+  max-width: 820px;
+  min-width: 560px;
+  background: #fff;
+  color: var(--ir-ink);
+  font-family: 'Inter', sans-serif;
+  padding: 34px 38px;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.ir-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-bottom: 2px solid var(--ir-ink); padding-bottom: 14px; }
+.ir-brand { font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: 0.05em; line-height: 1; }
+.ir-title { font-size: 15px; font-weight: 600; margin-top: 6px; }
+.ir-meta { text-align: right; font-size: 11px; color: var(--ir-soft); line-height: 1.6; }
+
+.ir-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--ir-soft); margin-bottom: 8px; }
+.ir-gap { margin-top: 14px; }
+
+.ir-note { margin-top: 18px; padding: 12px 14px; background: #f5f5f2; border-radius: 8px; }
+.ir-note p { font-size: 13px; line-height: 1.6; white-space: pre-line; }
+
+.ir-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.ir-kpi { border: 1px solid var(--ir-line); border-radius: 10px; padding: 12px 14px; }
+.ir-kpi-label { font-size: 10.5px; color: var(--ir-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+.ir-kpi-value { font-size: 22px; font-weight: 800; margin: 4px 0 2px; }
+.ir-kpi-change { font-size: 11px; font-weight: 600; }
+.ir-kpi-change.up { color: #0b7a3b; }
+.ir-kpi-change.down { color: #c1304a; }
+.ir-kpi-change span { color: var(--ir-soft); font-weight: 400; }
+
+.ir-block { margin-top: 20px; break-inside: avoid; }
+.ir-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+.ir-bars {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 4px;
+  height: 150px;
+  align-items: end;
+  border-bottom: 1px solid var(--ir-line);
+}
+.ir-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.ir-bar i { display: block; width: 70%; max-width: 34px; min-height: 1px; background: #2a4dff; border-radius: 3px 3px 0 0; }
+.ir-bar-v { font-size: 9px; color: var(--ir-soft); margin-bottom: 3px; white-space: nowrap; }
+.ir-bar-d { font-size: 9.5px; color: var(--ir-soft); margin-top: 4px; position: relative; top: 18px; height: 0; }
+.ir-block:has(.ir-bars) { padding-bottom: 18px; }
+
+.ir-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ir-table th { text-align: left; font-weight: 600; font-size: 10.5px; color: var(--ir-soft); padding: 4px 0; border-bottom: 1px solid var(--ir-line); }
+.ir-table td { padding: 6px 0; border-bottom: 1px solid var(--ir-line); }
+.ir-table td:not(:first-child), .ir-table th:not(:first-child) { text-align: right; padding-left: 10px; white-space: nowrap; }
+.ir-empty { font-size: 12px; color: var(--ir-soft); }
+.ir-fine { font-size: 10.5px; color: var(--ir-soft); margin-top: 6px; line-height: 1.5; }
+.ir-orders .ir-table { font-size: 11px; }
+.ir-foot { margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--ir-line); font-size: 10px; color: var(--ir-soft); text-align: center; }
+
+/* Printing the report: only it is on the page. */
+@media print {
+  html.printing-report body > *:not(.ir-print) { display: none !important; }
+  html.printing-report .ir-print,
+  html.printing-report .ir-print * { visibility: visible !important; }
+  html.printing-report .ir-print { display: block; position: static; }
+  html.printing-report .ir-paper { box-shadow: none; border-radius: 0; max-width: none; min-width: 0; padding: 0; }
+  html.printing-report body { background: #fff !important; }
+  html.printing-report .ir-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.ir-table tr.ir-sub td { color: var(--ir-soft); padding-left: 12px; }
+.ir-table tr.ir-sub td:not(:first-child) { padding-left: 10px; }

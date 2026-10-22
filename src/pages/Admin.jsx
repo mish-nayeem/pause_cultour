@@ -84,6 +84,7 @@ import CommandSearch from '../components/CommandSearch.jsx'
 import CourierSetup from '../components/CourierSetup.jsx'
 import BulkBar from '../components/BulkBar.jsx'
 import AccountsManager from '../components/AccountsManager.jsx'
+import InvestorReport from '../components/InvestorReport.jsx'
 import InfoTip from '../components/InfoTip.jsx'
 import './admin.css'
 import './admin-theme.css'
@@ -178,6 +179,7 @@ const ANALYTICS_SUBS = [
   { key: 'timing', label: 'Best times' },
   { key: 'location', label: 'Districts' },
   { key: 'pages', label: 'Pages' },
+  { key: 'report', label: 'Investor report' },
 ]
 
 // The three looks the panel can wear — see admin-theme.css. The pick is kept in
@@ -2369,7 +2371,9 @@ export default function Admin() {
             ))}
           </div>
 
-          <AnalyticsManager sub={analyticsSub} orders={orders} products={products} />
+          {analyticsSub === 'report'
+            ? <InvestorReport orders={orders} />
+            : <AnalyticsManager sub={analyticsSub} orders={orders} products={products} />}
           </>
         )}
         {!loading && tab === 'lookbook' && <LookbookManager products={products} />}
