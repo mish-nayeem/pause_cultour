@@ -2385,7 +2385,7 @@ export default function Admin() {
           </div>
 
           {analyticsSub === 'report'
-            ? <InvestorReport orders={orders} />
+            ? <InvestorReport orders={orders} products={products} />
             : <AnalyticsManager sub={analyticsSub} orders={orders} products={products} />}
           </>
         )}
