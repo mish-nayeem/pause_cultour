@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
-import { DROPS_MENU, fetchAllNavCategories } from '../lib/navCategories.js'
+import { DROPS_MENU, fetchAllNavCategories, deleteNavCategory } from '../lib/navCategories.js'
 import {
   fetchAllLooks,
   createLook,
@@ -23,7 +23,12 @@ import './lookbook-manager.css'
 // stays in frame, a caption, the products worn in it, order, hide, delete.
 export default function LookbookManager({ products }) {
   const [looks, setLooks] = useState([])
-  const [menuDrops, setMenuDrops] = useState([])
+  const [menuRows, setMenuRows] = useState([]) // the DROPS menu's entries
+  const menuDrops = useMemo(() => menuRows.map((c) => c.label), [menuRows])
+  // Deleting the whole lookbook: asking, and whether the DROPS menu entry goes too.
+  const [askDelete, setAskDelete] = useState(false)
+  const [alsoMenu, setAlsoMenu] = useState(true)
+  const [deleteNote, setDeleteNote] = useState('')
   const [drop, setDrop] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -46,7 +51,7 @@ export default function LookbookManager({ products }) {
     load()
     // Every collection, launched or not, so a new drop's lookbook can be
     // ready before it goes live (the shop's menus only list it after).
-    fetchAllNavCategories(DROPS_MENU).then(({ categories }) => setMenuDrops(categories.map((c) => c.label)))
+    fetchAllNavCategories(DROPS_MENU).then(({ categories }) => setMenuRows(categories))
     fetchSetting('hero_button').then(({ value }) => setHeroLink(value?.link || '/shop'))
   }, [])
 
@@ -170,6 +175,40 @@ export default function LookbookManager({ products }) {
     setBusy(false)
   }
 
+  // The whole lookbook of this drop: every photo, and — if ticked — its
+  // entry in the DROPS menu. The drop's products are left alone.
+  const menuEntry = menuRows.find((c) => dropKey(c.label) === dropKey(drop))
+
+  async function deleteLookbook() {
+    setBusy(true)
+    setError('')
+    const results = await Promise.all(shown.map((l) => deleteLook(l.id)))
+    if (results.some((r) => r.error)) {
+      setBusy(false)
+      setAskDelete(false)
+      return setError("Couldn't delete every photo — try again.")
+    }
+    let menuGone = false
+    if (alsoMenu && menuEntry) {
+      const { error: menuError } = await deleteNavCategory(menuEntry.id)
+      if (menuError) setError(`The photos are gone, but ${drop} couldn't be taken off the DROPS menu — remove it in Nav menus.`)
+      else {
+        menuGone = true
+        setMenuRows((rows) => rows.filter((c) => c.id !== menuEntry.id))
+      }
+    }
+    const name = drop
+    await load()
+    setAskDelete(false)
+    setBusy(false)
+    setDeleteNote(
+      `${name} lookbook deleted${shown.length ? ` — ${shown.length} photo${shown.length === 1 ? '' : 's'} removed` : ''}${menuGone ? ', and taken off the DROPS menu' : ''}.` +
+      (inDrop.length ? ` ${inDrop.length} product${inDrop.length === 1 ? ' still has' : 's still have'} it as their drop, so it stays in the list.` : '')
+    )
+    // Off to another drop, unless this one is still listed through its products.
+    if (!inDrop.length) setDrop('')
+  }
+
   // Homepage → Hero button straight to this lookbook, for a fresh drop.
   async function pointHero() {
     const value = { label: `SHOP ${drop}`.toUpperCase().slice(0, 28), link: lookbookPath(drop) }
@@ -201,7 +240,7 @@ export default function LookbookManager({ products }) {
                 key={d}
                 type="button"
                 className={`lk-drop ${dropKey(d) === dropKey(drop) ? 'on' : ''}`}
-                onClick={() => { setDrop(d); setConfirmId(null); setHeroNote('') }}
+                onClick={() => { setDrop(d); setConfirmId(null); setHeroNote(''); setAskDelete(false); setDeleteNote('') }}
               >
                 <span className="lk-drop-cover">
                   {cover ? <img src={imgUrl(cover.image_url, { w: 160 })} alt="" style={{ objectPosition: cover.focus || 'center' }} /> : <i className="mono">NO PHOTOS</i>}
@@ -419,8 +458,50 @@ export default function LookbookManager({ products }) {
               ))}
             </div>
           </Box>
+
+          {/* ---- Delete the whole lookbook ---- */}
+          <Box
+            title={`DELETE ${drop.toUpperCase()} LOOKBOOK`}
+            tip={
+              <>
+                <p>Removes every photo of this drop's lookbook in one go. The products themselves are not touched.</p>
+                <p><b>Also remove from the DROPS menu</b> takes the drop off the storefront's DROPS menu, so its lookbook page isn't linked any more.</p>
+                <p>A drop stays in the list above while products still have it as their drop — change their Drop in Products to make it go.</p>
+              </>
+            }
+          >
+            <div className="lk-del">
+              <div className="lk-del-what mono">
+                {shown.length ? `${shown.length} photo${shown.length === 1 ? '' : 's'} will be deleted.` : 'No photos in this lookbook.'}
+                {inDrop.length > 0 && ` ${inDrop.length} product${inDrop.length === 1 ? '' : 's'} keep${inDrop.length === 1 ? 's' : ''} ${drop} as their drop.`}
+              </div>
+              {menuEntry && (
+                <label className="lk-del-menu mono">
+                  <input type="checkbox" checked={alsoMenu} onChange={(e) => setAlsoMenu(e.target.checked)} />
+                  Also remove {drop} from the DROPS menu
+                </label>
+              )}
+              {askDelete ? (
+                <span className="lk-confirm">
+                  <span className="mono">Delete {drop}'s lookbook? This can't be undone.</span>
+                  <button type="button" className="lk-danger" disabled={busy} onClick={deleteLookbook}>{busy ? 'Deleting…' : 'Yes, delete'}</button>
+                  <button type="button" className="lk-ghost" onClick={() => setAskDelete(false)}>No</button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="lk-danger"
+                  disabled={busy || (!shown.length && !(alsoMenu && menuEntry))}
+                  onClick={() => { setAskDelete(true); setDeleteNote('') }}
+                >
+                  Delete lookbook
+                </button>
+              )}
+            </div>
+          </Box>
         </>
       )}
+      {deleteNote && <div className="lk-del-note mono">{deleteNote}</div>}
     </div>
   )
 }
