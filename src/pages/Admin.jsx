@@ -96,6 +96,16 @@ import './admin-mobile.css'
 // reached or refused it. Stock goes back, like a cancel.
 const STATUSES = ['pending', 'shipped', 'delivered', 'returned', 'cancelled']
 
+// The storefront's own pages, grouped under one sidebar entry ("Website")
+// with a tab each — every one works exactly as it did on its own.
+const SITE_TABS = [
+  { key: 'hero', label: 'Homepage' },
+  { key: 'lookbook', label: 'Lookbook' },
+  { key: 'menu', label: 'Nav menus' },
+  { key: 'about', label: 'About us' },
+]
+const SITE_KEYS = SITE_TABS.map((t) => t.key)
+
 const TAB_LABELS = {
   overview: 'Overview',
   orders: 'Orders',
@@ -121,6 +131,7 @@ const SECTION_COLORS = {
   marketing: '#7C6CFF',
   analytics: '#3FC1FF',
   hero: '#3DDC97',
+  site: '#3DDC97',
   lookbook: '#7C6CFF',
   menu: '#FFC14D',
   about: '#FF5E7E',
@@ -444,6 +455,8 @@ export default function Admin() {
   const [checkingAuth, setCheckingAuth] = useState(true)
 
   const [tab, setTab] = useState('overview')
+  // Website: the tab it opens on — the last one used.
+  const [lastSiteTab, setLastSiteTab] = useState('hero')
   const [orders, setOrders] = useState([])
   const [products, setProducts] = useState([])
   const [navCategories, setNavCategories] = useState([])
@@ -992,6 +1005,7 @@ export default function Admin() {
   // The sidebar drawer only exists on a phone width, but this runs on every
   // width rather than checking — closing a drawer that isn't open is a no-op.
   function goTab(key) {
+    if (SITE_KEYS.includes(key)) setLastSiteTab(key)
     setTab(key)
     setMobileMenuOpen(false)
   }
@@ -1241,13 +1255,11 @@ export default function Admin() {
     { key: 'orders', label: 'Orders', badge: stats.open > 0 ? stats.open : null },
     { key: 'products', label: 'Products / Inventory', badge: null },
     { key: 'customers', label: 'Customers', badge: demand.length > 0 ? wishRows.length : null },
+    { key: 'support', label: 'Support', badge: newRequests > 0 ? newRequests : null },
     { key: 'marketing', label: 'Marketing', badge: null },
     { key: 'analytics', label: 'Analytics', badge: null },
-    { key: 'hero', label: 'Homepage', badge: null },
-    { key: 'lookbook', label: 'Lookbook', badge: null },
-    { key: 'menu', label: 'Nav menus', badge: null },
-    { key: 'about', label: 'About us', badge: null },
-    { key: 'support', label: 'Support', badge: newRequests > 0 ? newRequests : null },
+    // Homepage, Lookbook, Nav menus and About us — as tabs inside.
+    { key: 'site', label: 'Website', badge: null },
   ]
 
   return (
@@ -1289,9 +1301,9 @@ export default function Admin() {
           {navItems.map((item) => (
             <button
               key={item.key}
-              className={tab === item.key ? 'on' : ''}
+              className={tab === item.key || (item.key === 'site' && SITE_KEYS.includes(tab)) ? 'on' : ''}
               style={{ '--item-color': SECTION_COLORS[item.key] }}
-              onClick={() => goTab(item.key)}
+              onClick={() => goTab(item.key === 'site' ? lastSiteTab : item.key)}
             >
               <span className="nav-left">
                 <span className="nav-dot" />
@@ -1315,7 +1327,7 @@ export default function Admin() {
         <header className="top">
           <div>
             <div className="admin-crumb mono">
-              ADMIN / {TAB_LABELS[tab].toUpperCase()}
+              ADMIN / {SITE_KEYS.includes(tab) ? `WEBSITE / ${TAB_LABELS[tab].toUpperCase()}` : TAB_LABELS[tab].toUpperCase()}
               {tab === 'overview' &&
                 ` / ${OVERVIEW_SUBS.find((s) => s.key === overviewSub).label.toUpperCase()}`}
               {tab === 'orders' &&
@@ -1331,7 +1343,7 @@ export default function Admin() {
               {tab === 'support' &&
                 ` / ${SUPPORT_SUBS.find((s) => s.key === supportSub).label.toUpperCase()}`}
             </div>
-            <h1 className="display">{TAB_LABELS[tab]}</h1>
+            <h1 className="display">{SITE_KEYS.includes(tab) ? 'Website' : TAB_LABELS[tab]}</h1>
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
           <div className="top-right">
@@ -2094,6 +2106,15 @@ export default function Admin() {
           </section>
           )}
           </>
+        )}
+        {SITE_KEYS.includes(tab) && (
+          <div className="subtabs mono">
+            {SITE_TABS.map((t) => (
+              <button key={t.key} className={`subtab ${tab === t.key ? 'active' : ''}`} onClick={() => goTab(t.key)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
         )}
         {tab === 'hero' && <HeroManager drops={collectionNames} ticker={<TickerManager />} />}
         {!loading && tab === 'menu' && (
