@@ -269,10 +269,10 @@
 }
 
 .mob-section {
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
   color: var(--steel);
-  margin-bottom: 14px;
+  margin-bottom: 11px;
 }
 
 .mob-cats + .mob-section { margin-top: 20px; }
@@ -280,8 +280,8 @@
 .mob-cats {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding-bottom: 20px;
+  gap: 6px;
+  padding-bottom: 18px;
   border-bottom: 1px solid rgba(237, 234, 225, 0.16);
 }
 
@@ -290,18 +290,19 @@
 /* Tap targets are full chips rather than text links — a 12px word is hard to
    hit accurately on a phone. */
 .mob-cats button {
-  background: rgba(237, 234, 225, 0.08);
-  border: none;
+  background: rgba(237, 234, 225, 0.06);
+  border: 1px solid rgba(237, 234, 225, 0.14);
   color: var(--paper);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  padding: 10px 14px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  padding: 7px 12px;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: 999px;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
 
-.mob-cats button:active { background: var(--cobalt); }
+.mob-cats button:active { background: var(--cobalt); border-color: var(--cobalt); transform: scale(0.96); }
 
 .mob-links {
   display: flex;
