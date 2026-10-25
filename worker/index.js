@@ -15,6 +15,11 @@
 //    domain the request actually came in on. So a shared home-page link
 //    shows this domain and loads its picture from here, and moving to a
 //    custom domain later needs no code change at all.
+//
+// 3. The admin as an app. /admin pages get the installed-app tags (the
+//    manifest, the iPhone home-screen ones and the admin icon), so Android
+//    offers "Install" and iPhone's "Add to Home Screen" makes PAUSE Admin.
+//    The shop's own pages never carry them.
 
 import { withSecurityHeaders } from './security-headers.js'
 
@@ -54,14 +59,34 @@ async function handle(request, env) {
     if (card) return card
   }
 
-  return withOwnOrigin(await env.ASSETS.fetch(request), url.origin)
+  return withOwnOrigin(await env.ASSETS.fetch(request), url)
 }
 
-async function withOwnOrigin(res, origin) {
-  if (res.status !== 200 || !TEXT_TYPES.test(res.headers.get('content-type') || '')) return res
-  if (origin === SITE_PLACEHOLDER) return res
+const isAdminPage = (path) => path === '/admin' || path.startsWith('/admin/')
 
-  const body = (await res.text()).replaceAll(SITE_PLACEHOLDER, origin)
+// The tags that make /admin installable. src/lib/adminApp.js adds the same
+// ones when the admin is reached from inside the shop without a reload.
+const ADMIN_APP_HEAD = `
+    <link rel="manifest" href="/admin.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="PAUSE Admin" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  </head>`
+
+async function withOwnOrigin(res, url) {
+  const origin = url.origin
+  if (res.status !== 200 || !TEXT_TYPES.test(res.headers.get('content-type') || '')) return res
+  const admin = isAdminPage(url.pathname) && /text\/html/.test(res.headers.get('content-type') || '')
+  if (origin === SITE_PLACEHOLDER && !admin) return res
+
+  let body = (await res.text()).replaceAll(SITE_PLACEHOLDER, origin)
+  if (admin) {
+    body = body
+      .replace('href="/apple-touch-icon.png"', 'href="/admin-apple-touch-icon.png"')
+      .replace(/<title>[^<]*<\/title>/, '<title>PAUSE Admin</title>')
+      .replace('</head>', ADMIN_APP_HEAD)
+  }
   return new Response(body, res)
 }
 

@@ -21,6 +21,8 @@ import SmoothScroll from './components/SmoothScroll.jsx'
 import { captureAttribution } from './lib/attribution.js'
 import { startSessionPolicy } from './lib/sessionPolicy.js'
 import { Sentry } from './lib/sentry.js'
+// Catches the browser's "install app" offer for the admin from the first load.
+import './lib/adminApp.js'
 import './styles/global.css'
 
 // Lazy: Admin.jsx pulls in every product/order/marketing manager component

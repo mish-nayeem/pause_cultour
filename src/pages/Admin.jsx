@@ -38,6 +38,8 @@ import EmailCampaigns from '../components/EmailCampaigns.jsx'
 import SocialTracking from '../components/SocialTracking.jsx'
 import MarketingGuide from '../components/MarketingGuide.jsx'
 import PromoManager from '../components/PromoManager.jsx'
+import InstallAppButton from '../components/InstallAppButton.jsx'
+import { startAdminApp } from '../lib/adminApp.js'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -460,6 +462,8 @@ function PackingSlip({ order }) {
 
 export default function Admin() {
   const [session, setSession] = useState(null)
+  // Installable as PAUSE Admin while this page is open (src/lib/adminApp.js).
+  useEffect(() => startAdminApp(), [])
   const [theme, setTheme] = useState(savedTheme)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
@@ -1299,6 +1303,7 @@ export default function Admin() {
         </nav>
 
         <div className="side-foot mono">
+          <InstallAppButton />
           <Link to="/"><IconExternal width="13" height="13" />View storefront</Link>
           <button onClick={handleSignOut} className="signout">
             <IconLogout width="13" height="13" />Sign out

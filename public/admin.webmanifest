@@ -1,0 +1,16 @@
+{
+  "id": "/admin",
+  "name": "PAUSE Admin",
+  "short_name": "PAUSE Admin",
+  "description": "Orders, products and marketing for PAUSE.",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#16160F",
+  "theme_color": "#16160F",
+  "icons": [
+    { "src": "/admin-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/admin-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/admin-icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

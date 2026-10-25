@@ -1,0 +1,43 @@
+/* Admin sidebar → Install app (InstallAppButton.jsx). */
+
+.install-note { font-size: 11px; color: var(--side-muted, var(--steel)); }
+
+.install-back {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(10, 12, 16, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.install-card {
+  width: min(420px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: #fff;
+  color: #15171a;
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  text-align: left;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.install-icon { width: 64px; height: 64px; border-radius: 15px; display: block; }
+.install-card h3 { font-size: 19px; margin: 14px 0 6px; }
+.install-lead { font-size: 13.5px; line-height: 1.55; color: #4a4f57; margin: 0 0 14px; }
+.install-card ol { margin: 0 0 18px; padding-left: 20px; display: grid; gap: 8px; font-size: 13.5px; line-height: 1.5; }
+.install-glyph { display: inline-block; border: 1px solid #c9ccd2; border-radius: 5px; padding: 0 5px; font-size: 12px; }
+
+.install-ok {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: #15171a;
+  color: #fff;
+  padding: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
