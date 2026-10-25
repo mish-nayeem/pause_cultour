@@ -27,7 +27,7 @@
 }
 
 .ir-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-bottom: 2px solid var(--ir-ink); padding-bottom: 14px; }
-.ir-brand { font-family: 'PAUSE Display', 'Anton', sans-serif; font-weight: 600; font-size: 30px; letter-spacing: 0.05em; line-height: 1; }
+.ir-brand { font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: 0.05em; line-height: 1; }
 .ir-title { font-size: 15px; font-weight: 600; margin-top: 6px; }
 .ir-meta { text-align: right; font-size: 11px; color: var(--ir-soft); line-height: 1.6; }
 
