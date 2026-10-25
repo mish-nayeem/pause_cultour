@@ -82,7 +82,10 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 0;
   background: var(--paper);
-  border-bottom: 1px solid var(--steel-line);
+  /* No line of its own at the foot: the tiles draw theirs, and the -1px lays
+     the last row's line onto the footer's top edge, so the two read as one
+     hairline instead of a thick double rule. */
+  margin-bottom: -1px;
 }
 
 /* The hairlines between tiles are each tile's own right and bottom edge, not
