@@ -39,6 +39,7 @@ import SocialTracking from '../components/SocialTracking.jsx'
 import MarketingGuide from '../components/MarketingGuide.jsx'
 import PromoManager from '../components/PromoManager.jsx'
 import InstallAppButton from '../components/InstallAppButton.jsx'
+import NotifyButton from '../components/NotifyButton.jsx'
 import { startAdminApp } from '../lib/adminApp.js'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
@@ -614,6 +615,37 @@ export default function Admin() {
     reload()
   }, [session, reload])
 
+  // New orders without a reload: the lists that change on their own
+  // (orders, returns, abandoned carts) are fetched again quietly — no
+  // loading screen — every minute while the admin is on screen, the moment
+  // it's opened again (the installed app has no refresh), and when a
+  // notification arrives. Products and the rest only change from here.
+  const [refreshing, setRefreshing] = useState(false)
+  const lastRefresh = useRef(0)
+  const refreshLive = useCallback(async () => {
+    lastRefresh.current = Date.now()
+    setRefreshing(true)
+    const [o, r, ac] = await Promise.all([fetchOrders(), fetchReturns(), fetchAbandonedCarts()])
+    setRefreshing(false)
+    if (!o.error) setOrders(o.orders)
+    if (!r.error) setReturns(r.returns)
+    if (!ac.error) setAbandonedCarts(ac.carts)
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    lastRefresh.current = Date.now()
+    const soon = () => { if (document.visibilityState === 'visible' && Date.now() - lastRefresh.current > 10_000) refreshLive() }
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') refreshLive() }, 60_000)
+    document.addEventListener('visibilitychange', soon)
+    window.addEventListener('focus', soon)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', soon)
+      window.removeEventListener('focus', soon)
+    }
+  }, [session, refreshLive])
+
 
   const stats = useMemo(() => computeStats(orders), [orders])
   const series = useMemo(() => dailySeries(orders, 14), [orders])
@@ -1140,6 +1172,32 @@ export default function Admin() {
     setProducts([])
   }
 
+  // A tapped "New order" notification: /admin?order=PC… when the app opens on
+  // it, or a message from the service worker when the admin is already open.
+  // (Set to openOrder further down, once it exists.)
+  const openOrderRef = useRef(null)
+  const refreshLiveRef = useRef(refreshLive)
+  refreshLiveRef.current = refreshLive
+  useEffect(() => {
+    if (loading || !session) return
+    const id = new URLSearchParams(window.location.search).get('order')
+    if (id) {
+      openOrderRef.current?.(id)
+      window.history.replaceState(null, '', '/admin')
+    }
+  }, [loading, session])
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const onMsg = (e) => {
+      if (e.data?.type === 'refresh') return refreshLiveRef.current?.()
+      if (e.data?.type !== 'open') return
+      const id = new URL(e.data.url, window.location.origin).searchParams.get('order')
+      if (id) openOrderRef.current?.(id)
+    }
+    navigator.serviceWorker.addEventListener('message', onMsg)
+    return () => navigator.serviceWorker.removeEventListener('message', onMsg)
+  }, [])
+
   if (checkingAuth) {
     return <div className="admin-boot mono">Checking access…</div>
   }
@@ -1174,6 +1232,8 @@ export default function Admin() {
     setExpanded(id)
     setTab('orders')
   }
+
+  openOrderRef.current = openOrder
 
   function openRequests() {
     setSupportSub('requests')
@@ -1303,6 +1363,7 @@ export default function Admin() {
         </nav>
 
         <div className="side-foot mono">
+          <NotifyButton />
           <InstallAppButton />
           <Link to="/"><IconExternal width="13" height="13" />View storefront</Link>
           <button onClick={handleSignOut} className="signout">
@@ -1336,11 +1397,17 @@ export default function Admin() {
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
           <div className="top-right">
+            <div className="top-actions">
+            <button type="button" className="top-search mono" onClick={refreshLive} disabled={refreshing} title="Check for new orders">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true" className={refreshing ? 'spin' : ''}><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5" /></svg>
+              {refreshing ? 'Checking…' : 'Refresh'}
+            </button>
             <button type="button" className="top-search mono" onClick={() => setSearchOpen(true)} title="Search orders, customers and products (Ctrl+K)">
               <IconSearch width="13" height="13" />
               Search
               <kbd>Ctrl K</kbd>
             </button>
+            </div>
             <div className="theme-picker" role="radiogroup" aria-label="Dashboard theme">
               <span className="theme-picker-label">Theme</span>
               {THEMES.map((t) => (

@@ -663,3 +663,8 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
 .admin .chip.on.returned { background: var(--pill-returned); border-color: var(--pill-returned); }
 .admin .ocard.returned { opacity: 0.7; }
 .admin .cs-status.returned, .admin .today-status.returned, .admin .main .bulk-btn.returned { color: var(--pill-returned) !important; }
+
+/* Header → Refresh: the arrow turns while it checks. */
+@keyframes admin-spin { to { transform: rotate(360deg); } }
+.admin .top-search .spin { animation: admin-spin 0.8s linear infinite; }
+.admin .top-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
