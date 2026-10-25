@@ -108,8 +108,8 @@ export default function Checkout() {
   const [saveInfo, setSaveInfo] = useState(Boolean(saved))
   const [user, setUser] = useState(null)
 
-  // Signed in: no need to offer the sign-in link, and the email is the
-  // account's — filled in and fixed, nothing to type.
+  // Signed in: no need to offer the sign-in link, and the account's email is
+  // filled in — still editable, for an order sent to someone else's email.
   // Their saved details (customer_profiles) fill whatever is still empty.
   useEffect(() => watchUser((u) => {
     setUser(u)
@@ -413,7 +413,6 @@ export default function Checkout() {
                   value={form.email}
                   onChange={handleChange}
                   placeholder="you@example.com"
-                  readOnly={Boolean(user?.email)}
                   aria-label="Email"
                   autoComplete="email"
                 />
@@ -421,7 +420,11 @@ export default function Checkout() {
                   <InfoTip label="Why we need your email" glyph="?">Used for your order confirmation and cart reminders.</InfoTip>
                 </span>
               </div>
-              {user?.email && <em className="co-signed mono">Signed in — your account's email is used.</em>}
+              {/* Account → My orders finds orders by the account's email, so a
+                  different one is fine but won't be listed there. */}
+              {user?.email && (form.email.trim().toLowerCase() === user.email.toLowerCase()
+                ? <em className="co-signed mono">Signed in — your account's email. You can change it.</em>
+                : <em className="co-signed mono">A different email from your account's ({user.email}) — the confirmation goes there, and this order won't show in your account's orders. <button type="button" className="co-reset mono" onClick={() => setForm((prev) => ({ ...prev, email: user.email }))}>Use mine</button></em>)}
               {errors.email && <em className="err mono">{errors.email}</em>}
             </div>
 
