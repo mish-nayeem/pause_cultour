@@ -13,6 +13,8 @@ import ShopFilter, { sortSizes } from '../components/ShopFilter.jsx'
 import QuickAdd from '../components/QuickAdd.jsx'
 import { scrollToTarget } from '../lib/smoothScroll.js'
 import { dropKey } from '../lib/lookbook.js'
+import PromoBanners, { DropHero } from '../components/PromoBanners.jsx'
+import { fetchPromos, dropBannerFor } from '../lib/promos.js'
 import './shop.css'
 
 const PAGE_SIZE = 24
@@ -31,6 +33,9 @@ export default function Shop() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  // Website → Banners, and each drop's own banner photo (Products → Collections).
+  const [promos, setPromos] = useState(null)
+  useEffect(() => { fetchPromos().then(setPromos).catch(() => {}) }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -140,6 +145,9 @@ export default function Shop() {
           </h1>
         </div>
       </div>
+
+      {activeDrop && <DropHero banner={dropBannerFor(activeDrop, promos?.banners)} />}
+      {promos && <PromoBanners place="shop" data={promos} />}
 
       <div className="filters mono">
         <button

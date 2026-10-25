@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import InfoTip from './InfoTip.jsx'
 import { listSales, createSale, setSaleActive, deleteSale, salePrice } from '../lib/sales.js'
 import './coupon-manager.css'
 import './sale-manager.css'
@@ -129,7 +130,7 @@ export default function SaleManager({ products }) {
   return (
     <>
       <form className="pform cp-form" onSubmit={handleCreate}>
-        <div className="pform-head"><h3 className="display">New sale</h3></div>
+        <div className="pform-head"><h3 className="display">New sale</h3><InfoTip>A running sale makes its own banner on the website — on a drop with the drop's banner photo (Products → Collections), on chosen products with the product's photo, with a countdown to the end. Website → Banners says which pages it shows on.</InfoTip></div>
         <div className="pf-grid">
           <label className="pf-field">
             <span className="mono">NAME (OPTIONAL)</span>

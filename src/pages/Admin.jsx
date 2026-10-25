@@ -37,6 +37,7 @@ import AdsRoas from '../components/AdsRoas.jsx'
 import EmailCampaigns from '../components/EmailCampaigns.jsx'
 import SocialTracking from '../components/SocialTracking.jsx'
 import MarketingGuide from '../components/MarketingGuide.jsx'
+import PromoManager from '../components/PromoManager.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -107,6 +108,7 @@ const SITE_TABS = [
   { key: 'lookbook', label: 'Lookbook' },
   { key: 'menu', label: 'Nav menus' },
   { key: 'about', label: 'About us' },
+  { key: 'banners', label: 'Banners' },
 ]
 const SITE_KEYS = SITE_TABS.map((t) => t.key)
 
@@ -121,6 +123,7 @@ const TAB_LABELS = {
   lookbook: 'Lookbook',
   menu: 'Nav menus',
   about: 'About us page',
+  banners: 'Banners',
   support: 'Support',
 }
 
@@ -139,6 +142,7 @@ const SECTION_COLORS = {
   lookbook: '#7C6CFF',
   menu: '#FFC14D',
   about: '#FF5E7E',
+  banners: '#FFC14D',
   support: '#3FC1FF',
 }
 
@@ -2158,6 +2162,7 @@ export default function Admin() {
         )}
         {!loading && tab === 'lookbook' && <LookbookManager products={products} />}
         {tab === 'about' && <AboutManager />}
+        {!loading && tab === 'banners' && <PromoManager products={products} />}
         {!loading && tab === 'support' && (
           <>
             <div className="subtabs mono">

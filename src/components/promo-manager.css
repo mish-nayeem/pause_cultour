@@ -1,0 +1,34 @@
+/* Admin → Website → Banners (PromoManager.jsx). */
+
+.pm { display: flex; flex-direction: column; gap: 14px; }
+
+.pm-how { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 13px; line-height: 1.55; color: var(--ink); }
+
+.pm-places { display: grid; gap: 4px; max-width: 560px; }
+.pm-places-row { display: grid; grid-template-columns: minmax(140px, 1.6fr) repeat(3, minmax(64px, 1fr)); align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--steel-line); font-size: 13px; }
+.pm-places-head { font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); }
+.pm-places-head span, .pm-tick { text-align: center; }
+.pm-kind { display: flex; align-items: center; gap: 6px; }
+.pm-tick input { width: 17px; height: 17px; cursor: pointer; }
+
+.pm-boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.pm-box { border: 2px solid; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pm-box-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; }
+.pm-box-num { border-radius: 999px; padding: 3px 10px; font-weight: 700; letter-spacing: 0.08em; }
+.pm-dots { display: flex; gap: 5px; }
+.admin .main .pm-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; padding: 0; cursor: pointer; box-shadow: 0 0 0 1px var(--steel-line); }
+.admin .main .pm-dot.on { border-color: var(--paper, #fff); box-shadow: 0 0 0 2px var(--ink); }
+.pm-on { margin-left: auto; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.pm-code { font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.pm-link { display: grid; gap: 8px; }
+
+.pm-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.pm-auto-row { font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--steel-line); }
+.pm-auto .dim { color: var(--steel); font-weight: 400; }
+
+/* The storefront cards, drawn as the shop would. */
+.pm-preview { background: #fff; color: #16160F; border-radius: 12px; padding: 16px 0 0; overflow: hidden; --paper: #FFFFFF; --paper-dim: #F5F5F5; --ink: #16160F; --steel-line: #E5E5E5; --signal: #FF4426; font-family: 'Inter', sans-serif; }
+.pm-preview .pb-row { padding: 0 16px 16px; }
+.pm-preview.narrow { max-width: 380px; padding: 16px; }
+.pm-preview.narrow .pb-row { padding: 0; }
+.pm-preview .ab-empty { padding: 0 16px 16px; }
