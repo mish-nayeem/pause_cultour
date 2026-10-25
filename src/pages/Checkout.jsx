@@ -420,11 +420,6 @@ export default function Checkout() {
                   <InfoTip label="Why we need your email" glyph="?">Used for your order confirmation and cart reminders.</InfoTip>
                 </span>
               </div>
-              {/* Account → My orders finds orders by the account's email, so a
-                  different one is fine but won't be listed there. */}
-              {user?.email && (form.email.trim().toLowerCase() === user.email.toLowerCase()
-                ? <em className="co-signed mono">Signed in — your account's email. You can change it.</em>
-                : <em className="co-signed mono">A different email from your account's ({user.email}) — the confirmation goes there, and this order won't show in your account's orders. <button type="button" className="co-reset mono" onClick={() => setForm((prev) => ({ ...prev, email: user.email }))}>Use mine</button></em>)}
               {errors.email && <em className="err mono">{errors.email}</em>}
             </div>
 
