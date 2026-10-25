@@ -41,7 +41,7 @@
   overscroll-behavior: contain;
 }
 
-.about-prev-title { font-family: 'PAUSE Display', 'Anton', sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 10px; }
+.about-prev-title { font-family: 'Anton', sans-serif; font-size: 18px; margin-bottom: 10px; }
 .about-prev-empty { font-size: 11px; color: #8b8a82; }
 
 .about-prev-block {

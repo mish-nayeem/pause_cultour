@@ -11,7 +11,10 @@
 
 .pdp {
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
+  /* minmax(0, …): a column is never wider than its share, whatever is in it
+     (a long word, a row of colours) — otherwise it pushed the buttons off a
+     phone's screen. */
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   gap: 40px;
   padding: 22px 40px 80px;
   align-items: start;
@@ -216,6 +219,7 @@
   padding-top: 4px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .title-row {
@@ -252,8 +256,8 @@
 .info h1 {
   font-size: clamp(28px, 3vw, 40px);
   line-height: 1.02;
-  /* A little air between the letters keeps a product name readable at
-     this size. */
+  /* Anton is set tight; a little air between the letters keeps a
+     product name readable at this size. */
   letter-spacing: 0.045em;
   margin-bottom: 0;
   min-width: 0;
@@ -704,7 +708,7 @@
   .crumb { padding: 18px 20px 0; }
 
   .pdp {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
     padding: 18px 20px 60px;
   }
