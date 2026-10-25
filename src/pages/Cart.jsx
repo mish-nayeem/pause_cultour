@@ -4,7 +4,8 @@ import Nav from '../components/Nav.jsx'
 import { useCart } from '../context/CartContext.jsx'
 import { imgUrl } from '../lib/images.js'
 import { fetchProducts } from '../lib/products.js'
-import { isSoldOut } from '../lib/stock.js'
+import { isSoldOut, isAllSoldOut } from '../lib/stock.js'
+import { CardPrice } from '../components/SalePrice.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import usePageMeta from '../lib/usePageMeta.js'
 import PromoBanners from '../components/PromoBanners.jsx'
@@ -41,10 +42,7 @@ export default function Cart() {
         </div>
 
         {items.length === 0 ? (
-          <div className="empty-cart">
-            <p className="mono">Queue is empty.</p>
-            <Link to="/" className="back-link mono">← BACK TO SHOP</Link>
-          </div>
+          <EmptyCart products={products} />
         ) : (
           <div className="cart-body">
             <div className="cart-lines">
@@ -152,5 +150,42 @@ export default function Cart() {
         )}
       </div>
     </>
+  )
+}
+
+// Nothing in the cart yet: a few words in the brand's voice, the way back
+// in, and the newest pieces that can still be bought.
+function EmptyCart({ products }) {
+  const fresh = products.filter((p) => !isAllSoldOut(p)).slice(0, 4)
+  return (
+    <div className="empty-cart">
+      <div className="empty-mark mono">NOTHING ON HOLD</div>
+      <h3 className="display empty-title">Your bag's waiting.</h3>
+      <p className="empty-line">
+        Small drops, cut and sewn in Dhaka. When it's gone, it's gone —
+        so find your piece before someone else does.
+      </p>
+      <div className="empty-actions">
+        <Link to="/shop?c=NEW" className="empty-btn mono">SHOP NEW IN →</Link>
+        <Link to="/shop" className="empty-btn ghost mono">SEE EVERYTHING</Link>
+      </div>
+
+      {fresh.length > 0 && (
+        <div className="empty-fresh">
+          <div className="empty-fresh-label mono">JUST IN</div>
+          <div className="empty-grid">
+            {fresh.map((p) => (
+              <Link to={`/product/${p.id}`} className="empty-card" key={p.id}>
+                <div className="empty-thumb">
+                  {p.images?.[0] && <ShimmerImage src={imgUrl(p.images[0], { w: 400 })} alt={p.name} />}
+                </div>
+                <div className="empty-name">{p.name}</div>
+                <div className="empty-price mono"><CardPrice product={p} /></div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
