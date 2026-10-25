@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext.jsx'
 import { availableSizes, roomLeft } from '../lib/stock.js'
 import { sortSizes } from './ShopFilter.jsx'
 import { useCornerTone } from '../lib/imageTone.js'
+import { flyToCart } from '../lib/flyToCart.js'
 import './quick-add.css'
 
 // The + in the corner of a product photo on the grid: adds to the cart
@@ -51,6 +52,7 @@ export default function QuickAdd({ product }) {
     // Same rule as the product page: never more in the cart than exists.
     if (roomLeft(product, size, items) < 1) return flash('max')
     addItem(product, size, 1)
+    flyToCart({ from: ref.current?.closest('.sthumb') || ref.current, image: product.images?.[0] })
     flash('added')
   }
 
