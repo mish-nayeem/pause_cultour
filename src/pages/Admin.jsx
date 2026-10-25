@@ -461,6 +461,20 @@ function PackingSlip({ order }) {
   )
 }
 
+// Where the panel was (section, sub-tabs, open collection), kept for this
+// browser session so a reload lands back there.
+const PLACE_KEY = 'pause_admin_place'
+// `options`: the tabs it can be — a saved one that's gone falls back.
+function savedPlace(key, fallback, options) {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(PLACE_KEY) || '{}')[key]
+    if (v === undefined || (options && !options.some((o) => o.key === v))) return fallback
+    return v
+  } catch {
+    return fallback
+  }
+}
+
 export default function Admin() {
   const [session, setSession] = useState(null)
   // Installable as PAUSE Admin while this page is open (src/lib/adminApp.js).
@@ -468,9 +482,9 @@ export default function Admin() {
   const [theme, setTheme] = useState(savedTheme)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
-  const [tab, setTab] = useState('overview')
+  const [tab, setTab] = useState(() => savedPlace('tab', 'overview', Object.keys(TAB_LABELS).map((key) => ({ key }))))
   // Website: the tab it opens on — the last one used.
-  const [lastSiteTab, setLastSiteTab] = useState('hero')
+  const [lastSiteTab, setLastSiteTab] = useState(() => savedPlace('lastSiteTab', 'hero', SITE_TABS))
   const [orders, setOrders] = useState([])
   const [products, setProducts] = useState([])
   const [navCategories, setNavCategories] = useState([])
@@ -504,26 +518,26 @@ export default function Admin() {
   const [copyFrom, setCopyFrom] = useState(null)
   // Products → Collections: the collection open, and the one a new product
   // is being added to (prefills its Drop).
-  const [openCollection, setOpenCollection] = useState(null)
+  const [openCollection, setOpenCollection] = useState(() => savedPlace('openCollection', null))
   const [newProductDrop, setNewProductDrop] = useState('')
   // A product added to a collection whose launch is scheduled starts with
   // the same launch time.
   const [newProductLaunch, setNewProductLaunch] = useState('')
   const [addingOrder, setAddingOrder] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [overviewSub, setOverviewSub] = useState('today')
-  const [ordersSub, setOrdersSub] = useState('list')
+  const [overviewSub, setOverviewSub] = useState(() => savedPlace('overviewSub', 'today', OVERVIEW_SUBS))
+  const [ordersSub, setOrdersSub] = useState(() => savedPlace('ordersSub', 'list', ORDERS_SUBS))
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
   const [blockedAttempts, setBlockedAttempts] = useState([])
-  const [analyticsSub, setAnalyticsSub] = useState('summary')
-  const [supportSub, setSupportSub] = useState('requests')
-  const [productsSub, setProductsSub] = useState('catalog')
+  const [analyticsSub, setAnalyticsSub] = useState(() => savedPlace('analyticsSub', 'summary', ANALYTICS_SUBS))
+  const [supportSub, setSupportSub] = useState(() => savedPlace('supportSub', 'requests', SUPPORT_SUBS))
+  const [productsSub, setProductsSub] = useState(() => savedPlace('productsSub', 'catalog', PRODUCTS_SUBS))
   // Products → Cost & margin: per product, or a drop's profit.
-  const [marginView, setMarginView] = useState('product')
-  const [customersSub, setCustomersSub] = useState('accounts')
+  const [marginView, setMarginView] = useState(() => savedPlace('marginView', 'product'))
+  const [customersSub, setCustomersSub] = useState(() => savedPlace('customersSub', 'accounts', CUSTOMERS_SUBS))
   const [allReviews, setAllReviews] = useState([])
-  const [marketingSub, setMarketingSub] = useState('audience')
+  const [marketingSub, setMarketingSub] = useState(() => savedPlace('marketingSub', 'audience', MARKETING_SUBS))
   const [adSpend, setAdSpend] = useState([])
   const [emailCampaigns, setEmailCampaigns] = useState([])
   const [socialStats, setSocialStats] = useState([])
@@ -562,6 +576,14 @@ export default function Admin() {
       setMobileMenuOpen(false)
     }
   )
+
+  // A reload (or the app reopened in the same session) comes back to the same
+  // section and sub-tab instead of Overview.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(PLACE_KEY, JSON.stringify({ tab, lastSiteTab, overviewSub, ordersSub, analyticsSub, supportSub, productsSub, marginView, customersSub, marketingSub, openCollection }))
+    } catch { /* storage blocked — it just opens on Overview */ }
+  }, [tab, lastSiteTab, overviewSub, ordersSub, analyticsSub, supportSub, productsSub, marginView, customersSub, marketingSub, openCollection])
 
   useEffect(() => {
     getSession().then((s) => {
