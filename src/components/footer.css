@@ -105,8 +105,7 @@
   flex-direction: column;
 }
 
-/* The heading is a button so a phone can open its list; on a computer it
-   reads as a plain heading and its list is always open. */
+/* The heading is a button that opens its list (below). */
 .site-footer .foot-toggle {
   display: flex;
   align-items: center;
@@ -118,7 +117,6 @@
   cursor: default;
 }
 
-.foot-plus { display: none; }
 
 .foot-links { display: grid; grid-template-rows: 1fr; }
 .foot-links-inner { min-height: 0; display: flex; flex-direction: column; gap: 11px; }
@@ -191,6 +189,67 @@
   color: var(--ink);
 }
 
+/* Every screen: lists closed until their heading is tapped (or pointed at
+   with a mouse), then sliding open under it on the easing iOS uses for its
+   own sheets — quick to start, long and soft to settle. */
+.site-footer .foot-toggle { cursor: pointer; margin-bottom: 0; -webkit-tap-highlight-color: transparent; }
+
+/* A thin + that turns into × as its list opens. */
+.foot-plus {
+  display: inline-block;
+  position: relative;
+  width: 11px;
+  height: 11px;
+  flex: none;
+  transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.foot-plus::before,
+.foot-plus::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background: var(--ink);
+  transform: translateY(-50%);
+}
+
+.foot-plus::after { transform: translateY(-50%) rotate(90deg); }
+
+.foot-col.open .foot-plus { transform: rotate(45deg); }
+
+.foot-links {
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* overflow: hidden and the room above the links as the first link's margin
+   (not padding, which would keep 14px showing while closed). */
+.foot-links-inner {
+  gap: 12px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.foot-links-inner > :first-child { margin-top: 14px; }
+
+.foot-col.open .foot-links { grid-template-rows: 1fr; }
+.foot-col.open .foot-links-inner { opacity: 1; transform: none; transition-delay: 0.05s; }
+
+/* Closed links aren't tabbable or tappable. */
+.foot-col:not(.open) .foot-links-inner { visibility: hidden; transition: opacity 0.25s ease, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s 0.5s; }
+
+/* With a mouse or trackpad, pointing at a heading opens its list too. */
+@media (hover: hover) and (pointer: fine) {
+  .foot-col:hover .foot-plus { transform: rotate(45deg); }
+  .foot-col:hover .foot-links { grid-template-rows: 1fr; }
+  .foot-col:hover .foot-links-inner { opacity: 1; transform: none; visibility: visible; transition: opacity 0.3s ease 0.05s, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s; }
+}
+
 @media (max-width: 860px) {
   .site-footer { padding: 40px 20px 26px; }
   .foot-main { grid-template-columns: 1fr; gap: 34px; }
@@ -201,65 +260,6 @@
   .site-footer .foot-label { margin-bottom: 0; }
   .foot-col a { font-size: 11px; line-height: 1.4; }
 
-  /* Lists closed until their heading is tapped, then sliding open under it
-     on the easing iOS uses for its own sheets — quick to start, long and
-     soft to settle. */
-  .site-footer .foot-toggle { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-
-  .foot-plus {
-    display: inline-block;
-    position: relative;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 1px solid var(--ink);
-    flex: none;
-    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.3s ease;
-  }
-
-  .foot-plus::before,
-  .foot-plus::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 8px;
-    height: 1.5px;
-    border-radius: 1px;
-    background: var(--ink);
-    transform: translate(-50%, -50%);
-    transition: background 0.3s ease;
-  }
-
-  .foot-plus::after { transform: translate(-50%, -50%) rotate(90deg); }
-
-  .foot-col.open .foot-plus { transform: rotate(135deg); background: var(--ink); }
-  .foot-col.open .foot-plus::before,
-  .foot-col.open .foot-plus::after { background: var(--paper-dim); }
-
-  .foot-links {
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-  }
-
-  /* overflow: hidden and the room above the links as the first link's margin
-     (not padding, which would keep 14px showing while closed). */
-  .foot-links-inner {
-    gap: 12px;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(-6px);
-    transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-  }
-
-  .foot-links-inner > :first-child { margin-top: 14px; }
-
-  .foot-col.open .foot-links { grid-template-rows: 1fr; }
-  .foot-col.open .foot-links-inner { opacity: 1; transform: none; transition-delay: 0.05s; }
-
-  /* Closed links aren't tabbable or tappable. */
-  .foot-col:not(.open) .foot-links-inner { visibility: hidden; transition: opacity 0.25s ease, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s 0.5s; }
-
   /* The base row stacks: the @pause.cultour lockup, the socials, the fine
      print — never wider than the screen. */
   .foot-base { flex-direction: column; align-items: flex-start; gap: 18px; }
@@ -267,7 +267,7 @@
   .foot-brand img { height: 52px; max-width: 100%; object-fit: contain; }
 }
 
-@media (max-width: 860px) and (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   .foot-links, .foot-links-inner, .foot-plus { transition: none; }
 }
 

@@ -6,9 +6,9 @@ import { INSTAGRAM, FACEBOOK, TIKTOK } from '../content/info-pages.js'
 import { DEFAULT_FOOTER_ABOUT, fetchFooterAbout } from '../lib/siteSettings.js'
 import './footer.css'
 
-// One list of footer links. On a computer it's always open; on a phone its
-// heading has a + beside it, and a tap on the heading slides the links open
-// under it (the + turns to ×) — one list at a time.
+// One list of footer links. Its heading has a thin + beside it; a tap on the
+// heading — or, with a mouse, just pointing at it — slides the links open
+// under it (the + turns to ×), one list at a time.
 function FootCol({ id, label, open, onToggle, children }) {
   const isOpen = open === id
   return (
