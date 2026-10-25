@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
@@ -33,6 +33,22 @@ export default function Shop() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  // The categories row on a phone scrolls sideways; `track` is how much of
+  // it shows and where (both in %), or null when it all fits.
+  const filtersRef = useRef(null)
+  const [track, setTrack] = useState(null)
+  const measureFilters = useCallback(() => {
+    const el = filtersRef.current
+    if (!el || el.scrollWidth <= el.clientWidth + 2) return setTrack(null)
+    const w = (el.clientWidth / el.scrollWidth) * 100
+    setTrack({ w, x: (el.scrollLeft / el.scrollWidth) * 100 })
+  }, [])
+  useEffect(() => {
+    measureFilters()
+    window.addEventListener('resize', measureFilters)
+    return () => window.removeEventListener('resize', measureFilters)
+  }, [measureFilters, categories])
+
   // Website → Banners, and each drop's own banner photo (Products → Collections).
   const [promos, setPromos] = useState(null)
   useEffect(() => { fetchPromos().then(setPromos).catch(() => {}) }, [])
@@ -149,28 +165,37 @@ export default function Shop() {
       {activeDrop && <DropHero banner={dropBannerFor(activeDrop, promos?.banners)} />}
       {promos && <PromoBanners place="shop" data={promos} />}
 
-      <div className="filters mono">
-        <button
-          className={active === 'ALL' && !activeDrop ? 'on' : ''}
-          onClick={() => pick('ALL')}
-        >
-          ALL
-        </button>
-        <button
-          className={active === 'NEW' && !activeDrop ? 'on' : ''}
-          onClick={() => pick('NEW')}
-        >
-          NEW
-        </button>
-        {categories.map((c) => (
+      <div className="filters-wrap">
+        <div className="filters mono" ref={filtersRef} onScroll={measureFilters}>
           <button
-            key={c}
-            className={active === c && !activeDrop ? 'on' : ''}
-            onClick={() => pick(c)}
+            className={active === 'ALL' && !activeDrop ? 'on' : ''}
+            onClick={() => pick('ALL')}
           >
-            {c}
+            ALL
           </button>
-        ))}
+          <button
+            className={active === 'NEW' && !activeDrop ? 'on' : ''}
+            onClick={() => pick('NEW')}
+          >
+            NEW
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c}
+              className={active === c && !activeDrop ? 'on' : ''}
+              onClick={() => pick(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        {/* Phones: a light line under the chips, its darker part showing
+            where in the row you are — so it's plain there's more to swipe. */}
+        {track && (
+          <div className="filters-track" aria-hidden="true">
+            <i style={{ width: `${track.w}%`, left: `${track.x}%` }} />
+          </div>
+        )}
       </div>
 
       {/* Card-shaped placeholders in the real grid, so the page already has
