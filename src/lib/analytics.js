@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { getVisitAttribution } from './attribution.js'
 
 // sessionStorage, not localStorage — a "session" for traffic purposes is
 // meant to reset when the tab closes, the way it does in any analytics tool,
@@ -37,13 +38,25 @@ export async function trackPageView(path) {
   // visit — counting it would inflate traffic and wreck the conversion rate.
   if (path.startsWith('/admin')) return
 
+  const row = {
+    session_id: getSessionId(),
+    path,
+    referrer: document.referrer || null,
+    device: deviceKind(),
+  }
+  // A visit that came in through a tracked link keeps its source on every
+  // page view (supabase-migration-utm-visits.sql adds the columns).
+  const utm = getVisitAttribution()
+  const withUtm = utm.utm_source
+    ? { ...row, utm_source: utm.utm_source, utm_medium: utm.utm_medium || null, utm_campaign: utm.utm_campaign || null }
+    : row
+
   try {
-    await supabase.from('page_views').insert({
-      session_id: getSessionId(),
-      path,
-      referrer: document.referrer || null,
-      device: deviceKind(),
-    })
+    const { error } = await supabase.from('page_views').insert(withUtm)
+    // Before that migration the columns aren't there — log the visit anyway.
+    if (error && withUtm !== row && /utm_/.test(error.message || '')) {
+      await supabase.from('page_views').insert(row)
+    }
   } catch (err) {
     console.warn('[Analytics] trackPageView failed:', err.message)
   }
