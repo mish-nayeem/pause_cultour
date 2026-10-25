@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
-import { imgUrl } from '../lib/images.js'
+import { imgUrl, uploadImage } from '../lib/images.js'
+import { fetchDropBanners, saveDropBanner, renameDropBanner, dropBannerFor, clearPromoCache } from '../lib/promos.js'
+import InfoTip from './InfoTip.jsx'
 import { dropKey } from '../lib/lookbook.js'
 import {
   DROPS_MENU,
@@ -27,6 +29,39 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [renaming, setRenaming] = useState('')
+  // Each collection's banner photo and "coming soon" switch (site_settings
+  // drop_banners — see src/lib/promos.js).
+  const [banners, setBanners] = useState({})
+  const [newBanner, setNewBanner] = useState(null)
+  const [bannerBusy, setBannerBusy] = useState(false)
+
+  async function loadBanners() {
+    const { banners } = await fetchDropBanners()
+    setBanners(banners)
+  }
+  useEffect(() => { loadBanners() }, [])
+
+  async function saveBanner(name, patch) {
+    setBannerBusy(true)
+    setError('')
+    const { error } = await saveDropBanner(name, patch)
+    setBannerBusy(false)
+    clearPromoCache()
+    if (error) return setError("Couldn't save the banner — has supabase-migration-site-settings.sql been run?")
+    loadBanners()
+  }
+
+  async function uploadBanner(name, file) {
+    setBannerBusy(true)
+    setError('')
+    try {
+      const url = await uploadImage(file, supabase, 'drops')
+      await saveBanner(name, { image: url })
+    } catch (e) {
+      setBannerBusy(false)
+      setError(`Couldn't upload the banner: ${e.message}`)
+    }
+  }
 
   async function load() {
     const { categories, error } = await fetchAllNavCategories(DROPS_MENU)
@@ -73,6 +108,11 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
     const { error } = await supabase.from('products').update({ publish_at: iso }).in('id', ids)
     setBusy(false)
     if (error) return setError("Couldn't save the launch time — has supabase-migration-scheduled-products.sql been run?")
+    // Visitors can't see products before their launch, so the "coming soon"
+    // banner reads the time from here.
+    await saveDropBanner(name, { launch_at: iso })
+    clearPromoCache()
+    loadBanners()
     setLaunchInput('')
     onChanged()
   }
@@ -90,7 +130,9 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
     const { error } = await createNavCategory({ label: name, sortOrder: rows.length, menu: DROPS_MENU })
     setBusy(false)
     if (error) return setError("Couldn't create it — try again.")
+    if (newBanner) await uploadBanner(name, newBanner)
     setNewName('')
+    setNewBanner(null)
     load()
   }
 
@@ -121,6 +163,7 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
       supabase.from('products').update({ drop_name: name }).ilike('drop_name', like),
       supabase.from('lookbook_looks').update({ drop_name: name }).ilike('drop_name', like),
       supabase.from('sales').update({ drop_name: name }).ilike('drop_name', like),
+      renameDropBanner(c.name, name),
     ])
     setBusy(false)
     if (results[0].error || results[1].error) setError("Couldn't rename everything — check the products and try again.")
@@ -159,6 +202,15 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
             + Add product to {open}
           </button>
         </div>
+
+        <BannerBlock
+          name={open}
+          banner={dropBannerFor(open, banners)}
+          launch={launch}
+          busy={bannerBusy}
+          onUpload={(f) => uploadBanner(open, f)}
+          onSave={(patch) => saveBanner(open, patch)}
+        />
 
         {/* Upload the whole drop first, then give every product one launch
             time — they all appear together, e.g. at 10 pm. */}
@@ -238,8 +290,13 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
           placeholder="New collection name — e.g. WINTER 26"
           maxLength={40}
         />
-        <button type="submit" className="add-product mono" disabled={busy || !newName.trim()}>
-          + Create collection
+        <label className="cl-file mono">
+          <input type="file" accept="image/*" onChange={(e) => setNewBanner(e.target.files?.[0] || null)} />
+          {newBanner ? `Banner: ${newBanner.name}` : '+ Banner image (optional)'}
+        </label>
+        <InfoTip>A wide photo for this drop. It shows on top of the drop's page in the shop, and small on any sale, coupon or "coming soon" banner for it. It can be added or changed later by opening the collection.</InfoTip>
+        <button type="submit" className="add-product mono" disabled={busy || bannerBusy || !newName.trim()}>
+          {bannerBusy ? 'Uploading…' : '+ Create collection'}
         </button>
       </form>
 
@@ -251,7 +308,7 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
       <div className="cl-grid">
         {collections.map((c) => {
           const items = productsIn(c.name)
-          const cover = items.find((p) => p.images?.[0])?.images[0]
+          const cover = dropBannerFor(c.name, banners)?.image || items.find((p) => p.images?.[0])?.images[0]
           const launch = launchOf(items)
           return (
             <div className="cl-card" key={c.name}>
@@ -291,5 +348,40 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
         })}
       </div>
     </section>
+  )
+}
+
+// The open collection's banner: its photo, and whether to announce it as
+// "coming soon" while its launch time is ahead.
+function BannerBlock({ name, banner, launch, busy, onUpload, onSave }) {
+  const soon = banner?.soon !== false
+  return (
+    <div className="cl-banner">
+      <div className="cl-banner-head mono">
+        BANNER IMAGE
+        <InfoTip>
+          <p>Shown wide on top of {name}'s page in the shop (Shop → this drop), and small on its sale, coupon and "coming soon" banners.</p>
+          <p>A wide photo works best (about 3:1, e.g. 1800 × 600). Without one, the banners just show their text.</p>
+        </InfoTip>
+      </div>
+      <div className="cl-banner-row">
+        <div className="cl-banner-img">
+          {banner?.image ? <img src={imgUrl(banner.image, { w: 900 })} alt="" /> : <span className="mono">No banner yet</span>}
+        </div>
+        <div className="cl-banner-tools">
+          <label className="cl-file mono">
+            <input type="file" accept="image/*" disabled={busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = '' }} />
+            {busy ? 'Saving…' : banner?.image ? 'Change image' : '+ Upload image'}
+          </label>
+          {banner?.image && <button type="button" className="cl-now mono" disabled={busy} onClick={() => onSave({ image: null })}>Remove</button>}
+          <label className="cl-soon mono">
+            <input type="checkbox" checked={soon} disabled={busy} onChange={(e) => onSave({ soon: e.target.checked })} />
+            Show a "coming soon" banner before launch
+            <InfoTip>While this collection's launch time (below) is ahead, a "{name} · DROPPING SOON" card with a countdown shows where Website → Banners puts new drops. It goes away by itself at launch.</InfoTip>
+          </label>
+          <div className="cl-hint mono">{launch ? `Launch: ${launchLabel(launch)}` : 'No launch time set — the "coming soon" banner needs one.'}</div>
+        </div>
+      </div>
+    </div>
   )
 }

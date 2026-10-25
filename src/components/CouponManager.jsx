@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import InfoTip from './InfoTip.jsx'
 import { unsold } from '../lib/admin.js'
 import { fetchCoupons, createCoupon, setCouponActive, deleteCoupon, describeCoupon } from '../lib/coupons.js'
 import './coupon-manager.css'
@@ -120,7 +121,7 @@ export default function CouponManager({ orders }) {
   return (
     <>
       <form className="pform cp-form" onSubmit={handleCreate}>
-        <div className="pform-head"><h3 className="display">New coupon</h3></div>
+        <div className="pform-head"><h3 className="display">New coupon</h3><InfoTip>Codes are secret until someone types one. To show a code on the website, write it in a coupon box in Website → Banners — customers can copy it from there.</InfoTip></div>
         <div className="pf-grid">
           <label className="pf-field">
             <span className="mono">CODE</span>

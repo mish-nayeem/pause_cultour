@@ -5,6 +5,7 @@ import Footer from '../components/Footer.jsx'
 import { fetchHeroSlides, slidesFor, PHONE_QUERY } from '../lib/hero.js'
 import { fetchTicker, fetchHeroExtras, DEFAULT_HERO_BUTTON } from '../lib/siteSettings.js'
 import DropCountdown from '../components/DropCountdown.jsx'
+import PromoBanners from '../components/PromoBanners.jsx'
 import { imgUrl } from '../lib/images.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './home.css'
@@ -130,6 +131,9 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* Website → Banners: coming drops, sales, coupon boxes. */}
+      <PromoBanners place="home" className="pb-home" />
 
       <Footer />
     </>

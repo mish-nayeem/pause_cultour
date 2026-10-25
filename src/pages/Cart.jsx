@@ -7,6 +7,7 @@ import { fetchProducts } from '../lib/products.js'
 import { isSoldOut } from '../lib/stock.js'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import usePageMeta from '../lib/usePageMeta.js'
+import PromoBanners from '../components/PromoBanners.jsx'
 import './cart.css'
 
 export default function Cart() {
@@ -144,6 +145,8 @@ export default function Cart() {
               </button>
               <div className="cod-note mono">Cash on delivery — outside Dhaka needs a ৳200 bKash advance</div>
               <Link to="/shop" className="back-link mono">← BACK TO SHOP</Link>
+              {/* A code to use at checkout, just before it. */}
+              <PromoBanners place="cart" className="pb-cart" />
             </div>
           </div>
         )}
