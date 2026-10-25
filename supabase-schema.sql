@@ -38,7 +38,7 @@ returns boolean
 language sql
 stable
 as $$
-  select coalesce(lower(auth.jwt() ->> 'email') = 'mish.nayeem@gmail.com', false)
+  select coalesce(lower(auth.jwt() ->> 'email') = 'contact.pausecultour@gmail.com', false)
 $$;
 
 -- ---------------------------------------------------------------------------
