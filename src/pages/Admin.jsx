@@ -36,6 +36,7 @@ import SaleManager from '../components/SaleManager.jsx'
 import AdsRoas from '../components/AdsRoas.jsx'
 import EmailCampaigns from '../components/EmailCampaigns.jsx'
 import SocialTracking from '../components/SocialTracking.jsx'
+import MarketingGuide from '../components/MarketingGuide.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -180,6 +181,7 @@ const MARKETING_SUBS = [
   { key: 'sales', label: 'Sales' },
   { key: 'coupons', label: 'Coupons' },
   { key: 'links', label: 'Tracked links' },
+  { key: 'setup', label: 'Setup guide' },
 ]
 
 const SUPPORT_SUBS = [
@@ -2128,6 +2130,8 @@ export default function Admin() {
           {marketingSub === 'coupons' && <CouponManager orders={orders} />}
 
           {marketingSub === 'links' && <LinkGenerator products={products} />}
+
+          {marketingSub === 'setup' && <MarketingGuide />}
 
           {marketingSub === 'audience' && <AudienceManager orders={orders} products={products} />}
           </>
