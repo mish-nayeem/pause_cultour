@@ -86,7 +86,7 @@ import BulkBar from '../components/BulkBar.jsx'
 import AccountsManager from '../components/AccountsManager.jsx'
 import InvestorReport from '../components/InvestorReport.jsx'
 import DropProfit from '../components/DropProfit.jsx'
-import { KeyStats, SalesTrend } from '../components/OverviewCharts.jsx'
+import { KeyStats, SalesTrend, OrderSources } from '../components/OverviewCharts.jsx'
 import InfoTip from '../components/InfoTip.jsx'
 import './admin.css'
 import './admin-theme.css'
@@ -1417,24 +1417,7 @@ export default function Admin() {
 
             {overviewSub === 'trend' && <SalesTrend orders={orders} products={products} />}
 
-            {overviewSub === 'recent' && (
-            <section className="panel">
-              <div className="panel-label mono" style={{ marginBottom: '6px' }}>
-                <IconTrend width="13" height="13" />ORDERS BY SOURCE
-              </div>
-              <div className="panel-note" style={{ marginBottom: '18px' }}>
-                Where each order's link came from — reel, story or bio, tagged with
-                ?utm_source. Orders with no tag were typed in or bookmarked directly.
-              </div>
-              <RankBars
-                rows={byAttribution}
-                empty="No orders yet."
-                accent="cobalt"
-                countKey="orders"
-                countLabel="orders"
-              />
-            </section>
-            )}
+            {overviewSub === 'recent' && <OrderSources orders={orders} />}
 
 
           </div>

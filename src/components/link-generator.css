@@ -94,3 +94,14 @@
   .linkgen-output { flex-direction: column; align-items: stretch; }
   .linkgen-template-head { flex-direction: column; align-items: flex-start; }
 }
+
+/* Campaign: typed when it isn't one of the drops. */
+.linkgen-campaign {
+  margin-top: 8px;
+  border: 1px solid var(--steel-line);
+  border-radius: var(--r-ctl, 10px);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 10px 12px;
+  font: inherit;
+}

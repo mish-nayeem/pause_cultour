@@ -4,6 +4,8 @@ import { orderMoney, phoneKey, unsold } from '../lib/admin.js'
 import { listDrops } from '../lib/dropMoney.js'
 import { DAY, PRESETS, rangeFor, bucketsFor, bucketLabel, toInput } from '../lib/periods.js'
 import { openPrintPage } from '../lib/printPage.js'
+import { supabase } from '../lib/supabaseClient.js'
+import { ATTRIBUTION_DAYS } from '../lib/attribution.js'
 import './investor-report.css'
 import './overview-charts.css'
 
@@ -724,6 +726,142 @@ export function SalesTrend({ orders, products }) {
           <InfoTip>Sales by weekday over the range above — when to post, run ads or launch.</InfoTip>
         </div>
         <Weekdays orders={orders} range={range} />
+      </section>
+    </div>
+  )
+}
+
+// ======================= Overview → Order sources =======================
+
+// Where orders came from — the tracked link (utm_source) each was placed
+// through — with what each brought in, and, from the page views, how many
+// visits each link brought: visits → orders is the conversion rate.
+const SOURCE_NAMES = {
+  insta_bio: 'Instagram bio', insta_post: 'Instagram post', insta_reel: 'Instagram reel', insta_story: 'Instagram story',
+  fb_post: 'Facebook post', fb_reel: 'Facebook reel', fb_story: 'Facebook story',
+  insta_ad: 'Instagram ad', fb_ad: 'Facebook ad', whatsapp: 'WhatsApp', tiktok: 'TikTok', share: 'Shared by a customer',
+  // Sales added by hand in Orders → New order — no link was clicked.
+  insta_dm: 'Instagram DM', messenger_dm: 'Messenger DM', whatsapp_dm: 'WhatsApp chat', phone_call: 'Phone call', in_person: 'In person / other',
+}
+
+// Sources with no link behind them, so no visits to count.
+const NO_VISITS = new Set(['direct', 'dm', 'insta_dm', 'messenger_dm', 'whatsapp_dm', 'phone_call', 'in_person'])
+
+function sourceOf(o) {
+  if (o.utm_source) return String(o.utm_source).toLowerCase()
+  return o.id?.startsWith('PM') ? 'dm' : 'direct'
+}
+
+function sourceName(k) {
+  if (k === 'direct') return 'Direct / no link'
+  if (k === 'dm') return 'DM / added by hand'
+  return SOURCE_NAMES[k] || k
+}
+
+export function OrderSources({ orders }) {
+  const r = useRange('30d', orders)
+  const { range } = r
+  const [visits, setVisits] = useState(null) // [{ source, campaign, visits }] | null while loading
+  const [visitsNote, setVisitsNote] = useState('')
+
+  useEffect(() => {
+    let off = false
+    setVisits(null)
+    supabase.rpc('admin_utm_visits', { p_from: new Date(range.start).toISOString(), p_to: new Date(range.end).toISOString() }).then(({ data, error }) => {
+      if (off) return
+      if (error) {
+        setVisits([])
+        setVisitsNote(/admin_utm_visits/.test(error.message || '') ? 'Visits need supabase-migration-utm-visits.sql — run it in Supabase.' : "Couldn't load visits.")
+      } else {
+        setVisits(Array.isArray(data) ? data : [])
+        setVisitsNote('')
+      }
+    })
+    return () => { off = true }
+  }, [range.start, range.end])
+
+  const { bySource, byCampaign } = useMemo(() => {
+    const inRange = orders.filter((o) => at(o) >= range.start && at(o) < range.end)
+    const add = (map, k) => {
+      const e = map.get(k) || { orders: 0, sales: 0, revenue: 0, visits: 0 }
+      map.set(k, e)
+      return e
+    }
+    const bySource = new Map()
+    const byCampaign = new Map()
+    for (const o of inRange) {
+      const m = orderMoney(o)
+      const live = !unsold(o)
+      const s = add(bySource, sourceOf(o))
+      const c = o.utm_campaign ? add(byCampaign, String(o.utm_campaign).toLowerCase()) : null
+      for (const e of [s, c].filter(Boolean)) {
+        if (live) {
+          e.orders++
+          e.sales += value(o)
+        }
+        e.revenue += m.toShop
+      }
+    }
+    for (const v of visits || []) {
+      add(bySource, String(v.source).toLowerCase()).visits += Number(v.visits)
+      if (v.campaign) add(byCampaign, String(v.campaign).toLowerCase()).visits += Number(v.visits)
+    }
+    const sort = (map) => [...map.entries()].sort((a, b) => b[1].sales - a[1].sales || b[1].visits - a[1].visits)
+    return { bySource: sort(bySource), byCampaign: sort(byCampaign) }
+  }, [orders, range, visits])
+
+  const maxSales = Math.max(1, ...bySource.map(([, e]) => e.sales))
+  const conv = (e) => (e.visits ? `${((e.orders / e.visits) * 100).toFixed(1)}%` : '—')
+
+  const table = (rows, nameOf, keyLabel) => (
+    <div className="ovc-src-wrap">
+      <table className="ovc-table ovc-src mono">
+        <thead>
+          <tr><th>{keyLabel}</th><th>Visits</th><th>Orders</th><th>Conversion</th><th>Sales</th><th>Revenue</th></tr>
+        </thead>
+        <tbody>
+          {rows.map(([k, e]) => (
+            <tr key={k}>
+              <td>
+                <span className="ovc-src-name">{nameOf(k)}</span>
+                {nameOf === sourceName && <span className="ovc-src-bar"><i style={{ width: `${(e.sales / maxSales) * 100}%` }} /></span>}
+              </td>
+              <td>{nameOf === sourceName && NO_VISITS.has(k) ? '—' : visits == null ? '…' : e.visits}</td>
+              <td>{e.orders}</td>
+              <td>{nameOf === sourceName && NO_VISITS.has(k) ? '—' : conv(e)}</td>
+              <td>{taka(e.sales)}</td>
+              <td>{taka(e.revenue)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+
+  return (
+    <div className="ovc">
+      <RangeBar r={r} note={rangeText(range)} />
+      {visitsNote && <div className="ab-warn mono">{visitsNote}</div>}
+
+      <section className="ovc-box">
+        <div className="ovc-box-head mono">
+          BY SOURCE
+          <InfoTip>
+            <p>Which link each order came through — made in Marketing → Links. The last link a customer clicked in the past {ATTRIBUTION_DAYS} days gets the order; older or none = Direct.</p>
+            <p><b>Visits</b> = browser sessions that arrived through that link. <b>Conversion</b> = orders ÷ visits. <b>Sales</b> = orders placed (delivery included), <b>Revenue</b> = what reached you from the delivered ones, after the courier.</p>
+          </InfoTip>
+        </div>
+        {bySource.length === 0 ? <div className="ab-empty mono">No orders or tracked visits in this range.</div> : table(bySource, sourceName, 'Source')}
+      </section>
+
+      <section className="ovc-box">
+        <div className="ovc-box-head mono">
+          BY CAMPAIGN
+          <InfoTip>Links made with a Campaign (a drop, or a name like "eid-sale"). Compare with Drop profit's ad spend to see which push paid off.</InfoTip>
+        </div>
+        {byCampaign.length === 0
+          ? <div className="ab-empty mono">No campaign links used yet — pick a Campaign when making a link in Marketing → Links.</div>
+          : table(byCampaign, (k) => k, 'Campaign')}
       </section>
     </div>
   )

@@ -18,7 +18,19 @@ const SOURCES = [
   { value: 'fb_post', label: 'Facebook post', medium: 'social', group: 'Facebook' },
   { value: 'fb_reel', label: 'Facebook reel', medium: 'social', group: 'Facebook' },
   { value: 'fb_story', label: 'Facebook story', medium: 'social', group: 'Facebook' },
+  // Paid: the link pasted as the ad's website URL, so ad orders don't land
+  // in Direct.
+  { value: 'insta_ad', label: 'Instagram ad', medium: 'paid', group: 'Ads' },
+  { value: 'fb_ad', label: 'Facebook ad', medium: 'paid', group: 'Ads' },
+  { value: 'whatsapp', label: 'WhatsApp', medium: 'chat', group: 'Other' },
+  { value: 'tiktok', label: 'TikTok', medium: 'social', group: 'Other' },
 ]
+
+// A campaign name as it goes in the link: lower case, words joined by -.
+// "CITYBOY launch" → cityboy-launch, so one campaign never splits in two.
+export function campaignSlug(text) {
+  return String(text || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
+}
 
 // The product name goes in before this ever reaches the customer, so they
 // never have to identify or type it themselves — just their own details and
@@ -42,6 +54,10 @@ Thanks — PAUSE`
 export default function LinkGenerator({ products }) {
   const [destination, setDestination] = useState('home')
   const [source, setSource] = useState('insta_reel')
+  // Which drop or push this link is for — lets one reel and one sale story
+  // be told apart in Order sources. A drop from the list, or typed.
+  const [campaign, setCampaign] = useState('')
+  const [customCampaign, setCustomCampaign] = useState('')
   const [copied, setCopied] = useState(false)
   const [templateCopied, setTemplateCopied] = useState(false)
 
@@ -85,8 +101,10 @@ export default function LinkGenerator({ products }) {
     const url = new URL(path, window.location.origin)
     url.searchParams.set('utm_source', chosen.value)
     url.searchParams.set('utm_medium', chosen.medium)
+    const c = campaignSlug(campaign === '__custom' ? customCampaign : campaign)
+    if (c) url.searchParams.set('utm_campaign', c)
     return url.toString()
-  }, [path, source])
+  }, [path, source, campaign, customCampaign])
 
   async function copyLink() {
     try {
@@ -165,9 +183,45 @@ export default function LinkGenerator({ products }) {
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </optgroup>
+            <optgroup label="Ads (paid)">
+              {SOURCES.filter((s) => s.group === 'Ads').map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Other">
+              {SOURCES.filter((s) => s.group === 'Other').map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </optgroup>
           </select>
         </label>
+
+        <label className="linkgen-field">
+          <span className="mono">CAMPAIGN (OPTIONAL)</span>
+          <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
+            <option value="">None</option>
+            {drops.length > 0 && (
+              <optgroup label="Drops">
+                {drops.map((d) => <option key={d} value={d}>{d}</option>)}
+              </optgroup>
+            )}
+            <option value="__custom">Type a name…</option>
+          </select>
+          {campaign === '__custom' && (
+            <input
+              className="linkgen-campaign"
+              value={customCampaign}
+              onChange={(e) => setCustomCampaign(e.target.value)}
+              placeholder="e.g. eid sale, cityboy launch"
+            />
+          )}
+        </label>
       </div>
+      {SOURCES.find((s) => s.value === source)?.medium === 'paid' && (
+        <div className="panel-note mono" style={{ marginTop: '-6px', marginBottom: '14px' }}>
+          Paste this as the ad's <b>Website URL</b> in Ads Manager, so orders from the ad show under it instead of Direct.
+        </div>
+      )}
 
       <div className="linkgen-output">
         <span className="linkgen-url mono">{link}</span>
