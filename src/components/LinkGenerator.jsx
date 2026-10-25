@@ -24,6 +24,7 @@ const SOURCES = [
   { value: 'fb_ad', label: 'Facebook ad', medium: 'paid', group: 'Ads' },
   { value: 'whatsapp', label: 'WhatsApp', medium: 'chat', group: 'Other' },
   { value: 'tiktok', label: 'TikTok', medium: 'social', group: 'Other' },
+  { value: 'email', label: 'Email', medium: 'email', group: 'Other' },
 ]
 
 // A campaign name as it goes in the link: lower case, words joined by -.
