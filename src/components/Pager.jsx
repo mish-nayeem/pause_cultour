@@ -18,6 +18,15 @@ function pageList(current, total) {
   return out
 }
 
+// Thin arrow for Previous (flipped) and Next.
+function Chevron({ flip = false }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={flip ? { transform: 'scaleX(-1)' } : undefined}>
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
 // Shared by the shop grid and the product page's "You may like" list. Renders
 // nothing when there's only one page.
 export default function Pager({ page, totalPages, onChange }) {
@@ -26,8 +35,8 @@ export default function Pager({ page, totalPages, onChange }) {
   return (
     <nav className="pager" aria-label="Pages">
       {page > 1 && (
-        <button type="button" className="pager-btn wide" onClick={() => onChange(page - 1)}>
-          Previous
+        <button type="button" className="pager-btn arrow" onClick={() => onChange(page - 1)} aria-label="Previous page" title="Previous page">
+          <Chevron flip />
         </button>
       )}
 
@@ -49,8 +58,8 @@ export default function Pager({ page, totalPages, onChange }) {
       )}
 
       {page < totalPages && (
-        <button type="button" className="pager-btn wide" onClick={() => onChange(page + 1)}>
-          Next page
+        <button type="button" className="pager-btn arrow" onClick={() => onChange(page + 1)} aria-label="Next page" title="Next page">
+          <Chevron />
         </button>
       )}
     </nav>

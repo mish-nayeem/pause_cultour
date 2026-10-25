@@ -220,3 +220,31 @@
   .shop-grid { grid-template-columns: repeat(2, 1fr); }
   .shop-msg { padding: 36px 20px; }
 }
+
+/* The categories row's scroll line (phones, when the chips don't all fit):
+   a light track under them with a darker piece for the part on screen. */
+.filters-wrap { position: relative; }
+.filters-track { display: none; }
+
+@media (max-width: 860px) {
+  .filters-track {
+    display: block;
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 9px;
+    height: 3px;
+    border-radius: 3px;
+    background: #ececec;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .filters-track i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 3px;
+    background: #c4c4c4;
+    transition: left 0.12s linear;
+  }
+}
