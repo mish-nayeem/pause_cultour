@@ -39,6 +39,7 @@ import SocialTracking from '../components/SocialTracking.jsx'
 import MarketingGuide from '../components/MarketingGuide.jsx'
 import PromoManager from '../components/PromoManager.jsx'
 import InstallAppButton from '../components/InstallAppButton.jsx'
+import NotifyButton from '../components/NotifyButton.jsx'
 import { startAdminApp } from '../lib/adminApp.js'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
@@ -1140,6 +1141,29 @@ export default function Admin() {
     setProducts([])
   }
 
+  // A tapped "New order" notification: /admin?order=PC… when the app opens on
+  // it, or a message from the service worker when the admin is already open.
+  // (Set to openOrder further down, once it exists.)
+  const openOrderRef = useRef(null)
+  useEffect(() => {
+    if (loading || !session) return
+    const id = new URLSearchParams(window.location.search).get('order')
+    if (id) {
+      openOrderRef.current?.(id)
+      window.history.replaceState(null, '', '/admin')
+    }
+  }, [loading, session])
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const onMsg = (e) => {
+      if (e.data?.type !== 'open') return
+      const id = new URL(e.data.url, window.location.origin).searchParams.get('order')
+      if (id) openOrderRef.current?.(id)
+    }
+    navigator.serviceWorker.addEventListener('message', onMsg)
+    return () => navigator.serviceWorker.removeEventListener('message', onMsg)
+  }, [])
+
   if (checkingAuth) {
     return <div className="admin-boot mono">Checking access…</div>
   }
@@ -1174,6 +1198,8 @@ export default function Admin() {
     setExpanded(id)
     setTab('orders')
   }
+
+  openOrderRef.current = openOrder
 
   function openRequests() {
     setSupportSub('requests')
@@ -1303,6 +1329,7 @@ export default function Admin() {
         </nav>
 
         <div className="side-foot mono">
+          <NotifyButton />
           <InstallAppButton />
           <Link to="/"><IconExternal width="13" height="13" />View storefront</Link>
           <button onClick={handleSignOut} className="signout">
