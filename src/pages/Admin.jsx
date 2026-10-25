@@ -33,6 +33,9 @@ import ImageMigration from '../components/ImageMigration.jsx'
 import BkashCheck from '../components/BkashCheck.jsx'
 import CouponManager from '../components/CouponManager.jsx'
 import SaleManager from '../components/SaleManager.jsx'
+import AdsRoas from '../components/AdsRoas.jsx'
+import EmailCampaigns from '../components/EmailCampaigns.jsx'
+import SocialTracking from '../components/SocialTracking.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -502,10 +505,6 @@ export default function Admin() {
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
   const [blockedAttempts, setBlockedAttempts] = useState([])
-  const [adSpendDraft, setAdSpendDraft] = useState({ channel: '', spend: '', revenue: '' })
-  const [emailDraft, setEmailDraft] = useState({ campaign: '', open_rate: '', click_rate: '' })
-  const [socialDraft, setSocialDraft] = useState({ platform: '', followers: '', engagement_rate: '' })
-  const [marketingBusy, setMarketingBusy] = useState(null)
   const [analyticsSub, setAnalyticsSub] = useState('summary')
   const [supportSub, setSupportSub] = useState('requests')
   const [productsSub, setProductsSub] = useState('catalog')
@@ -1040,30 +1039,9 @@ export default function Admin() {
     setSavingId(null)
   }
 
-  // One handler for all four Marketing tables — same shape every time: add a
-  // row through the table's api, clear the draft, reload. `numericKeys` says
-  // which fields to parse as numbers before the insert.
-  async function handleMarketingAdd(api, draft, setDraft, numericKeys) {
-    setMarketingBusy(api)
-    const row = { ...draft }
-    numericKeys.forEach((k) => { row[k] = Number(row[k]) || 0 })
-
-    const { error } = await api.add(row)
-    setMarketingBusy(null)
-
-    if (error) {
-      setLoadError("Couldn't save that row. Try again.")
-      return
-    }
-
-    setDraft(Object.fromEntries(Object.keys(draft).map((k) => [k, ''])))
-    reload()
-  }
-
+  // Deletes an old typed row (ad spend, email, social), then reloads.
   async function handleMarketingDelete(api, id) {
-    setMarketingBusy(id)
     await api.remove(id)
-    setMarketingBusy(null)
     reload()
   }
 
@@ -2121,145 +2099,28 @@ export default function Admin() {
           </div>
 
           {marketingSub === 'adspend' && (
-            <>
-              <form
-                className="pform"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (!adSpendDraft.channel.trim()) return
-                  handleMarketingAdd(adSpendApi, adSpendDraft, setAdSpendDraft, ['spend', 'revenue'])
-                }}
-              >
-                <div className="pform-head"><h3 className="display">Log ad spend</h3></div>
-                <div className="pf-note">Cost per channel vs the revenue it brought in — both typed in by hand for now.</div>
-                <div className="pf-grid">
-                  <label className="pf-field">
-                    <span className="mono">CHANNEL</span>
-                    <input value={adSpendDraft.channel} onChange={(e) => setAdSpendDraft({ ...adSpendDraft, channel: e.target.value })} placeholder="FB Ads, IG Boost…" />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">SPEND (৳)</span>
-                    <input type="number" value={adSpendDraft.spend} onChange={(e) => setAdSpendDraft({ ...adSpendDraft, spend: e.target.value })} />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">REVENUE (৳)</span>
-                    <input type="number" value={adSpendDraft.revenue} onChange={(e) => setAdSpendDraft({ ...adSpendDraft, revenue: e.target.value })} />
-                  </label>
-                </div>
-                <button type="submit" className="mof-submit mono" disabled={marketingBusy === adSpendApi}>
-                  {marketingBusy === adSpendApi ? 'Saving…' : 'Add row'}
-                </button>
-              </form>
-
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>AD SPEND / ROAS</div>
-                {adSpend.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
-                {adSpend.map((r) => (
-                  <div className="mini-row" key={r.id}>
-                    <div className="mini-name">{r.channel}</div>
-                    <div className="mini-right">
-                      <div className="mono">{taka(r.spend)} → {taka(r.revenue)}</div>
-                      <div className="mono dim">{r.spend > 0 ? (r.revenue / r.spend).toFixed(1) : '0.0'}x ROAS</div>
-                    </div>
-                    <button className="mof-item-x" onClick={() => handleMarketingDelete(adSpendApi, r.id)}>×</button>
-                  </div>
-                ))}
-              </section>
-            </>
+            <AdsRoas orders={orders} legacy={adSpend} onDeleteLegacy={(id) => handleMarketingDelete(adSpendApi, id)} />
           )}
 
           {marketingSub === 'email' && (
-            <>
-              <form
-                className="pform"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (!emailDraft.campaign.trim()) return
-                  handleMarketingAdd(emailCampaignsApi, emailDraft, setEmailDraft, ['open_rate', 'click_rate'])
-                }}
-              >
-                <div className="pform-head"><h3 className="display">Log a campaign</h3></div>
-                <div className="pf-grid">
-                  <label className="pf-field">
-                    <span className="mono">CAMPAIGN</span>
-                    <input value={emailDraft.campaign} onChange={(e) => setEmailDraft({ ...emailDraft, campaign: e.target.value })} placeholder="Drop 02 launch" />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">OPEN %</span>
-                    <input type="number" value={emailDraft.open_rate} onChange={(e) => setEmailDraft({ ...emailDraft, open_rate: e.target.value })} />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">CLICK %</span>
-                    <input type="number" value={emailDraft.click_rate} onChange={(e) => setEmailDraft({ ...emailDraft, click_rate: e.target.value })} />
-                  </label>
-                </div>
-                <button type="submit" className="mof-submit mono" disabled={marketingBusy === emailCampaignsApi}>
-                  {marketingBusy === emailCampaignsApi ? 'Saving…' : 'Add row'}
-                </button>
-              </form>
-
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>EMAIL CAMPAIGNS</div>
-                {emailCampaigns.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
-                {emailCampaigns.map((r) => (
-                  <div className="mini-row" key={r.id}>
-                    <div className="mini-name">{r.campaign}</div>
-                    <div className="mini-right">
-                      <div className="mono">{r.open_rate}% open</div>
-                      <div className="mono dim">{r.click_rate}% click</div>
-                    </div>
-                    <button className="mof-item-x" onClick={() => handleMarketingDelete(emailCampaignsApi, r.id)}>×</button>
-                  </div>
-                ))}
-              </section>
-            </>
+            <EmailCampaigns
+              orders={orders}
+              adminEmail={import.meta.env.VITE_ADMIN_EMAIL}
+              onDeleteLegacy={(id) => handleMarketingDelete(emailCampaignsApi, id)}
+            />
           )}
 
           {marketingSub === 'social' && (
-            <>
-              <form
-                className="pform"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (!socialDraft.platform.trim()) return
-                  handleMarketingAdd(socialStatsApi, socialDraft, setSocialDraft, ['followers', 'engagement_rate'])
-                }}
-              >
-                <div className="pform-head"><h3 className="display">Log a platform</h3></div>
-                <div className="pf-grid">
-                  <label className="pf-field">
-                    <span className="mono">PLATFORM</span>
-                    <input value={socialDraft.platform} onChange={(e) => setSocialDraft({ ...socialDraft, platform: e.target.value })} placeholder="Instagram, Facebook…" />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">FOLLOWERS</span>
-                    <input type="number" value={socialDraft.followers} onChange={(e) => setSocialDraft({ ...socialDraft, followers: e.target.value })} />
-                  </label>
-                  <label className="pf-field">
-                    <span className="mono">ENGAGEMENT %</span>
-                    <input type="number" value={socialDraft.engagement_rate} onChange={(e) => setSocialDraft({ ...socialDraft, engagement_rate: e.target.value })} />
-                  </label>
-                </div>
-                <button type="submit" className="mof-submit mono" disabled={marketingBusy === socialStatsApi}>
-                  {marketingBusy === socialStatsApi ? 'Saving…' : 'Add row'}
-                </button>
-              </form>
-
-              <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>SOCIAL TRACKING</div>
-                {socialStats.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
-                {socialStats.map((r) => (
-                  <div className="mini-row" key={r.id}>
-                    <div className="mini-name">{r.platform}</div>
-                    <div className="mini-right">
-                      <div className="mono">{Number(r.followers).toLocaleString()} followers</div>
-                      <div className="mono dim">{r.engagement_rate}% engagement</div>
-                    </div>
-                    <button className="mof-item-x" onClick={() => handleMarketingDelete(socialStatsApi, r.id)}>×</button>
-                  </div>
-                ))}
-              </section>
-            </>
+            <SocialTracking
+              rows={socialStats}
+              onSynced={reload}
+              onAdd={async (row) => {
+                const { error } = await socialStatsApi.add(row)
+                if (!error) reload()
+                return error
+              }}
+              onDelete={(id) => handleMarketingDelete(socialStatsApi, id)}
+            />
           )}
 
           {marketingSub === 'sales' && <SaleManager products={products} />}

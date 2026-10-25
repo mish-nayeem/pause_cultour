@@ -740,6 +740,7 @@ const SOURCE_NAMES = {
   insta_bio: 'Instagram bio', insta_post: 'Instagram post', insta_reel: 'Instagram reel', insta_story: 'Instagram story',
   fb_post: 'Facebook post', fb_reel: 'Facebook reel', fb_story: 'Facebook story',
   insta_ad: 'Instagram ad', fb_ad: 'Facebook ad', whatsapp: 'WhatsApp', tiktok: 'TikTok', share: 'Shared by a customer',
+  email: 'Email campaign',
   // Sales added by hand in Orders → New order — no link was clicked.
   insta_dm: 'Instagram DM', messenger_dm: 'Messenger DM', whatsapp_dm: 'WhatsApp chat', phone_call: 'Phone call', in_person: 'In person / other',
 }

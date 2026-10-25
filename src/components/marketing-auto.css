@@ -1,0 +1,54 @@
+/* Marketing pages that fill themselves in (AdsRoas, EmailCampaigns,
+   SocialTracking) and their setup boxes (MarketingSetup). */
+
+.mk { display: flex; flex-direction: column; gap: 14px; }
+
+.mk-svc {
+  border: 1px solid var(--order-edge, var(--steel-line));
+  border-radius: 16px;
+  padding: 12px 16px;
+  background: var(--glass, transparent);
+}
+
+.mk-svc-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11.5px; letter-spacing: 0.1em; font-weight: 700; color: var(--ink); }
+.mk-svc-head > span:first-child { margin-right: 4px; }
+
+.mk-pill { font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600; border-radius: 999px; padding: 3px 10px; border: 1px solid var(--steel-line); color: var(--steel); }
+.mk-pill.ok { border-color: #2e9e5b; color: #2e9e5b; }
+.mk-pill.bad { border-color: var(--signal); color: var(--signal); }
+
+.admin .main .mk-link { background: none; border: none; color: var(--cobalt); font-size: 11.5px; cursor: pointer; padding: 0; text-decoration: underline; letter-spacing: 0; font-weight: 400; }
+
+.mk-svc-detail { font-size: 11.5px; color: var(--steel); margin-top: 8px; }
+.mk-svc-detail.bad { color: var(--signal); }
+
+.mk-steps { margin-top: 12px; font-size: 13px; line-height: 1.6; color: var(--ink); }
+.mk-steps ol { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 6px; }
+.mk-secrets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.mk-secrets code { font-size: 11px; border: 1px solid var(--steel-line); border-radius: 6px; padding: 2px 7px; }
+.mk-note { font-size: 11.5px; color: var(--steel); display: flex; align-items: center; gap: 6px; }
+
+.mk-neg { color: var(--signal); }
+
+/* Email: compose next to a live preview. */
+.mk-compose { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.mk-preview { border: 1px solid var(--steel-line); border-radius: 12px; background: #fff; overflow: hidden; }
+.mk-preview iframe { width: 100%; height: 520px; border: 0; display: block; }
+.mk-aud { display: grid; gap: 6px; font-size: 12.5px; }
+.mk-aud label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.mk-aud .dim { color: var(--steel); }
+
+/* Social: one tile per platform. */
+.mk-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.mk-tile { border: 1px solid var(--steel-line); border-radius: 12px; padding: 12px 14px; }
+.mk-tile-name { font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); }
+.mk-tile-num { font-size: 24px; font-weight: 700; color: var(--ink); margin: 4px 0; }
+.mk-tile-ch { font-size: 11.5px; color: var(--steel); }
+.mk-tile-ch .up { color: #2e9e5b; }
+.mk-tile-ch .down { color: var(--signal); }
+.mk-chart { width: 100%; height: auto; display: block; }
+
+@media (max-width: 760px) {
+  .mk-compose { grid-template-columns: 1fr; }
+  .mk-preview iframe { height: 420px; }
+}
