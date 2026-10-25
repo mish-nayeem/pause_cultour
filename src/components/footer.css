@@ -30,9 +30,12 @@
   border-radius: 12px;
   overflow: hidden;
   background: var(--paper);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.sub-form:focus-within { border-color: var(--ink); }
+/* Tapped: the outline darkens and a soft ring fades in around it — the
+   same 1px border throughout, so nothing moves. */
+.sub-form:focus-within { border-color: var(--ink); box-shadow: 0 0 0 4px rgba(22, 22, 15, 0.07); }
 
 .sub-input {
   flex: 1;
@@ -60,7 +63,9 @@
   white-space: nowrap;
 }
 
+.sub-btn { transition: background 0.25s ease, transform 0.15s ease; }
 .sub-btn:hover { background: var(--cobalt); }
+.sub-btn:active { transform: scale(0.97); }
 .sub-btn:disabled { opacity: 0.6; cursor: default; }
 
 .sub-msg {

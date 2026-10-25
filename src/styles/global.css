@@ -198,3 +198,21 @@ button {
 }
 .cart-bump { animation: cart-bump 0.6s ease; }
 a.cart-bump:not(.search-btn) { display: inline-block; }
+
+/* ---------- Smooth taps and fields, everywhere ----------
+   No grey flash where a phone is tapped; fields, buttons and links ease
+   between states instead of snapping (:where keeps this at zero weight, so
+   any component's own transition still wins); and on touch screens fields
+   are at least 16px, below which an iPhone zooms the whole page in the
+   moment one is tapped — the jolt people feel. */
+* { -webkit-tap-highlight-color: transparent; }
+
+:where(input, textarea, select, button, a) {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select { font-size: max(16px, 1em); }
+}
