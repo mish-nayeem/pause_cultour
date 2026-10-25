@@ -215,7 +215,7 @@ export default function Nav({ overlay = false }) {
               </button>
             </li>
             <li onMouseEnter={() => showMenu(null)}>
-              <Link to="/cart" className={cls('cart', 'cart')}>CART ({count})</Link>
+              <Link to="/cart" className={cls('cart', 'cart')} data-cart-target>CART ({count})</Link>
             </li>
             <li onMouseEnter={() => showMenu(null)}>
               <Link to={accountLink} className={cls('account', 'admin-link')} title={accountLabel} aria-label={accountLabel}>
@@ -261,6 +261,7 @@ export default function Nav({ overlay = false }) {
           <Link
             to="/cart"
             className={`search-btn mob-bag ${here === 'cart' ? 'here' : ''}`}
+            data-cart-target
             onClick={() => { setMenuOpen(false); setSearchOpen(false) }}
             aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
           >

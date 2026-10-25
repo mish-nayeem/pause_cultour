@@ -5,6 +5,7 @@ import Footer from '../components/Footer.jsx'
 import YouMayLike from '../components/YouMayLike.jsx'
 import RecentlyViewed from '../components/RecentlyViewed.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
+import { flyToCart } from '../lib/flyToCart.js'
 import Lightbox from '../components/Lightbox.jsx'
 import { IconShare, IconChat, IconPen } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
@@ -335,6 +336,8 @@ export default function Product() {
     }
 
     addItem(product, size, 1)
+    // From the sticky bar's photo when that's what was tapped, else the gallery.
+    flyToCart({ from: barOn ? [document.querySelector('.buy-thumb'), galleryRef.current] : galleryRef.current, image: product.images?.[0] })
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 1600)
   }
