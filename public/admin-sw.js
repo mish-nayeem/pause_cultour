@@ -7,7 +7,7 @@
 // It also shows the "New order" notifications the notify edge function
 // sends (supabase/functions/notify), and opens that order when one is tapped.
 
-const CACHE = 'pause-admin-v2'
+const CACHE = 'pause-admin-v3'
 const OFFLINE = '/admin-offline.html'
 
 self.addEventListener('install', (event) => {
@@ -35,7 +35,10 @@ self.addEventListener('push', (event) => {
   } catch {
     msg = { body: event.data ? event.data.text() : '' }
   }
-  event.waitUntil(
+  // An admin already open fetches the new order straight away.
+  const tellOpen = self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    .then((wins) => wins.forEach((w) => w.postMessage({ type: 'refresh' })))
+  event.waitUntil(Promise.all([tellOpen,
     self.registration.showNotification(msg.title || 'PAUSE Admin', {
       body: msg.body || '',
       icon: '/admin-icon-192.png',
@@ -43,8 +46,8 @@ self.addEventListener('push', (event) => {
       tag: msg.tag,
       renotify: Boolean(msg.tag),
       data: { url: msg.url || '/admin' },
-    })
-  )
+    }),
+  ]))
 })
 
 // Tapped: an admin window already open goes to that order; otherwise the
