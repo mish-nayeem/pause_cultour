@@ -18,6 +18,7 @@ import Track from './pages/Track.jsx'
 import PageViewTracker from './components/PageViewTracker.jsx'
 import RecoveryRedirect from './components/RecoveryRedirect.jsx'
 import SmoothScroll from './components/SmoothScroll.jsx'
+import ScrollReveal from './components/ScrollReveal.jsx'
 import { captureAttribution } from './lib/attribution.js'
 import { startSessionPolicy } from './lib/sessionPolicy.js'
 import { Sentry } from './lib/sentry.js'
@@ -49,6 +50,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <CartProvider>
           <PageViewTracker />
           <SmoothScroll />
+          <ScrollReveal />
           <RecoveryRedirect />
           <Routes>
             <Route path="/" element={<Home />} />
