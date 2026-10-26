@@ -52,6 +52,11 @@
   border-right: 7px solid currentColor;
 }
 
+/* Scrolling down slides it up out of sight; scrolling up brings it back. */
+.nav-wrap { transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1); }
+.nav-wrap.tucked { transform: translateY(calc(-100% - 24px)); }
+@media (prefers-reduced-motion: reduce) { .nav-wrap { transition: none; } }
+
 /* On the hero, the nav floats over the image instead of pushing it down. */
 .nav-wrap.overlay {
   position: absolute;

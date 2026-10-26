@@ -6,6 +6,7 @@ import YouMayLike from '../components/YouMayLike.jsx'
 import RecentlyViewed from '../components/RecentlyViewed.jsx'
 import ShimmerImage from '../components/ShimmerImage.jsx'
 import { flyToCart } from '../lib/flyToCart.js'
+import ScrollHint from '../components/ScrollHint.jsx'
 import Lightbox from '../components/Lightbox.jsx'
 import { IconShare, IconChat, IconPen } from '../components/Icons.jsx'
 import { fetchProductById, fetchColourOptions } from '../lib/products.js'
@@ -819,7 +820,7 @@ export default function Product() {
 
       {sheet === 'sizes' && (
         <Sheet eyebrow="SIZE CHART" title={product.name} onClose={() => setSheet(null)}>
-          <div className="sheet-table-wrap">
+          <ScrollHint className="sheet-table-wrap">
             <table className="sheet-table mono">
               <thead>
                 <tr>
@@ -840,7 +841,7 @@ export default function Product() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollHint>
 
           {chartNotes.length > 0 && (
             <ul className="sheet-list">

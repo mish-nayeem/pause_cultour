@@ -28,6 +28,9 @@ export default function Nav({ overlay = false }) {
   // collections) or 'menu' (MENU — everything else).
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  // Scrolling down tucks the nav away; the slightest scroll back up brings
+  // it back. Never while one of its menus is open, or near the top.
+  const [tucked, setTucked] = useState(false)
   const [categories, setCategories] = useState([])
   const [drops, setDrops] = useState([])
 
@@ -58,6 +61,29 @@ export default function Nav({ overlay = false }) {
   }
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
+
+  const busy = Boolean(openMenu || menuOpen || searchOpen)
+  useEffect(() => {
+    if (overlay) return
+    let last = window.scrollY
+    let frame = 0
+    const onScroll = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const y = window.scrollY
+        if (busy || y < 90) {
+          setTucked(false)
+          last = y
+          return
+        }
+        if (y - last > 8) { setTucked(true); last = y }
+        else if (last - y > 8) { setTucked(false); last = y }
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll) }
+  }, [overlay, busy])
+  useEffect(() => { if (busy) setTucked(false) }, [busy])
 
   useEffect(() => watchUser(setUser), [])
 
@@ -166,7 +192,7 @@ export default function Nav({ overlay = false }) {
 
   return (
     <div
-      className={`nav-wrap ${overlay ? 'overlay' : ''} ${showBack ? 'has-back' : ''}`}
+      className={`nav-wrap ${overlay ? 'overlay' : ''} ${showBack ? 'has-back' : ''} ${tucked ? 'tucked' : ''}`}
       onMouseLeave={scheduleClose}
     >
       {showBack && (

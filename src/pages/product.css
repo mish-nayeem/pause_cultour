@@ -1023,3 +1023,7 @@
   font-size: 10.5px;
   letter-spacing: 0.06em;
 }
+
+/* The size chart's scroll line, on the sheet's dark glass. */
+.sheet .scroll-hint { background: rgba(255, 255, 255, 0.16); }
+.sheet .scroll-hint i { background: rgba(255, 255, 255, 0.7); }

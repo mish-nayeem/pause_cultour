@@ -216,3 +216,9 @@ a.cart-bump:not(.search-btn) { display: inline-block; }
   textarea,
   select { font-size: max(16px, 1em); }
 }
+
+/* ScrollHint.jsx: the light line under a box that scrolls sideways.
+   Mid grey at two strengths, so it reads on a white page and on the dark
+   glass of the size chart alike. */
+.scroll-hint { position: relative; height: 3px; margin-top: 10px; border-radius: 3px; background: rgba(140, 140, 140, 0.22); overflow: hidden; }
+.scroll-hint i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: rgba(160, 160, 160, 0.75); transition: left 0.12s linear; }
