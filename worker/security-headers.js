@@ -22,6 +22,8 @@ export const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
+  // The homepage hero video: Supabase Storage, or a link the admin pasted.
+  "media-src 'self' blob: https:",
   `connect-src 'self' https://${SUPABASE} wss://${SUPABASE} https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io`,
   "frame-src 'none'",
   "object-src 'none'",

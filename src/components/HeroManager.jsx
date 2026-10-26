@@ -14,6 +14,7 @@ import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
 import { IconX } from './Icons.jsx'
+import HeroVideoManager from './HeroVideoManager.jsx'
 import './hero-manager.css'
 
 const DEVICES = [
@@ -226,6 +227,9 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
           </Box>
         )
       })}
+
+      {/* ---- Video (in place of the photos) ---- */}
+      <HeroVideoManager />
 
       {/* ---- Button ---- */}
       <Box title="HERO BUTTON" tip="The button in the middle of the hero. Point it at a new drop while it's fresh — e.g. SHOP CITYBOY → the CITYBOY lookbook — then back to VIEW SHOP.">

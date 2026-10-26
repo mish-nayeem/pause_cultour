@@ -245,3 +245,9 @@ a.cart-bump:not(.search-btn) { display: inline-block; }
 .reveal.reveal-in .pb-thumb,
 .reveal.reveal-in.lb-item img,
 .reveal.reveal-in.about-shot img { transform: none; }
+
+/* PageFade.jsx: a new page fades in instead of flashing white. */
+.page-fade { display: contents; }
+.page-in > :not(.nav-wrap) { animation: page-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .page-in > :not(.nav-wrap) { animation: none; } }
