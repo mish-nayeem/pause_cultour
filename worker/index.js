@@ -115,7 +115,14 @@ async function productCard(url, env) {
   // No price here: a shared link is an invitation to look, not a price tag.
   const fullDescription = `${product.name} — ${product.variant}. ${product.description || ''}`.trim()
   const description = fullDescription.length > 200 ? fullDescription.slice(0, 197).trimEnd() + '…' : fullDescription
-  const image = product.images?.[0] ? ogImage(product.images[0]) : `${url.origin}/og-image.jpg`
+  // The ready-made preview picture (src/lib/shareImage.js) when the admin
+  // has made one — small, a JPEG, already on the CDN, so it's there before
+  // the app gives up waiting. Otherwise the photo cropped on the spot.
+  const ready = `${supabaseUrl}/storage/v1/object/public/images/og/${encodeURIComponent(id)}.jpg`
+  const hasReady = product.images?.[0]
+    ? await fetch(ready, { method: 'HEAD' }).then((r) => r.ok).catch(() => false)
+    : false
+  const image = hasReady ? ready : product.images?.[0] ? ogImage(product.images[0]) : `${url.origin}/og-image.jpg`
   // Without the ?utm_source=share the link was sent with, so every share of
   // one product is cached by WhatsApp/Facebook as the same page.
   const pageUrl = url.origin + url.pathname
@@ -133,6 +140,7 @@ async function productCard(url, env) {
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:image" content="${escapeHtml(image)}" />
 <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
+${hasReady ? '<meta property="og:image:type" content="image/jpeg" />' : ''}
 <meta property="og:image:width" content="${OG_IMAGE_WIDTH}" />
 <meta property="og:image:height" content="${OG_IMAGE_HEIGHT}" />
 <meta property="og:image:alt" content="${escapeHtml(title)}" />

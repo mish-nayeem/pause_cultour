@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { makeShareImage } from '../lib/shareImage.js'
 import { toLocalInput, launchLabel } from '../lib/schedule.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
@@ -457,6 +458,10 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     for (const size of restocked) {
       await sendRestockAlert(p.id.trim(), size)
     }
+
+    // The link-preview picture for WhatsApp / Facebook, from the first photo
+    // — in the background; the form doesn't wait for it.
+    makeShareImage(id, Array.isArray(p.images) ? p.images[0] : null)
 
     setSaving(false)
 
