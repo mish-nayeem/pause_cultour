@@ -34,20 +34,27 @@ export default function Nav({ overlay = false }) {
   const [user, setUser] = useState(null)
 
   const closeTimer = useRef(null)
+  const [leaving, setLeaving] = useState(false)
 
   // Closing on a delay rather than the instant the pointer leaves: the trip
   // from a nav link down to the panel clips the corner of the gap between them,
   // and without this grace period the menu shuts halfway there.
   function showMenu(name) {
     clearTimeout(closeTimer.current)
+    setLeaving(false)
     if (name) setSearchOpen(false)
     if (name !== openMenu) setByCollection(false)
     setOpenMenu(name)
   }
 
+  // …then it fades and lifts away (`leaving`) before it's gone, instead of
+  // vanishing in one frame.
   function scheduleClose() {
     clearTimeout(closeTimer.current)
-    closeTimer.current = setTimeout(() => setOpenMenu(null), 220)
+    closeTimer.current = setTimeout(() => {
+      setLeaving(true)
+      closeTimer.current = setTimeout(() => { setOpenMenu(null); setLeaving(false) }, 170)
+    }, 220)
   }
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
@@ -276,7 +283,7 @@ export default function Nav({ overlay = false }) {
       {/* Desktop hover dropdown — same panel for both menus, so moving between
           SHOP and DROPS swaps the contents instead of stacking two boxes. */}
       {openMenu && openList.length > 0 && (
-        <div className="cat-menu" onMouseEnter={() => showMenu(openMenu)}>
+        <div className={`cat-menu ${leaving ? 'leaving' : ''}`} onMouseEnter={() => showMenu(openMenu)}>
           <div className="cat-inner mono">
             {openList.map((c) => (
               <button key={c} onClick={() => openGo(c)} onMouseEnter={() => setByCollection(false)}>{c}</button>
