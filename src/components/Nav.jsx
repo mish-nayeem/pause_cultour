@@ -28,29 +28,62 @@ export default function Nav({ overlay = false }) {
   // collections) or 'menu' (MENU — everything else).
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  // Scrolling down tucks the nav away; the slightest scroll back up brings
+  // it back. Never while one of its menus is open, or near the top.
+  const [tucked, setTucked] = useState(false)
   const [categories, setCategories] = useState([])
   const [drops, setDrops] = useState([])
 
   const [user, setUser] = useState(null)
 
   const closeTimer = useRef(null)
+  const [leaving, setLeaving] = useState(false)
 
   // Closing on a delay rather than the instant the pointer leaves: the trip
   // from a nav link down to the panel clips the corner of the gap between them,
   // and without this grace period the menu shuts halfway there.
   function showMenu(name) {
     clearTimeout(closeTimer.current)
+    setLeaving(false)
     if (name) setSearchOpen(false)
     if (name !== openMenu) setByCollection(false)
     setOpenMenu(name)
   }
 
+  // …then it fades and lifts away (`leaving`) before it's gone, instead of
+  // vanishing in one frame.
   function scheduleClose() {
     clearTimeout(closeTimer.current)
-    closeTimer.current = setTimeout(() => setOpenMenu(null), 220)
+    closeTimer.current = setTimeout(() => {
+      setLeaving(true)
+      closeTimer.current = setTimeout(() => { setOpenMenu(null); setLeaving(false) }, 170)
+    }, 220)
   }
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
+
+  const busy = Boolean(openMenu || menuOpen || searchOpen)
+  useEffect(() => {
+    if (overlay) return
+    let last = window.scrollY
+    let frame = 0
+    const onScroll = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const y = window.scrollY
+        if (busy || y < 90) {
+          setTucked(false)
+          last = y
+          return
+        }
+        if (y - last > 8) { setTucked(true); last = y }
+        else if (last - y > 8) { setTucked(false); last = y }
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll) }
+  }, [overlay, busy])
+  useEffect(() => { if (busy) setTucked(false) }, [busy])
 
   useEffect(() => watchUser(setUser), [])
 
@@ -159,7 +192,7 @@ export default function Nav({ overlay = false }) {
 
   return (
     <div
-      className={`nav-wrap ${overlay ? 'overlay' : ''} ${showBack ? 'has-back' : ''}`}
+      className={`nav-wrap ${overlay ? 'overlay' : ''} ${showBack ? 'has-back' : ''} ${tucked ? 'tucked' : ''}`}
       onMouseLeave={scheduleClose}
     >
       {showBack && (
@@ -276,7 +309,7 @@ export default function Nav({ overlay = false }) {
       {/* Desktop hover dropdown — same panel for both menus, so moving between
           SHOP and DROPS swaps the contents instead of stacking two boxes. */}
       {openMenu && openList.length > 0 && (
-        <div className="cat-menu" onMouseEnter={() => showMenu(openMenu)}>
+        <div className={`cat-menu ${leaving ? 'leaving' : ''}`} onMouseEnter={() => showMenu(openMenu)}>
           <div className="cat-inner mono">
             {openList.map((c) => (
               <button key={c} onClick={() => openGo(c)} onMouseEnter={() => setByCollection(false)}>{c}</button>

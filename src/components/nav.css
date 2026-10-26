@@ -52,6 +52,11 @@
   border-right: 7px solid currentColor;
 }
 
+/* Scrolling down slides it up out of sight; scrolling up brings it back. */
+.nav-wrap { transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1); }
+.nav-wrap.tucked { transform: translateY(calc(-100% - 24px)); }
+@media (prefers-reduced-motion: reduce) { .nav-wrap { transition: none; } }
+
 /* On the hero, the nav floats over the image instead of pushing it down. */
 .nav-wrap.overlay {
   position: absolute;
@@ -178,11 +183,17 @@
 
 /* ---------- Desktop category dropdown ---------- */
 
+/* Laid over the page, not in its flow: when it sat in the flow, opening it
+   pushed the whole page down and closing it snapped the page back up. */
 .cat-menu {
   pointer-events: auto;
-  position: relative;
-  margin-top: 8px;
-  max-width: 720px;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  max-width: min(720px, calc(100vw - 40px));
   background: rgba(22, 22, 15, 0.72);
   backdrop-filter: blur(10px);
   border-radius: 26px;
@@ -205,6 +216,17 @@
 @keyframes cat-in {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.cat-menu.leaving { animation: cat-out 0.17s ease-in forwards; pointer-events: none; }
+
+@keyframes cat-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-menu, .cat-menu.leaving, .cat-sub { animation: none; }
 }
 
 .cat-inner {
@@ -252,8 +274,11 @@
 .mob-panel {
   pointer-events: auto;
   display: none;
-  margin-top: 10px;
-  width: 100%;
+  /* Over the page too, so opening it doesn't shove the page down. */
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 20px;
+  right: 20px;
   background: rgba(22, 22, 15, 0.96);
   backdrop-filter: blur(10px);
   border-radius: 22px;
