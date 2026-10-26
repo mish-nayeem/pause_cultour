@@ -169,3 +169,6 @@
   .view-shop { padding: 14px 30px; font-size: 11.5px; letter-spacing: 0.1em; }
   .hero-dots { bottom: 22px; }
 }
+
+/* The hero video sits over the photos (they're its stand-in while it loads). */
+.hero-video { z-index: 1; }

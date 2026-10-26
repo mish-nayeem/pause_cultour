@@ -65,3 +65,13 @@ export async function fetchFooterAbout() {
     text: String(value.text ?? '').trim() || DEFAULT_FOOTER_ABOUT.text,
   }
 }
+
+// The homepage hero video, one for PCs and one for phones — Admin →
+// Homepage → Hero video. Stored as site_settings 'hero_video':
+// { pc: { url }, mobile: { url } }. Either can be empty; a screen with none
+// of its own uses the other's, and with neither the photos show.
+export async function fetchHeroVideo() {
+  const { value, error } = await fetchSetting('hero_video')
+  const pick = (v) => (v && typeof v.url === 'string' && v.url.trim() ? { url: v.url.trim() } : null)
+  return { video: { pc: pick(value?.pc), mobile: pick(value?.mobile) }, error }
+}

@@ -19,6 +19,7 @@ import PageViewTracker from './components/PageViewTracker.jsx'
 import RecoveryRedirect from './components/RecoveryRedirect.jsx'
 import SmoothScroll from './components/SmoothScroll.jsx'
 import ScrollReveal from './components/ScrollReveal.jsx'
+import PageFade from './components/PageFade.jsx'
 import { captureAttribution } from './lib/attribution.js'
 import { startSessionPolicy } from './lib/sessionPolicy.js'
 import { Sentry } from './lib/sentry.js'
@@ -52,6 +53,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <SmoothScroll />
           <ScrollReveal />
           <RecoveryRedirect />
+          <PageFade>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
@@ -84,6 +86,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             ))}
             <Route path="/returns" element={<Navigate to="/support/portal" replace />} />
           </Routes>
+          </PageFade>
         </CartProvider>
       </BrowserRouter>
     </Sentry.ErrorBoundary>

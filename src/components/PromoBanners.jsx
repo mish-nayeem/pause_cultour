@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { imgUrl } from '../lib/images.js'
 import { fetchPromos, promoCards, colorOf } from '../lib/promos.js'
-import { useCountdown } from './DropCountdown.jsx'
+import { useCountdown, FlipText } from './DropCountdown.jsx'
 import './promo-banners.css'
 
 function Countdown({ at, label }) {
   const left = useCountdown(at)
   if (!left) return null
-  return <span className="pb-count mono">{label} {left}</span>
+  return <span className="pb-count mono">{label} <FlipText text={left} /></span>
 }
 
 function CopyCode({ code }) {
