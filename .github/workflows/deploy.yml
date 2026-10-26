@@ -1,0 +1,49 @@
+# Deploys the site to Cloudflare from GitHub, on every push to main (and by
+# hand: Actions → Deploy → Run workflow). The same build and `wrangler deploy`
+# Cloudflare's own Workers Builds runs — kept as the way in when that queue
+# is stuck.
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   — My Profile → API Tokens → "Edit Cloudflare Workers"
+#   CLOUDFLARE_ACCOUNT_ID  — Workers & Pages → Account ID (right-hand side)
+# Optional repository variable: VITE_SENTRY_DSN.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The browser's settings, baked into the build. None of these is a
+      # secret — they're all in the JavaScript every visitor downloads.
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://rzylwwrpzkqjyxxkstjo.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6eWx3d3Jwemtxanl4eGtzdGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMDAwMzUsImV4cCI6MjEwNDc3NjAzNX0.obmW3bA-wrUdd19Nd9QNGWXVuLlaanxpBJgdmG9vDGM
+          VITE_ADMIN_EMAIL: contact.pausecultour@gmail.com
+          VITE_GOOGLE_LOGIN: 'true'
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+
+      - run: npx --yes wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
