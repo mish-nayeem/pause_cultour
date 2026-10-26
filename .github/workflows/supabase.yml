@@ -1,0 +1,109 @@
+# Supabase from GitHub, so the database and the edge functions always match
+# this repo — nothing pasted into the dashboard by hand.
+#
+#   On every push to main:
+#     • each edge function whose folder changed is deployed
+#       (supabase/functions/<name>; settings in supabase/config.toml)
+#     • new files in supabase/migrations are run against the database, in
+#       order, each exactly once (Supabase keeps the list of what's run)
+#   By hand — Actions → Supabase → Run workflow:
+#     • "pull-schema": copies the live database's structure (tables,
+#       policies, functions, triggers) into a new migration on the branch
+#       schema-baseline, for review — the starting point that makes this
+#       repo and the live database the same
+#     • "deploy-all-functions": deploys every function
+#
+# Needs two repository secrets:
+#   SUPABASE_ACCESS_TOKEN  — Supabase → Account → Access Tokens
+#   SUPABASE_DB_PASSWORD   — Project Settings → Database → password
+
+name: Supabase
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**']
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to do
+        type: choice
+        options: [pull-schema, deploy-all-functions, push-migrations]
+        default: pull-schema
+
+concurrency:
+  group: supabase
+  cancel-in-progress: false
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  PROJECT_REF: rzylwwrpzkqjyxxkstjo
+
+jobs:
+  functions:
+    if: github.event_name == 'push' || inputs.task == 'deploy-all-functions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy changed functions
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            names=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- supabase/functions | cut -d/ -f3 | sort -u)
+          else
+            names=$(ls supabase/functions)
+          fi
+          if [ -z "$names" ]; then echo "No function changed."; exit 0; fi
+          for n in $names; do
+            if [ -f "supabase/functions/$n/index.ts" ]; then
+              echo "::group::Deploying $n"
+              supabase functions deploy "$n" --project-ref "$PROJECT_REF"
+              echo "::endgroup::"
+            fi
+          done
+
+  migrations:
+    if: github.event_name == 'push' || inputs.task == 'push-migrations'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Run new migrations
+        run: |
+          if [ -z "$(ls supabase/migrations/*.sql 2>/dev/null)" ]; then echo "No migrations yet."; exit 0; fi
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
+
+  pull-schema:
+    if: inputs.task == 'pull-schema'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Pull the live schema
+        run: |
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db pull baseline --linked --password "$SUPABASE_DB_PASSWORD" --yes
+          ls -la supabase/migrations
+      - name: Push it to the schema-baseline branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B schema-baseline
+          git add supabase/migrations
+          git commit -m "Baseline: the live database's schema, pulled by the Supabase workflow"
+          git push -f origin schema-baseline
