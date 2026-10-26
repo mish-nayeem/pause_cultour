@@ -222,3 +222,13 @@ a.cart-bump:not(.search-btn) { display: inline-block; }
    glass of the size chart alike. */
 .scroll-hint { position: relative; height: 3px; margin-top: 10px; border-radius: 3px; background: rgba(140, 140, 140, 0.22); overflow: hidden; }
 .scroll-hint i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: rgba(160, 160, 160, 0.75); transition: left 0.12s linear; }
+
+/* ScrollReveal.jsx: rising into view as the page scrolls. */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) var(--rd, 0ms),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--rd, 0ms);
+}
+.reveal.reveal-in { opacity: 1; transform: none; }
