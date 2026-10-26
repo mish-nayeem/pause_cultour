@@ -30,7 +30,7 @@ export default function ScrollReveal() {
         io.unobserve(el)
         el.classList.add('reveal-in')
         // Back to exactly how it was, after the rise has played.
-        setTimeout(() => el.classList.remove('reveal', 'reveal-in'), 1100 + (parseInt(el.style.getPropertyValue('--rd')) || 0))
+        setTimeout(() => el.classList.remove('reveal', 'reveal-in'), 1600 + (parseInt(el.style.getPropertyValue('--rd')) || 0))
       }
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 })
 
@@ -46,7 +46,7 @@ export default function ScrollReveal() {
         const top = Math.round(r.top)
         row = top === lastTop ? row + 1 : 0
         lastTop = top
-        el.style.setProperty('--rd', `${Math.min(row, 4) * 70}ms`)
+        el.style.setProperty('--rd', `${Math.min(row, 4) * 110}ms`)
         el.classList.add('reveal')
         io.observe(el)
       }
