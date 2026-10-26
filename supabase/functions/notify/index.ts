@@ -161,11 +161,24 @@ async function pushAll(db: Db, message: Record<string, unknown>) {
 
 const taka = (n: unknown) => '৳' + Math.round(Number(n || 0)).toLocaleString('en-US')
 
+// A small square of a product's first photo for the notification (Android
+// shows it beside the text; iPhone always shows the app's own icon).
+async function productThumb(db: Db, productId: string): Promise<string | null> {
+  const { data } = await db.from('products').select('images').eq('id', productId).maybeSingle()
+  const url = Array.isArray(data?.images) ? String(data.images[0] || '') : ''
+  if (!url) return null
+  const object = '/storage/v1/object/public/'
+  if (url.includes(object) && !url.includes('?')) {
+    return url.replace(object, '/storage/v1/render/image/public/') + '?width=192&height=192&resize=cover&quality=70&format=origin'
+  }
+  return url
+}
+
 async function newOrder(db: Db, orderId: string) {
   if (!orderId || orderId.startsWith('PM')) return { skipped: 'manual order' } // made in the admin itself
   const { data: o } = await db
     .from('orders')
-    .select('id, customer_name, customer_area, subtotal, total, created_at, order_items(product_name, size, qty)')
+    .select('id, customer_name, customer_area, subtotal, total, created_at, order_items(id, product_id, product_name, size, qty)')
     .eq('id', orderId)
     .maybeSingle()
   // Only a real order, and only while it's new — calling this again later
@@ -174,8 +187,14 @@ async function newOrder(db: Db, orderId: string) {
   const { error } = await db.from('push_sent').insert({ order_id: o.id })
   if (error) return { skipped: 'already sent' }
 
-  const items = (o.order_items || []).map((it: { product_name: string; size: string; qty: number }) => `${it.product_name} ${it.size} ×${it.qty}`).join(', ')
+  // In the order they were put in the cart — the first is what the
+  // notification shows a photo of.
+  type Item = { id: number; product_id: string; product_name: string; size: string; qty: number }
+  const lines = ((o.order_items || []) as Item[]).slice().sort((a, b) => a.id - b.id)
+  const items = lines.map((it) => `${it.product_name} ${it.size} ×${it.qty}`).join(', ')
+  const icon = lines[0] ? await productThumb(db, lines[0].product_id) : null
   return pushAll(db, {
+    icon,
     title: `🛍 New order · ${taka(o.total ?? o.subtotal)}`,
     body: [o.customer_name, items, o.customer_area].filter(Boolean).join(' · ').slice(0, 180),
     url: `/admin?order=${encodeURIComponent(o.id)}`,

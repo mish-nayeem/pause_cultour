@@ -7,7 +7,7 @@
 // It also shows the "New order" notifications the notify edge function
 // sends (supabase/functions/notify), and opens that order when one is tapped.
 
-const CACHE = 'pause-admin-v3'
+const CACHE = 'pause-admin-v4'
 const OFFLINE = '/admin-offline.html'
 
 self.addEventListener('install', (event) => {
@@ -41,7 +41,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(Promise.all([tellOpen,
     self.registration.showNotification(msg.title || 'PAUSE Admin', {
       body: msg.body || '',
-      icon: '/admin-icon-192.png',
+      // The first product's photo when the order has one, else the app's icon.
+      icon: msg.icon || '/admin-icon-192.png',
       badge: '/admin-icon-192.png',
       tag: msg.tag,
       renotify: Boolean(msg.tag),
