@@ -41,6 +41,7 @@ import PromoManager from '../components/PromoManager.jsx'
 import InstallAppButton from '../components/InstallAppButton.jsx'
 import NotifyButton from '../components/NotifyButton.jsx'
 import { startAdminApp } from '../lib/adminApp.js'
+import { fillMissingShareImages } from '../lib/shareImage.js'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
@@ -620,6 +621,8 @@ export default function Admin() {
 
     setOrders(o.orders)
     setProducts(p.products)
+    // Any product still without a link-preview picture gets one (background).
+    fillMissingShareImages(p.products)
     setNavCategories(c.categories)
     setWishRows(w.rows)
     setReturns(r.returns)
