@@ -37,12 +37,12 @@ export default function InstallAppButton() {
           <div className="install-card" onClick={(e) => e.stopPropagation()}>
             <img src="/admin-icon-192.png" alt="" className="install-icon" />
             <h3>Install PAUSE Admin</h3>
-            <p className="install-lead">The admin as an app on your phone — its own icon, full screen, signed in. Free, nothing from an app store, and it updates by itself with the website.</p>
+            <p className="install-lead">The admin as an app on your phone — its own icon, full screen, signed in. Free, nothing from an app store, and it updates by itself with the website.{app.ios ? ' iPhone doesn’t let a website install itself with one tap, so it takes these few steps once.' : ''}</p>
             {app.ios ? (
               <ol>
                 <li>Open this page in <b>Safari</b> (not Chrome or the Instagram browser).</li>
-                <li>Tap the <b>Share</b> button <span className="install-glyph">⬆︎</span> at the bottom (top on iPad).</li>
-                <li>Scroll down → <b>Add to Home Screen</b> → <b>Add</b>.</li>
+                <li>Tap the <b>Share</b> button <span className="install-glyph">⬆︎</span>. On newer iPhones it's inside the <b>•••</b> button at the bottom right: tap <b>•••</b> → <b>Share</b>.</li>
+                <li>Scroll down → <b>Add to Home Screen</b> (under “View More” if it isn't showing). If there's an <b>Open as Web App</b> switch, leave it on → <b>Add</b>.</li>
                 <li>Open <b>PAUSE Admin</b> from the home screen and sign in once.</li>
               </ol>
             ) : (
