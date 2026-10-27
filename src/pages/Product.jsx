@@ -112,7 +112,7 @@ export default function Product() {
   const addRef = useRef(null)
   const endRef = useRef(null)
   const [barOn, setBarOn] = useState(false)
-  const [barPick, setBarPick] = useState(false) // the bar's size row open
+  const [barNudge, setBarNudge] = useState(false) // the bar's sizes shaking: pick one first
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' })
   const [reviewState, setReviewState] = useState('idle') // idle | saving | error | done
 
@@ -292,7 +292,6 @@ export default function Product() {
       const pastEnd = end && end.top < vh
       const on = !btnShowing && !pastEnd
       setBarOn(on)
-      if (!on) setBarPick(false)
     }
     function onScroll() {
       if (!frame) frame = requestAnimationFrame(check)
@@ -735,49 +734,46 @@ export default function Product() {
       <YouMayLike currentId={product.id} />
 
       <div className={`buy-bar ${barOn ? 'on' : ''}`} aria-hidden={!barOn} inert={barOn ? undefined : ''}>
-        {barPick && (
-          <div className="buy-sizes">
-            {product.sizes.map((s) => {
-              const out = isSoldOut(product, s)
-              return (
-                <button
-                  type="button"
-                  key={s}
-                  className={`buy-size mono ${out ? 'out' : ''} ${activeSize === s ? 'on' : ''}`}
-                  onClick={() => {
-                    setActiveSize(s)
-                    setWishState('idle')
-                    setNeedSize(false)
-                    setBarPick(false)
-                    // Picking a size here is the add — one tap, not two.
-                    if (!out) handleAddToCart(s)
-                  }}
-                >
-                  {s}
-                </button>
-              )
-            })}
-          </div>
-        )}
         <div className="buy-row">
           {product.images?.[0] && (
             <img className="buy-thumb" src={imgUrl(product.images[0], { w: 120 })} alt="" />
           )}
           <div className="buy-what">
             <span className="buy-name">{product.name}</span>
-            <span className="buy-price mono">৳ {Number(product.price).toLocaleString()}</span>
+            {/* The price, then the sizes right beside it — pick one here and
+                the button turns into ADD TO CART. */}
+            <div className="buy-line">
+              <span className="buy-price mono">৳ {Number(product.price).toLocaleString()}</span>
+              {product.sizes?.length > 0 && (
+                <div className={`buy-szs ${barNudge ? 'nudge' : ''}`} role="radiogroup" aria-label="Size">
+                  {product.sizes.map((s) => (
+                    <button
+                      type="button"
+                      key={s}
+                      role="radio"
+                      aria-checked={activeSize === s}
+                      className={`buy-sz mono ${isSoldOut(product, s) ? 'out' : ''} ${activeSize === s ? 'on' : ''}`}
+                      onClick={() => { setActiveSize(s); setWishState('idle'); setNeedSize(false) }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          {activeSize && (
-            <button type="button" className="buy-chosen mono" onClick={() => setBarPick((v) => !v)} aria-label="Change size">
-              {activeSize} <span aria-hidden="true">▾</span>
-            </button>
-          )}
           <button
             type="button"
-            className={`buy-go mono ${justAdded ? 'done' : ''}`}
+            className={`buy-go mono ${justAdded ? 'done' : ''} ${!activeSize ? 'wait' : ''}`}
             disabled={onList}
             onClick={() => {
-              if (!activeSize) return setBarPick((v) => !v)
+              // No size yet: nothing is added — the sizes beside the price
+              // give a little shake to show where to pick one.
+              if (!activeSize) {
+                setBarNudge(true)
+                setTimeout(() => setBarNudge(false), 500)
+                return
+              }
               if (isSoldOut(product, activeSize)) {
                 // The email box lives under the page's own button.
                 addRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -789,13 +785,11 @@ export default function Product() {
           >
             {onList
               ? 'ON THE LIST ✓'
-              : !activeSize
-                ? 'SELECT SIZE'
-                : isSoldOut(product, activeSize)
-                  ? 'NOTIFY ME'
-                  : justAdded
-                    ? 'ADDED ✓'
-                    : 'ADD TO CART'}
+              : activeSize && isSoldOut(product, activeSize)
+                ? 'NOTIFY ME'
+                : justAdded
+                  ? 'ADDED ✓'
+                  : 'ADD TO CART'}
           </button>
         </div>
         {capped && <div className="buy-note mono">That's every piece we have left in {activeSize}.</div>}
