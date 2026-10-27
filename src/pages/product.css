@@ -959,10 +959,10 @@
     color: var(--ink);
     border: none;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 13px 16px;
+    letter-spacing: 0.03em;
+    padding: 9px 11px;
     cursor: pointer;
     transition: background 0.2s ease, color 0.2s ease;
   }
