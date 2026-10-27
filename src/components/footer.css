@@ -91,7 +91,7 @@
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   letter-spacing: 0.08em;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
   margin-bottom: 16px;
 }
@@ -203,8 +203,8 @@
 .foot-plus {
   display: inline-block;
   position: relative;
-  width: 11px;
-  height: 11px;
+  width: 8px;
+  height: 8px;
   flex: none;
   transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
 }
