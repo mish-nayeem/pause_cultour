@@ -573,7 +573,7 @@ export default function Product() {
           </button>
           {capped && (
             <div className="added-note mono">
-              That's every piece we have left in {activeSize}.
+              That was the last piece we had.
             </div>
           )}
 
@@ -792,7 +792,7 @@ export default function Product() {
                   : 'ADD TO CART'}
           </button>
         </div>
-        {capped && <div className="buy-note mono">That's every piece we have left in {activeSize}.</div>}
+        {capped && <div className="buy-note mono">That was the last piece we had.</div>}
       </div>
       <RecentlyViewed currentId={product.id} />
 
