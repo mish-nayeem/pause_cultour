@@ -279,6 +279,115 @@
 .admin .side-foot a:hover,
 .admin .signout:hover { color: var(--side-text); }
 
+/* Each section's icon, coloured the way its dot was: its own colour on
+   dark, quiet white on the light themes (dark on orange), the accent once
+   picked. */
+.admin .nav-icon { flex: none; color: var(--item-color, var(--steel)); }
+.admin:not([data-theme='dark']) .nav-icon { color: rgba(255, 255, 255, 0.7); }
+.admin[data-accent='orange'] .nav-icon { color: rgba(17, 17, 17, 0.6); }
+.admin:not([data-theme='dark']) .side-nav button.on .nav-icon,
+.admin[data-accent='orange'] .side-nav button.on .nav-icon { color: var(--cobalt); }
+.admin .side-nav button { white-space: nowrap; }
+
+/* ---------- The sidebar's light ---------- */
+
+/* A glowing bar on the sidebar's edge with a soft wash of light across the
+   item, gliding to whichever item the pointer is on and back to the open
+   one. On dark it takes each section's own colour; on the coloured
+   sidebars it's white light. */
+.admin .side-nav { position: relative; }
+
+.admin .side-lamp {
+  --glow: var(--lamp-c, var(--cobalt));
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: var(--lamp-y, 0);
+  height: var(--lamp-h, 0);
+  pointer-events: none;
+  opacity: 0;
+  transition: top 0.45s cubic-bezier(0.32, 0.72, 0, 1), height 0.45s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+}
+.admin:not([data-theme='dark']) .side-lamp,
+.admin[data-accent='orange'] .side-lamp { --glow: #ffffff; }
+.admin .side-lamp.lit { opacity: 1; }
+
+.admin .side-lamp::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--glow);
+  box-shadow: 0 0 8px 1px var(--glow), 0 0 22px 3px color-mix(in srgb, var(--glow) 55%, transparent);
+}
+
+.admin .side-lamp::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 85% 120% at 0 50%, color-mix(in srgb, var(--glow) 30%, transparent), transparent 75%);
+}
+
+@media (prefers-reduced-motion: reduce) { .admin .side-lamp { transition: opacity 0.3s ease; } }
+
+/* ---------- Fold to icons (desktop) ---------- */
+
+.admin .side-fold {
+  position: absolute;
+  top: 32px;
+  right: -13px;
+  z-index: 5;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--steel-line);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s ease;
+}
+.admin .side-fold svg { transform: rotate(90deg); transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1); }
+.admin.mini .side-fold svg { transform: rotate(-90deg); }
+.admin .side-fold:hover { transform: scale(1.1); }
+
+@media (min-width: 761px) {
+  .admin { transition: grid-template-columns 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
+  .admin .side { z-index: 20; }
+  .admin.mini { grid-template-columns: 78px 1fr; }
+
+  .admin.mini .side-brand { padding: 0 0 26px; align-items: center; }
+  .admin.mini .side-brand .display { font-size: 15px; }
+  .admin.mini .side-fold { top: 62px; }
+  .admin.mini .side-sub,
+  .admin.mini .nav-label,
+  .admin.mini .install-note { display: none; }
+
+  .admin.mini .side-nav button,
+  .admin.mini .side-nav button:hover,
+  .admin.mini .side-nav button.on,
+  .admin.mini .side-nav button.on:hover { justify-content: center; padding: 11px 0 11px 2px; }
+  .admin.mini .nav-left { gap: 0; }
+
+  /* The count sits on the icon's corner. */
+  .admin.mini .side-nav .badge { position: absolute; top: 3px; right: 9px; font-size: 9px; padding: 0 5px; line-height: 15px; }
+
+  /* The links at the bottom keep just their icons. */
+  .admin.mini .side-foot { padding: 4px 0 0; align-items: center; gap: 14px; }
+  .admin.mini .side-foot a,
+  .admin.mini .side-foot .signout { font-size: 0; gap: 0; }
+}
+
+@media (max-width: 760px) { .admin .side-fold { display: none; } }
+
 /* ---------- Header + theme picker ---------- */
 
 .admin .top { margin-bottom: 24px; align-items: center; }

@@ -68,6 +68,9 @@ import { COURIERS, courierLabel, sendToCourier, syncCourierStatus } from '../lib
 import { whatsappLink, shopToCustomerMessage } from '../lib/whatsapp.js'
 import {
   IconTag,
+  IconGrid,
+  IconBag,
+  IconUser,
   IconBox,
   IconTruck,
   IconCheck,
@@ -226,6 +229,24 @@ function savedTheme() {
   } catch {
     return 'dark'
   }
+}
+
+// The sidebar folded down to its icons (desktop), remembered like the theme.
+const MINI_KEY = 'pause_admin_side_mini'
+
+function savedMini() {
+  try { return localStorage.getItem(MINI_KEY) === '1' } catch { return false }
+}
+
+const NAV_ICONS = {
+  overview: IconGrid,
+  orders: IconBag,
+  products: IconTag,
+  customers: IconUser,
+  support: IconChat,
+  marketing: IconStar,
+  analytics: IconTrend,
+  site: IconImage,
 }
 
 function taka(n) {
@@ -526,6 +547,11 @@ export default function Admin() {
   const [newProductLaunch, setNewProductLaunch] = useState('')
   const [addingOrder, setAddingOrder] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mini, setMini] = useState(savedMini)
+  // The light down the sidebar's edge: on the item under the pointer, else
+  // the open one. { top, height, color } inside the scrolling list.
+  const sideNavRef = useRef(null)
+  const [sideLamp, setSideLamp] = useState(null)
   const [overviewSub, setOverviewSub] = useState(() => savedPlace('overviewSub', 'today', OVERVIEW_SUBS))
   const [ordersSub, setOrdersSub] = useState(() => savedPlace('ordersSub', 'list', ORDERS_SUBS))
   const [returns, setReturns] = useState([])
@@ -1222,6 +1248,18 @@ export default function Admin() {
     navigator.serviceWorker.addEventListener('message', onMsg)
     return () => navigator.serviceWorker.removeEventListener('message', onMsg)
   }, [])
+  // The sidebar's light settles back on the open section after a change of
+  // tab, a fold or a resize (the items move when the badges or width change).
+  useEffect(() => {
+    const rest = () => setSideLamp(() => {
+      const el = sideNavRef.current?.querySelector('button.on')
+      return el ? { top: el.offsetTop, height: el.offsetHeight, color: el.style.getPropertyValue('--item-color') } : null
+    })
+    rest()
+    const t = setTimeout(rest, 380)
+    window.addEventListener('resize', rest)
+    return () => { clearTimeout(t); window.removeEventListener('resize', rest) }
+  }, [tab, mini, checkingAuth, session])
 
   if (checkingAuth) {
     return <div className="admin-boot mono">Checking access…</div>
@@ -1335,10 +1373,27 @@ export default function Admin() {
     { key: 'site', label: 'Website', badge: null },
   ]
 
+  const isOn = (key) => tab === key || (key === 'site' && SITE_KEYS.includes(tab))
+
+  function lampOn(el) {
+    if (!el) return setSideLamp(null)
+    setSideLamp({ top: el.offsetTop, height: el.offsetHeight, color: el.style.getPropertyValue('--item-color') })
+  }
+  function lampRest() {
+    lampOn(sideNavRef.current?.querySelector('button.on'))
+  }
+
+  function toggleMini() {
+    setMini((v) => {
+      try { localStorage.setItem(MINI_KEY, v ? '0' : '1') } catch { /* not remembered */ }
+      return !v
+    })
+  }
+
   return (
     // Black & orange is the dark theme with its own colours (data-accent), so
     // every rule written for the dark theme holds for it too.
-    <div className="admin" data-theme={theme === 'orange' ? 'dark' : theme} data-accent={theme === 'orange' ? 'orange' : undefined} data-tab={tab}>
+    <div className={`admin ${mini ? 'mini' : ''}`} data-theme={theme === 'orange' ? 'dark' : theme} data-accent={theme === 'orange' ? 'orange' : undefined} data-tab={tab}>
       <div className="admin-topbar">
         {/* Phones: one step back inside the panel, like the phone's own Back. */}
         {panelHistory.depth > 0 && (
@@ -1364,27 +1419,45 @@ export default function Admin() {
       )}
 
       <aside className={`side ${mobileMenuOpen ? 'open' : ''}`}>
+        <button type="button" className="side-fold" onClick={toggleMini} aria-label={mini ? 'Open the menu wide' : 'Fold the menu to icons'} title={mini ? 'Open wide' : 'Fold'}>
+          <IconChevron width="13" height="13" />
+        </button>
         <div className="side-brand">
           <span className="display">PAUSE</span>
           <span className="mono side-sub">ADMIN</span>
         </div>
 
         {/* data-lenis-prevent: the wheel scrolls the menu, not the page, while the pointer is over it. */}
-        <nav className="side-nav mono" data-lenis-prevent>
-          {navItems.map((item) => (
-            <button
-              key={item.key}
-              className={tab === item.key || (item.key === 'site' && SITE_KEYS.includes(tab)) ? 'on' : ''}
-              style={{ '--item-color': SECTION_COLORS[item.key] }}
-              onClick={() => goTab(item.key === 'site' ? lastSiteTab : item.key)}
-            >
-              <span className="nav-left">
-                <span className="nav-dot" />
-                {item.label}
-              </span>
-              {item.badge != null && <span className="badge">{item.badge}</span>}
-            </button>
-          ))}
+        <nav
+          className="side-nav mono"
+          data-lenis-prevent
+          ref={sideNavRef}
+          onMouseOver={(e) => { const b = e.target.closest('.side-nav > button'); if (b) lampOn(b) }}
+          onMouseLeave={lampRest}
+        >
+          <span
+            className={`side-lamp ${sideLamp ? 'lit' : ''}`}
+            aria-hidden="true"
+            style={sideLamp ? { '--lamp-y': `${sideLamp.top}px`, '--lamp-h': `${sideLamp.height}px`, '--lamp-c': sideLamp.color } : undefined}
+          />
+          {navItems.map((item) => {
+            const Icon = NAV_ICONS[item.key]
+            return (
+              <button
+                key={item.key}
+                className={isOn(item.key) ? 'on' : ''}
+                style={{ '--item-color': SECTION_COLORS[item.key] }}
+                onClick={() => goTab(item.key === 'site' ? lastSiteTab : item.key)}
+                title={mini ? item.label : undefined}
+              >
+                <span className="nav-left">
+                  <Icon className="nav-icon" width="16" height="16" />
+                  <span className="nav-label">{item.label}</span>
+                </span>
+                {item.badge != null && <span className="badge">{item.badge}</span>}
+              </button>
+            )
+          })}
         </nav>
 
         <div className="side-foot mono">
