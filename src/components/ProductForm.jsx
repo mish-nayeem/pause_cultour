@@ -222,15 +222,21 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   // The other colours this product will be shown with (same name), for the
   // OTHER COLOURS line.
   const otherColours = allProducts.filter((r) =>
-    String(r.id) !== String(p.id) && p.name.trim() && (r.name || '').trim().toLowerCase() === p.name.trim().toLowerCase()
+    String(r.id) !== String(p.id) && (
+      ((p.colourGroup || '').trim() && (r.colour_group || '').trim() === p.colourGroup.trim()) ||
+      (p.name.trim() && (r.name || '').trim().toLowerCase() === p.name.trim().toLowerCase())
+    )
   )
 
-  // Editing one colour: the piece's other colours, found by the name it had
-  // when the form opened (a rename takes them along). Saving passes the
-  // shared details on to them — each keeps its own photos, colour name and
+  // Editing one colour: the piece's other colours as the form opened — its
+  // colour group, and anything with its name then. Saving passes the shared
+  // details on to them; each keeps its own name, photos, colour name and
   // stock.
   const siblings = existing
-    ? allProducts.filter((r) => String(r.id) !== String(existing.id) && (r.name || '').trim().toLowerCase() === (existing.name || '').trim().toLowerCase())
+    ? allProducts.filter((r) => String(r.id) !== String(existing.id) && (
+      ((existing.colour_group || '').trim() && (r.colour_group || '').trim() === existing.colour_group.trim()) ||
+      ((existing.name || '').trim() && (r.name || '').trim().toLowerCase() === existing.name.trim().toLowerCase())
+    ))
     : []
   const [shareWithColours, setShareWithColours] = useState(true)
 
@@ -444,19 +450,22 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     // (PC240), which is what the product page and cart print as its code.
     // An older product keeps whatever SKU it already had.
     const id = p.id.trim()
-    const link = colourLink({ ...p, id }, allProducts)
+    const found = colourLink({ ...p, id }, allProducts)
+    // Colours already together stay together under one group, so each can
+    // be renamed on its own (Black Blank, Green Tea) without coming apart.
+    const keep = (p.colourGroup || '').trim() || siblings.find((r) => r.colour_group)?.colour_group || (siblings.length ? tagOf(existing.name) : '')
+    const link = keep ? { group: keep, relink: found.relink } : found
     const { error: saveError } = await saveProduct(
       { ...p, id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) },
       isNewRecord
     )
 
-    // The other colours take the same details: name, price, category,
+    // The other colours take the same details: price, category,
     // collection, description, details, size chart and sizes. Their photos,
     // colour name, stock and launch time stay their own; a size added here
     // starts at 0 for them, a size dropped here leaves them too.
     if (!saveError && shareWithColours && siblings.length) {
       await Promise.all(siblings.map((r) => supabase.from('products').update({
-        name: p.name.trim(),
         price: Number(p.price),
         cost: p.cost === '' || p.cost == null ? null : Number(p.cost),
         category: p.category || null,
@@ -663,7 +672,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
           {/* No colour-group box to fill in: products with the same name are
               colours of one piece and link up by themselves when saved. */}
           <div className="pf-field">
-            <FieldLabel tip="Products with the same name are shown as colours of one piece: each colour its own card in the shop, and a colour picker on the product page. Use + Add another colour at the top, or give another product the same name.">
+            <FieldLabel tip="The other colours of this piece: each colour its own card in the shop, and small photos on the product page. Use + Add another colour at the top — each colour can have its own name. A product with the same name joins too.">
               OTHER COLOURS
             </FieldLabel>
             <div className="pf-colours mono">
@@ -1060,7 +1069,8 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
           <input type="checkbox" checked={shareWithColours} onChange={(e) => setShareWithColours(e.target.checked)} />
           <span>
             Use these details for the other {siblings.length === 1 ? 'colour' : `${siblings.length} colours`} too
-            ({siblings.map((c) => c.variant || c.id).join(', ')}) — their photos, colour name and stock stay their own.
+            ({siblings.map((c) => c.variant || c.name || c.id).join(', ')}) — price, category, collection, description,
+            details, size chart and sizes. Their own name, photos, colour name and stock stay as they are.
           </span>
         </label>
       )}

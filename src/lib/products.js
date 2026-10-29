@@ -43,9 +43,12 @@ export function queueOrder(list) {
   })
 }
 
-// Whether two products are colours of the same piece: the same name, any
-// case — same name, same piece.
+// Whether two products are colours of the same piece: the same colour group
+// (set when a colour is added with + Add another colour — each colour can
+// then have its own name, Black Blank and Green Tea), or the same name.
 export function samePiece(a, b) {
+  const ga = (a.colourGroup ?? a.colour_group ?? '').trim()
+  if (ga && ga === (b.colourGroup ?? b.colour_group ?? '').trim()) return true
   const na = (a.name || '').trim().toLowerCase()
   return Boolean(na) && na === (b.name || '').trim().toLowerCase()
 }
@@ -58,7 +61,7 @@ export function oneColourEach(list, inStock = () => true) {
   const made = (p) => new Date(p.createdAt ?? p.created_at ?? 0).getTime()
   const pick = new Map()
   for (const p of list) {
-    const key = (p.name || '').trim().toLowerCase() || `#${p.id}`
+    const key = (p.colourGroup || '').trim() || (p.name || '').trim().toLowerCase() || `#${p.id}`
     const cur = pick.get(key)
     if (!cur) { pick.set(key, p); continue }
     const better = inStock(p) !== inStock(cur) ? inStock(p) : made(p) < made(cur) || (made(p) === made(cur) && String(p.id) < String(cur.id))
@@ -82,24 +85,29 @@ export async function saveQueueOrder(ids) {
 }
 
 // The same piece in its other colours. Each colour is its own product row;
-// the colours of a piece are every product with the same name (any case).
-// The old hand-typed colour group isn't used: a placeholder typed into it
-// (e.g. XXX) could tie unrelated products together.
-export async function fetchColourOptions(name) {
-  if (!name || !name.trim()) return { options: [], error: null }
+// the colours of a piece are the products in its colour group (each may have
+// its own name) plus any with the same name (any case).
+export async function fetchColourOptions(name, group = '') {
+  if ((!name || !name.trim()) && !group) return { options: [], error: null }
 
-  const { data, error } = await supabase
-    .from('products')
-    .select('id, name, variant, images')
-    .ilike('name', name.trim().replace(/[\\%_]/g, (m) => '\\' + m))
-    .order('created_at', { ascending: true })
+  const cols = 'id, name, variant, images, created_at'
+  const [byName, byGroup] = await Promise.all([
+    name && name.trim()
+      ? supabase.from('products').select(cols).ilike('name', name.trim().replace(/[\\%_]/g, (m) => '\\' + m))
+      : { data: [], error: null },
+    group ? supabase.from('products').select(cols).eq('colour_group', group) : { data: [], error: null },
+  ])
 
+  const error = byName.error || byGroup.error
   if (error) {
     console.error('[Supabase] fetchColourOptions failed:', error.message)
     return { options: [], error }
   }
 
-  return { options: data, error: null }
+  const seen = new Map()
+  for (const r of [...(byName.data || []), ...(byGroup.data || [])]) seen.set(String(r.id), r)
+  const options = [...seen.values()].sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
+  return { options, error: null }
 }
 
 // Both fetchers hand back products at today's price: a running sale is
