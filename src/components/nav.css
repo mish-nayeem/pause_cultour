@@ -137,11 +137,13 @@
 .site-header a {
   color: var(--paper);
   text-decoration: none;
-  transition: opacity 0.18s ease;
+  transition: color 0.18s ease;
 }
 
-.site-header a:hover { opacity: 0.62; }
-.site-header a.dim { opacity: 0.62; }
+/* Hover fades the word's colour, not the whole link, so the blue of the
+   page you're on (and CART's blue dot) stays bright under the pointer. */
+.site-header a:hover,
+.site-header a.dim { color: rgba(237, 234, 225, 0.62); }
 
 /* The link for the page you're on. */
 .site-header a.here,
