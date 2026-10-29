@@ -73,7 +73,8 @@ export async function findOrder(orderId, contact) {
   return { order: data, error: null }
 }
 
-export async function sendRequest({ orderId, contact, kind, reason, items, details }) {
+// `refundTo`: the bKash number a cheaper exchange's difference is sent to.
+export async function sendRequest({ orderId, contact, kind, reason, items, details, refundTo = '' }) {
   const { data, error } = await supabase.rpc('support_request_return', {
     p_order_id: orderId,
     p_contact: contact,
@@ -81,6 +82,7 @@ export async function sendRequest({ orderId, contact, kind, reason, items, detai
     p_reason: reason,
     p_items: items,
     p_details: details,
+    ...(refundTo ? { p_refund_to: refundTo } : {}),
   })
   // The function's own messages ("Pick at least one item.") are written for
   // the customer, so they're shown as they are.
@@ -89,6 +91,39 @@ export async function sendRequest({ orderId, contact, kind, reason, items, detai
 }
 
 // ---------- Admin ----------
+
+// An exchange's money, from what was asked (or done): the price difference
+// over the pieces (+ the customer owes it, − we owe it back).
+export function exchangeDiff(items) {
+  return (items || []).reduce((sum, it) => {
+    const to = it.to_price ?? it.exchange_price
+    const from = it.from_price ?? it.price
+    if (to == null || from == null) return sum
+    return sum + (Number(to) - Number(from)) * (Number(it.qty) || 1)
+  }, 0)
+}
+
+// The refund of a cheaper exchange has been sent by bKash.
+export async function markExchangeRefund(returnId, trx) {
+  const { data, error } = await supabase.rpc('admin_mark_exchange_refund', { p_return_id: returnId, p_trx: trx || '' })
+  if (error) console.error('[Supabase] admin_mark_exchange_refund failed:', error.message)
+  return { resolution: data, error }
+}
+
+// The admin's own email to an order's customer (send-customer-email).
+export async function emailCustomer(orderId, subject, text) {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-customer-email', { body: { orderId, subject, text } })
+    if (error) {
+      let msg = error.message
+      try { msg = (await error.context.clone().json()).error || msg } catch { /* not JSON */ }
+      return { error: msg }
+    }
+    return { error: data?.error || null, to: data?.to }
+  } catch (err) {
+    return { error: err.message }
+  }
+}
 
 export function isNewRequest(r) {
   return r.source === 'customer' && !r.seen_at

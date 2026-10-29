@@ -226,3 +226,18 @@
 }
 .admin .main .rm-fee-pick button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .rm-fee .dim { color: var(--steel); }
+
+/* Exchange to a dearer / cheaper product: who owes what. */
+.rm-diff { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--cobalt); border-radius: 12px; font-size: 12px; line-height: 1.5; margin-top: 10px; }
+.rm-diff.back { border-color: #0b7a3b; }
+.rm-refund { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding: 10px 12px; border: 1px solid var(--signal); border-radius: 10px; font-size: 12px; }
+.rm-refund.sent { border-color: #0b7a3b; color: #0b7a3b; }
+.rm-refund-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.rm-refund-row input { flex: 1; min-width: 140px; border: 1px solid var(--steel-line); background: transparent; color: var(--ink); border-radius: 8px; padding: 7px 10px; font: inherit; }
+
+/* The email to the customer, open to edit. */
+.rm-mail { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding: 12px; border: 1px solid var(--steel-line); border-radius: 12px; }
+.rm-mail-head { font-size: 11px; letter-spacing: 0.06em; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.rm-mail-text { font-family: inherit; line-height: 1.55; resize: vertical; }
+.rm-mail-note { font-size: 12px; color: var(--cobalt); }
+.rm-mail-btn { margin-top: 10px; align-self: flex-start; }

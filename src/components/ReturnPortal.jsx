@@ -23,17 +23,22 @@ function taka(n) {
   return '৳ ' + Number(n).toLocaleString()
 }
 
-// A product's price before any sale — what an exchange is matched on.
-const shelf = (p) => Number(p.originalPrice ?? p.price)
+// The difference to show beside a product: + the customer pays it with the
+// second parcel, − we send it back by bKash.
+function diffLabel(d) {
+  if (!d) return 'Same price'
+  return d > 0 ? `+ ${taka(d)} to pay` : `${taka(-d)} back to you`
+}
 
 // An exchange: the sizes of the same piece, the ones out of stock struck
-// through — and, when the size wanted isn't there, another product at the
-// same price to swap to instead.
+// through — and, when the size wanted isn't there, another product to swap
+// to instead (any price: the difference is paid, or refunded by bKash).
 function ExchangePick({ item, pick, products, onChange }) {
   const own = products.find((p) => String(p.id) === String(item.product_id))
-  const others = products.filter((p) =>
-    String(p.id) !== String(item.product_id) && shelf(p) === Number(item.price) && availableSizes(p).length > 0
-  )
+  // Same price first, then the nearest.
+  const others = products
+    .filter((p) => String(p.id) !== String(item.product_id) && availableSizes(p).length > 0)
+    .sort((a, b) => Math.abs(Number(a.price) - item.price) - Math.abs(Number(b.price) - item.price))
   const target = pick.exchange_product_id ? products.find((p) => String(p.id) === String(pick.exchange_product_id)) : own
   const swapping = Boolean(pick.exchange_product_id) || pick.other
 
@@ -73,7 +78,7 @@ function ExchangePick({ item, pick, products, onChange }) {
           )}
           {others.length > 0 && (
             <button type="button" className="rp-other-btn" onClick={() => onChange({ other: true, exchange_size: '' })}>
-              Size not there? Choose another product at {taka(item.price)} →
+              Size not there? Choose another product instead →
             </button>
           )}
         </>
@@ -81,17 +86,18 @@ function ExchangePick({ item, pick, products, onChange }) {
 
       {swapping && (
         <>
-          ANOTHER PRODUCT AT {taka(item.price)}
+          ANOTHER PRODUCT · YOURS WAS {taka(item.price)}
           <div className="rp-others">
             {others.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 className={`rp-other ${String(pick.exchange_product_id) === String(p.id) ? 'on' : ''}`}
-                onClick={() => onChange({ exchange_product_id: p.id, exchange_size: '' })}
+                onClick={() => onChange({ exchange_product_id: p.id, exchange_price: Number(p.price), exchange_size: '' })}
               >
                 <span className="rp-other-img">{p.images?.[0] && <img src={imgUrl(p.images[0], { w: 160 })} alt="" />}</span>
                 <span className="rp-other-name">{p.name}{p.variant ? ` · ${p.variant}` : ''}</span>
+                <span className="rp-other-price">{taka(p.price)} · {diffLabel((Number(p.price) - Number(item.price)) * (item.qty || 1))}</span>
               </button>
             ))}
           </div>
@@ -101,7 +107,7 @@ function ExchangePick({ item, pick, products, onChange }) {
               {sizesOf(target, null)}
             </>
           )}
-          <button type="button" className="rp-other-btn" onClick={() => onChange({ other: false, exchange_product_id: '', exchange_size: '' })}>
+          <button type="button" className="rp-other-btn" onClick={() => onChange({ other: false, exchange_product_id: '', exchange_price: null, exchange_size: '' })}>
             ← Back to the same product
           </button>
         </>
@@ -134,6 +140,8 @@ export default function ReturnPortal() {
   const [sent, setSent] = useState(null)
   // The shop's products, for the sizes in stock and same-price swaps.
   const [products, setProducts] = useState([])
+  // A cheaper exchange: the bKash number the difference goes back to.
+  const [refundTo, setRefundTo] = useState('')
 
   useEffect(() => {
     fetchPortal().then(({ portal }) => setPortal(portal))
@@ -201,6 +209,10 @@ export default function ReturnPortal() {
     if (kind === 'exchange' && !exchangeIsFree(reason) && !feeOk) {
       return setError('Tick the box to confirm you will pay the exchange delivery charge.')
     }
+    const bkash = refundTo.replace(/[^\d]/g, '')
+    if (priceDiff < 0 && !/^01\d{9}$/.test(bkash)) {
+      return setError('Give the bKash number we should send the difference to (11 digits, 01…).')
+    }
 
     setBusy(true)
     setError('')
@@ -211,11 +223,20 @@ export default function ReturnPortal() {
       reason,
       items,
       details: details.trim(),
+      refundTo: priceDiff < 0 ? bkash : '',
     })
     setBusy(false)
     if (error) return setError(error)
-    setSent({ id, kind, fee: kind === 'exchange' && !exchangeIsFree(reason) })
+    setSent({ id, kind, fee: kind === 'exchange' && !exchangeIsFree(reason), diff: priceDiff, bkash: priceDiff < 0 ? bkash : '' })
   }
+
+  // The price difference over the pieces swapped to another product.
+  const priceDiff = kind === 'exchange' && order
+    ? order.items.reduce((sum, it, i) => {
+      const p = picked[i]
+      return p?.on && p.exchange_product_id && p.exchange_price != null ? sum + (Number(p.exchange_price) - Number(it.price)) * Number(it.qty || 1) : sum
+    }, 0)
+    : 0
 
   const open = order?.open_request
   const canRequest = order && order.status === 'delivered' && !open
@@ -362,6 +383,27 @@ export default function ReturnPortal() {
                       </span>
                     </div>
                   )}
+                  {/* Swapped to a dearer or a cheaper product: what that means. */}
+                  {kind === 'exchange' && priceDiff !== 0 && (
+                    <div className={`rp-diff ${priceDiff > 0 ? 'pay' : 'back'}`}>
+                      {priceDiff > 0 ? (
+                        <>
+                          <b className="mono">PRICE DIFFERENCE · + {taka(priceDiff)}</b>
+                          <span>The new piece costs more. You pay the rider {taka(priceDiff)} when the new piece arrives, together with any delivery charge below. We'll email you the new invoice.</span>
+                        </>
+                      ) : (
+                        <>
+                          <b className="mono">PRICE DIFFERENCE · {taka(-priceDiff)} BACK TO YOU</b>
+                          <span>The new piece costs less. We send you {taka(-priceDiff)} by bKash (Send Money) once the exchange is done.</span>
+                          <label className="rp-bkash">
+                            <span className="mono">YOUR BKASH NUMBER</span>
+                            <input value={refundTo} onChange={(e) => { setRefundTo(e.target.value); setError('') }} inputMode="tel" placeholder="01XXXXXXXXX" maxLength={14} />
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {kind === 'exchange' && (
                     reason && exchangeIsFree(reason) ? (
                       <div className="rp-fee free mono">
@@ -416,6 +458,8 @@ export default function ReturnPortal() {
                 Your {sent.kind} request for {order.id} is with us. We'll call or message you within one
                 working day to arrange the {sent.kind === 'exchange' ? 'swap' : 'pickup'}.
                 {sent.kind === 'refund' && ' If the size you needed is in stock, we will offer an exchange instead.'}
+                {sent.diff > 0 && ` The new piece costs ${taka(sent.diff)} more — you pay it to the rider with the new piece.`}
+                {sent.diff < 0 && ` We'll send ${taka(-sent.diff)} to bKash ${sent.bkash} once the exchange is done.`}
                 {sent.fee && ` Keep the delivery charge ready for the rider: ৳${EXCHANGE_FEE.inside} inside Dhaka, ৳${EXCHANGE_FEE.outside} outside.`}
               </p>
               <Link to="/shop" className="rp-btn mono">Back to shop</Link>

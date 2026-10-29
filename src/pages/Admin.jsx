@@ -929,14 +929,29 @@ export default function Admin() {
             )
           })}
           {(!o.order_items || o.order_items.length === 0) && <div className="mono dim">No line items recorded.</div>}
-          {history.map((r) => (
-            <div className="ditem-history mono" key={r.id}>
-              {r.resolution.action === 'exchange'
-                ? `Exchanged ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.from_size} → ${x.to_size} ×${x.qty}`).join(', ')}`
-                : `Refunded ${taka(r.resolution.refund)} · ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.size} ×${x.qty}`).join(', ')} back in stock`}
-              {' · '}{shortDate(r.resolution.at || r.processed_at)}
-            </div>
-          ))}
+          {/* Every exchange and refund on this order: what changed, and its money. */}
+          {history.map((r) => {
+            const res = r.resolution
+            const swap = (x) => x.to_product_name && String(x.to_product_id) !== String(x.product_id)
+              ? `${x.product_name} ${x.from_size} → ${x.to_product_name} ${x.to_size}`
+              : `${x.product_name} ${x.from_size} → ${x.to_size}`
+            return (
+              <div className="ditem-history mono" key={r.id}>
+                {res.action === 'exchange'
+                  ? `Exchanged ${(res.items || []).map((x) => `${swap(x)} ×${x.qty}`).join(', ')}`
+                  : `Refunded ${taka(res.refund)} · ${(res.items || []).map((x) => `${x.product_name} ${x.size} ×${x.qty}`).join(', ')} back in stock`}
+                {' · '}{shortDate(res.at || r.processed_at)}
+                {res.action === 'exchange' && Number(res.extra_due) > 0 && <div>Price difference + {taka(res.extra_due)} · collected by the rider with the new piece</div>}
+                {res.action === 'exchange' && Number(res.refund_due) > 0 && (
+                  <div>
+                    Price difference − {taka(res.refund_due)} · refund by bKash to {res.refund_to || '—'}
+                    {res.refund_sent_at ? ` · sent ${shortDate(res.refund_sent_at)}${res.refund_trx ? ` (${res.refund_trx})` : ''}` : ' · NOT SENT YET'}
+                  </div>
+                )}
+                {Number(res.fee) > 0 && <div>Second parcel {taka(res.fee)} · {res.fee_paid === false ? 'paid by us' : 'paid by the customer'}</div>}
+              </div>
+            )
+          })}
         </section>
 
         <section className="osec">
@@ -967,6 +982,9 @@ export default function Admin() {
           )}
           {o.refunded > 0 && (
             <div className="orow ditem-refund"><span>Refunded</span><span className="mono">− {taka(o.refunded)}</span></div>
+          )}
+          {o.exchange_extra > 0 && (
+            <div className="orow"><span>Exchange price difference (collected)</span><span className="mono">+ {taka(o.exchange_extra)}</span></div>
           )}
           <div className="orow ototal">
             <span>{advance > 0 ? 'Cash to collect' : 'Total (COD)'}</span>
