@@ -799,3 +799,18 @@
   .qc-grid { grid-template-columns: minmax(0, 1fr); }
   .qc-colour { width: 88px; }
 }
+
+/* Editing one colour: pass the shared details on to the others. */
+.pf-share {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--steel-line);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.pf-share input { margin-top: 2px; accent-color: var(--cobalt); }
