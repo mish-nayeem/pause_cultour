@@ -9,6 +9,7 @@ import {
 } from '../lib/navCategories.js'
 import { IconX } from './Icons.jsx'
 import AdminBox from './AdminBox.jsx'
+import useDragSort from '../lib/useDragSort.js'
 import InfoTip from './InfoTip.jsx'
 import './category-manager.css'
 
@@ -115,19 +116,24 @@ export default function CategoryManager({ menu = SHOP_MENU, products = [] }) {
     setBusy(false)
   }
 
-  async function move(index, dir) {
-    const target = index + dir
-    if (target < 0 || target >= cats.length) return
-
-    const next = [...cats]
-    ;[next[index], next[target]] = [next[target], next[index]]
-
+  async function saveOrder(next) {
     setCats(next) // optimistic, so the list doesn't jump while saving
     setBusy(true)
     await reorderNavCategories(next)
     await load()
     setBusy(false)
   }
+
+  function move(index, dir) {
+    const target = index + dir
+    if (target < 0 || target >= cats.length) return
+    const next = [...cats]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    saveOrder(next)
+  }
+
+  // Drag a row by its handle to put it anywhere on the menu.
+  const drag = useDragSort(cats, setCats, saveOrder)
 
   async function remove(id) {
     setBusy(true)
@@ -147,7 +153,7 @@ export default function CategoryManager({ menu = SHOP_MENU, products = [] }) {
         <>
           <p>{config.intro}</p>
           <p><b>Spelling matters:</b> a name has to match {config.matchHint} exactly, or it opens an empty page. The count on each row says how many products it shows.</p>
-          <p>Use ↑ ↓ for the order, the pill to hide or show it, ✕ to take it off the menu.</p>
+          <p>Drag a row by ⋮⋮ (or use ↑ ↓) to set the order the menu shows them in, the pill to hide or show it, ✕ to take it off the menu.</p>
         </>
       }
     >
@@ -214,13 +220,18 @@ export default function CategoryManager({ menu = SHOP_MENU, products = [] }) {
           const count = counts[c.label] || 0
 
           return (
-            <div className={`cm-row ${c.active ? '' : 'off'}`} key={c.id}>
+            <div className={`cm-row ${c.active ? '' : 'off'} ${drag.dragging === i ? 'dragging' : ''}`} key={c.id} {...drag.row(i)}>
+              <span className="cm-grip" {...drag.handle(i)}>⋮⋮</span>
               <span className="cm-pos mono">{i + 1}</span>
               <input
                 className="cm-name mono"
                 defaultValue={c.label}
                 aria-label="Name on the menu"
-                onBlur={(e) => rename(c, e.target.value)}
+                // A collection's name is on its products too, so it's renamed in
+                // Products → Collections, which moves everything along with it.
+                readOnly={menu === 'drops'}
+                title={menu === 'drops' ? 'Rename it in Products → Collections' : undefined}
+                onBlur={(e) => menu !== 'drops' && rename(c, e.target.value)}
               />
               <span className={`cm-count mono ${count === 0 ? 'zero' : ''}`} title={count === 0 ? 'Opens an empty page — check the spelling' : ''}>
                 {count === 0 ? '0 · empty' : count}

@@ -159,12 +159,7 @@ function EmptyCart({ products }) {
   const fresh = products.filter((p) => !isAllSoldOut(p)).slice(0, 4)
   return (
     <div className="empty-cart">
-      <div className="empty-mark mono">NOTHING ON HOLD</div>
       <h3 className="display empty-title">Your bag's waiting.</h3>
-      <p className="empty-line">
-        Small drops, cut and sewn in Dhaka. When it's gone, it's gone —
-        so find your piece before someone else does.
-      </p>
       <div className="empty-actions">
         <Link to="/shop?c=NEW" className="empty-btn mono">SHOP NEW IN →</Link>
         <Link to="/shop" className="empty-btn ghost mono">SEE EVERYTHING</Link>

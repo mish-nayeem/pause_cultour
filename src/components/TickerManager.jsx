@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchSetting, saveSetting, DEFAULT_TICKER } from '../lib/siteSettings.js'
+import { fetchSetting, saveSetting, fetchTickerSpeed, DEFAULT_TICKER, DEFAULT_TICKER_SPEED, TICKER_SPEEDS } from '../lib/siteSettings.js'
 import './ticker-manager.css'
 
 // Admin → Homepage → Ticker: the lines that scroll under the hero. Good for
@@ -10,8 +10,11 @@ export default function TickerManager() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const [speed, setSpeed] = useState(DEFAULT_TICKER_SPEED)
+  const [savedSpeed, setSavedSpeed] = useState(DEFAULT_TICKER_SPEED)
 
   useEffect(() => {
+    fetchTickerSpeed().then((n) => { setSpeed(n); setSavedSpeed(n) })
     fetchSetting('ticker').then(({ value, error }) => {
       const list = Array.isArray(value) && value.length ? value.map(String) : DEFAULT_TICKER
       setLines(list)
@@ -45,8 +48,12 @@ export default function TickerManager() {
   async function save(list) {
     const clean = list.map((l) => l.trim().toUpperCase()).filter(Boolean)
     setBusy(true)
-    const { error } = await saveSetting('ticker', clean)
+    const [{ error }, sp] = await Promise.all([
+      saveSetting('ticker', clean),
+      speed !== savedSpeed ? saveSetting('ticker_speed', speed) : { error: null },
+    ])
     setBusy(false)
+    if (!sp.error) setSavedSpeed(speed)
     if (error) {
       setNote("Couldn't save — has supabase-migration-site-settings.sql been run?")
       return
@@ -57,14 +64,15 @@ export default function TickerManager() {
     setNote(clean.length ? 'Saved — live on the homepage now.' : 'Empty, so the homepage shows the default lines.')
   }
 
-  const dirty = JSON.stringify(lines) !== JSON.stringify(saved)
+  const dirty = JSON.stringify(lines) !== JSON.stringify(saved) || speed !== savedSpeed
 
   return (
     <section className="panel tk-panel">
       <div className="panel-label mono">TICKER</div>
       <p className="tk-help">
         The strip that scrolls under the homepage photos. Use it for a sale or a coupon code —
-        e.g. <b>EID SALE 20% OFF</b> or <b>USE CODE EID10</b>. Shown in capitals.
+        e.g. <b>EID SALE 20% OFF</b> or <b>USE CODE EID10</b>. Shown in capitals. Slide
+        SPEED to make it run slower or faster.
       </p>
 
       {loading ? (
@@ -88,6 +96,23 @@ export default function TickerManager() {
             ))}
           </div>
 
+          {/* 1 slow … 10 fast; the strip below runs at the chosen pace. */}
+          <div className="tk-speed">
+            <span className="tk-speed-label mono">SPEED</span>
+            <span className="tk-speed-end mono">Slow</span>
+            <input
+              type="range"
+              min="1"
+              max={TICKER_SPEEDS.length}
+              step="1"
+              value={speed}
+              onChange={(e) => { setSpeed(Number(e.target.value)); setNote('') }}
+              aria-label="Ticker speed"
+            />
+            <span className="tk-speed-end mono">Fast</span>
+            <span className="tk-speed-val mono">{speed}/{TICKER_SPEEDS.length}</span>
+          </div>
+
           <div className="tk-actions">
             <button type="button" className="tk-add mono" onClick={() => setLines((p) => [...p, ''])} disabled={lines.length >= 12}>
               + Add line
@@ -102,7 +127,13 @@ export default function TickerManager() {
 
           {/* What the strip will read, in order. */}
           <div className="tk-preview mono" aria-hidden="true">
-            {lines.filter((l) => l.trim()).map((l, i) => <span key={i}>{l.trim().toUpperCase()}</span>)}
+            <div className="tk-preview-run" key={speed} style={{ animationDuration: `${TICKER_SPEEDS[speed - 1] / Math.max(2, Math.ceil(8 / Math.max(1, lines.filter((l) => l.trim()).length)))}s` }}>
+              {[0, 1].map((half) => (
+                <div className="tk-preview-half" key={half}>
+                  {lines.filter((l) => l.trim()).map((l, i) => <span key={i}>{l.trim().toUpperCase()}</span>)}
+                </div>
+              ))}
+            </div>
           </div>
 
           {note && <div className="tk-note mono">{note}</div>}

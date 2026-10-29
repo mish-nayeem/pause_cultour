@@ -12,7 +12,7 @@ import {
 import { fetchHeroExtras, saveSetting, fetchSetting, DEFAULT_HERO_BUTTON, DEFAULT_FOOTER_ABOUT, fetchTicker } from '../lib/siteSettings.js'
 import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
-import FocusPicker from './FocusPicker.jsx'
+import FocusDrag from './FocusDrag.jsx'
 import { IconX } from './Icons.jsx'
 import HeroVideoManager from './HeroVideoManager.jsx'
 import './hero-manager.css'
@@ -183,7 +183,7 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
             tip={
               <>
                 <p>The full-screen photos at the top of the homepage. They rotate every 5 seconds, in this order.</p>
-                <p><b>Size:</b> {size} A photo of another shape is cropped to fill the screen — pick which part stays in frame under each photo.</p>
+                <p><b>Size:</b> {size} A photo of another shape is cropped to fill the screen — drag each photo to choose which part stays in frame, like a Facebook cover.</p>
                 <p>{device === 'mobile' ? 'If no photo is set for phones, the PC photos are used there too.' : 'If no photo is set for PCs, the phone photos are used there too.'} A photo set to Both shows on every screen.</p>
               </>
             }
@@ -330,11 +330,17 @@ function Box({ title, tip, wide = false, children }) {
 function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onAskDelete, onCancelDelete, onDelete }) {
   return (
     <div className={`hm-card ${s.active ? '' : 'off'}`}>
-      <div className={`hm-shot ${device}`}>
-        <img src={imgUrl(s.image_url, { w: device === 'mobile' ? 360 : 640 })} alt="" style={{ objectPosition: s.focus || 'center' }} />
+      {/* Drag the photo to choose what stays in frame, like a Facebook cover. */}
+      <FocusDrag
+        className={`hm-shot ${device}`}
+        src={imgUrl(s.image_url, { w: device === 'mobile' ? 360 : 640 })}
+        value={s.focus}
+        disabled={busy}
+        onChange={(focus) => onPatch({ focus })}
+      >
         {!s.active && <span className="hm-hidden mono">HIDDEN</span>}
         <span className="hm-pos mono">{s.device === 'all' || !s.device ? 'BOTH' : device === 'mobile' ? 'PHONE' : 'PC'}</span>
-      </div>
+      </FocusDrag>
 
       <input
         className="hm-name mono"
@@ -347,7 +353,6 @@ function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onA
         }}
       />
 
-      <FocusPicker value={s.focus} disabled={busy} onChange={(focus) => onPatch({ focus })} />
 
       <div className="hm-card-row mono">
         <select value={s.device || 'all'} disabled={busy} onChange={(e) => onPatch({ device: e.target.value })} aria-label="Shows on">

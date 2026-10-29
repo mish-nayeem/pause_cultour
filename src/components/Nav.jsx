@@ -186,25 +186,6 @@ export default function Nav({ overlay = false }) {
             : ''
   const cls = (name, extra = '') => `${extra} ${here === name ? 'here' : ''}`.trim()
 
-  // A blue lamp along the pill's top edge, shining down on one link: the one
-  // under the pointer, else the page you're on. It glides between them.
-  const [lamp, setLamp] = useState(null)
-  function placeLamp(el) {
-    const h = headerRef.current
-    const r = el?.getBoundingClientRect()
-    if (!h || !r?.width) return setLamp(null)
-    setLamp(r.left - h.getBoundingClientRect().left + r.width / 2)
-  }
-  function restLamp() {
-    const els = headerRef.current ? [...headerRef.current.querySelectorAll('.here')] : []
-    placeLamp(els.find((el) => el.getBoundingClientRect().width > 0))
-  }
-  useEffect(() => {
-    restLamp()
-    window.addEventListener('resize', restLamp)
-    return () => window.removeEventListener('resize', restLamp)
-  }, [here, menuOpen, count, user])
-
   const catList = ['ALL', 'NEW', ...categories]
   const openList = openMenu === 'drops' ? drops : catList
   const openGo = openMenu === 'drops' ? goLookbook : goCategory
@@ -221,15 +202,7 @@ export default function Nav({ overlay = false }) {
         </button>
       )}
 
-      <header
-        className="site-header"
-        ref={headerRef}
-        onMouseOver={(e) => { const li = e.target.closest('.desk-nav li'); if (li) placeLamp(li.firstElementChild) }}
-        onMouseLeave={restLamp}
-      >
-        <span className="nav-glow" aria-hidden="true">
-          <span className={`nav-lamp ${lamp === null ? '' : 'on'}`} style={lamp === null ? undefined : { '--x': `${lamp}px` }} />
-        </span>
+      <header className="site-header" ref={headerRef}>
         <Link to="/" className="logo" aria-label="PAUSE — home">
           <span className="logo-3d">
             {Array.from({ length: LOGO_LAYERS }, (_, i) => {

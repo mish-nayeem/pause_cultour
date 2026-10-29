@@ -75,58 +75,6 @@
   padding: 13px 26px;
 }
 
-/* ---------- The lamp ---------- */
-
-/* A blue bar on the pill's top edge with a soft cone of light under it,
-   sliding to whichever link it's lighting. Clipped to the pill's shape. */
-.site-header { position: relative; }
-.site-header > :not(.nav-glow) { position: relative; z-index: 1; }
-
-.nav-glow {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.nav-lamp {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 70px;
-  height: 100%;
-  opacity: 0;
-  transform: translateX(calc(var(--x, 0px) - 50%));
-  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
-}
-
-.nav-lamp.on { opacity: 1; }
-
-/* The bar itself. */
-.nav-lamp::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 30px;
-  height: 3px;
-  transform: translateX(-50%);
-  border-radius: 0 0 3px 3px;
-  background: #4b9bff;
-  box-shadow: 0 0 10px 2px rgba(75, 155, 255, 0.85), 0 0 22px 4px rgba(75, 155, 255, 0.45);
-}
-
-/* Its light, fanning out and fading as it falls. */
-.nav-lamp::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 50% 95% at 50% 0, rgba(75, 155, 255, 0.6), rgba(75, 155, 255, 0.2) 55%, transparent 85%);
-}
-
-@media (prefers-reduced-motion: reduce) { .nav-lamp { transition: opacity 0.3s ease; } }
-
 /* The mark is a cutout on transparency, so it sits on the dark pill without a
    panel of its own. Perspective lives on the link rather than the image so the
    turn reads as depth instead of a flat horizontal squash. */
@@ -194,8 +142,6 @@
 
 .site-header a:hover { opacity: 0.62; }
 .site-header a.dim { opacity: 0.62; }
-/* On the desktop links the lamp shows the hover, so the lit word stays bright. */
-.desk-nav a:hover, .desk-nav a.dim, .desk-nav .search-btn:hover { opacity: 1; }
 
 /* The link for the page you're on. */
 .site-header a.here,

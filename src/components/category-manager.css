@@ -48,7 +48,7 @@
 
 .cm-row {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  grid-template-columns: 14px 22px minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   border: 1px solid var(--order-edge, var(--steel-line));
@@ -59,6 +59,9 @@
 
 .cm-row.off .cm-name,
 .cm-row.off .cm-count { opacity: 0.45; }
+
+.cm-grip { font-size: 13px; color: var(--steel); text-align: center; letter-spacing: -2px; user-select: none; }
+.cm-row.dragging { border-color: var(--cobalt); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); }
 
 .cm-pos { font-size: 11px; color: var(--steel); text-align: center; }
 

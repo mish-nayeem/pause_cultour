@@ -190,12 +190,33 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
     const items = productsIn(open)
     const launch = launchOf(items)
     const waiting = items.filter((p) => isScheduled(p)).length
+    const openRow = collections.find((x) => dropKey(x.name) === dropKey(open)) || { name: open, row: null }
     return (
       <section className="panel">
         <div className="orders-head">
           <div>
             <button type="button" className="cl-back mono" onClick={() => onOpen(null)}>← All collections</button>
-            <h3 className="display cl-title">{open}</h3>
+            {/* The name can be changed from inside too: everything using it moves along. */}
+            {renaming === open ? (
+              <input
+                className="cl-rename cl-rename-title"
+                autoFocus
+                defaultValue={open}
+                aria-label="Collection name"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') rename(openRow, e.currentTarget.value)
+                  if (e.key === 'Escape') setRenaming('')
+                }}
+                onBlur={(e) => rename(openRow, e.currentTarget.value)}
+              />
+            ) : (
+              <h3 className="display cl-title">
+                {open}
+                <button type="button" className="cl-title-edit mono" onClick={() => setRenaming(open)} disabled={busy}>
+                  Edit name
+                </button>
+              </h3>
+            )}
             <div className="panel-note mono">{items.length} product{items.length === 1 ? '' : 's'} in this collection</div>
           </div>
           <button className="add-product mono" onClick={() => onAddProduct(open, launch)}>

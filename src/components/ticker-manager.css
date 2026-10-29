@@ -65,3 +65,16 @@
 @media (max-width: 600px) {
   .tk-actions .tk-save { margin: 0; width: 100%; }
 }
+
+/* The preview runs at the chosen speed, the same way the homepage strip does. */
+.tk-preview { display: block; }
+.tk-preview-run { display: flex; width: max-content; animation: tk-run 20s linear infinite; }
+.tk-preview-half { display: flex; flex-shrink: 0; gap: 28px; padding-right: 28px; }
+@keyframes tk-run { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .tk-preview-run { animation: none; } }
+
+.tk-speed { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.tk-speed-label { font-size: 11px; letter-spacing: 0.12em; font-weight: 700; }
+.tk-speed-end { font-size: 11px; opacity: 0.7; }
+.tk-speed input { flex: 1 1 160px; accent-color: var(--cobalt); }
+.tk-speed-val { font-size: 12px; font-weight: 700; min-width: 3.5em; text-align: right; }
