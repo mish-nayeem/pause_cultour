@@ -17,6 +17,7 @@ import { nextProductId as nextId, tagOf } from './ProductForm.jsx'
 export default function QuickColours({ base, existingIds, onDone }) {
   const tracked = stockMap(base) !== null
   const blank = () => ({
+    name: '',
     variant: '',
     images: [],
     stock: Object.fromEntries((base.sizes || []).map((s) => [s, 0])),
@@ -58,6 +59,8 @@ export default function QuickColours({ base, existingIds, onDone }) {
         ...base,
         id,
         sku: id.toUpperCase(),
+        // Its own name if one is typed (Green Tea), else the piece's.
+        name: form.name.trim() || base.name,
         variant: form.variant.trim(),
         images: form.images,
         sizesOut: [],
@@ -96,7 +99,7 @@ export default function QuickColours({ base, existingIds, onDone }) {
           <InfoTip>
             <p>Every colour is its own card in the shop, sliding through its own photos when the pointer rests on it.</p>
             <p>Open one and it's the big one; the other colours show as small photos under the price — tap one to go to it.</p>
-            <p>Colours belong together by name: anything named {base.name} is a colour of this piece.</p>
+            <p>Each colour can have its own name (Black Blank, Green Tea) — leave it empty to use {base.name}. They stay colours of one piece either way.</p>
           </InfoTip>
         </h3>
         <button type="button" className="courier-btn mono qc-done" onClick={onDone}>Done</button>
@@ -120,7 +123,7 @@ export default function QuickColours({ base, existingIds, onDone }) {
       <section className="pf-sec qc-box">
         <div className="pf-sec-head">
           <span className="pf-sec-title mono">+ ADD ANOTHER COLOUR</span>
-          <InfoTip>Just this colour's photos and how many of each size there are. Name, price, sizes, size chart and details are copied from {base.name}. Press Upload colour, then add the next one, or Done.</InfoTip>
+          <InfoTip>Just this colour's photos and how many of each size there are. Price, sizes, size chart and details are copied from {base.name}; so is the name, unless you type this colour's own. Press Upload colour, then add the next one, or Done.</InfoTip>
         </div>
 
         <div className="qc-grid">
@@ -164,6 +167,11 @@ export default function QuickColours({ base, existingIds, onDone }) {
                 <div className="qc-total mono">Total {total} pieces</div>
               </>
             )}
+
+            <label className="pf-field qc-name">
+              <span className="pf-flabel mono">PRODUCT NAME (OPTIONAL)</span>
+              <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={base.name} maxLength={80} />
+            </label>
 
             <label className="pf-field qc-name">
               <span className="pf-flabel mono">COLOUR NAME (OPTIONAL)</span>
