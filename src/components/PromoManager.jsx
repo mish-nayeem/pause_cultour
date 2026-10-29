@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import AdminBox from './AdminBox.jsx'
 import InfoTip from './InfoTip.jsx'
 import PromoBanners from './PromoBanners.jsx'
@@ -55,6 +57,9 @@ export default function PromoManager({ products }) {
   const live = sales.filter((s) => s.active && new Date(s.ends_at).getTime() > Date.now())
   const coming = Object.values(banners).filter((b) => b?.launch_at && new Date(b.launch_at).getTime() > Date.now())
 
+  // Unsaved boxes and places stay in this browser until Save.
+  const kept = useDraft('promo', { boxes, places }, (v) => { setBoxes(v.boxes); setPlaces(v.places) }, { enabled: Boolean(boxes && places) })
+
   // The preview draws exactly what the shop would, from what's typed here.
   const previewData = useMemo(() => {
     if (!boxes || !places) return null
@@ -83,6 +88,7 @@ export default function PromoManager({ products }) {
     clearPromoCache()
     setBoxes(clean)
     setSaved(JSON.stringify([clean, places]))
+    kept.saved({ boxes: clean, places })
     setNote('Saved — live on the website now.')
   }
 
@@ -90,6 +96,7 @@ export default function PromoManager({ products }) {
 
   return (
     <div className="pm">
+      <DraftNote draft={kept} />
       <AdminBox
         wide
         title="HOW BANNERS WORK"

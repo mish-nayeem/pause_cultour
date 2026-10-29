@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import {
@@ -65,12 +67,17 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
     })
   }, [])
 
+  // Each box's unsaved words stay in this browser until saved there.
+  const keptButton = useDraft('hero:button', button, setButton, { enabled: saved.button !== '' })
+  const keptCountdown = useDraft('hero:countdown', countdown, setCountdown, { enabled: saved.countdown !== '' })
+  const keptFooter = useDraft('footer:about', footer, setFooter, { enabled: saved.footer !== '' })
+
   async function saveFooter() {
     const clean = { heading: footer.heading.trim(), text: footer.text.trim() }
     const { error } = await saveSetting('footer_about', clean)
     setFooter(clean)
     setNote((n) => ({ ...n, footer: error ? "Couldn't save — try again." : 'Saved — live in the footer.' }))
-    if (!error) setSaved((s) => ({ ...s, footer: JSON.stringify(clean) }))
+    if (!error) { setSaved((s) => ({ ...s, footer: JSON.stringify(clean) })); keptFooter.saved(clean) }
   }
 
   async function upload(file, device) {
@@ -132,7 +139,7 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
     const { error } = await saveSetting('hero_button', clean)
     setButton(clean)
     setNote((n) => ({ ...n, button: error ? "Couldn't save — try again." : 'Saved — live on the homepage.' }))
-    if (!error) setSaved((s) => ({ ...s, button: JSON.stringify(clean) }))
+    if (!error) { setSaved((s) => ({ ...s, button: JSON.stringify(clean) })); keptButton.saved(clean) }
   }
 
   async function saveCountdown(clear = false) {
@@ -141,7 +148,7 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
     const { error } = await saveSetting('hero_countdown', value)
     if (clear) setCountdown(cd)
     setNote((n) => ({ ...n, countdown: error ? "Couldn't save — try again." : cd.at ? 'Saved — counting down on the homepage.' : 'Countdown off.' }))
-    if (!error) setSaved((s) => ({ ...s, countdown: JSON.stringify(cd) }))
+    if (!error) { setSaved((s) => ({ ...s, countdown: JSON.stringify(cd) })); keptCountdown.saved(cd) }
   }
 
   const groups = useMemo(
@@ -233,6 +240,7 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
 
       {/* ---- Button ---- */}
       <Box title="HERO BUTTON" tip="The button in the middle of the hero. Point it at a new drop while it's fresh — e.g. SHOP CITYBOY → the CITYBOY lookbook — then back to VIEW SHOP.">
+        <DraftNote draft={keptButton} />
         <label className="pf-field">
           <span className="hm-flabel mono">TEXT</span>
           <input value={button.label} maxLength={28} onChange={(e) => { setButton({ ...button, label: e.target.value }); setNote({}) }} placeholder="VIEW SHOP" />
@@ -261,6 +269,7 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
 
       {/* ---- Countdown ---- */}
       <Box title="DROP COUNTDOWN" tip="A countdown over the hero button — NEXT DROP IN 2D 04:12:09 — to build up a launch. It disappears by itself the moment the time passes. Pair it with a product's Goes live time so the drop appears as the clock hits zero.">
+        <DraftNote draft={keptCountdown} />
         <label className="pf-field">
           <span className="hm-flabel mono">TEXT ABOVE THE CLOCK</span>
           <input value={countdown.label} maxLength={32} onChange={(e) => { setCountdown({ ...countdown, label: e.target.value }); setNote({}) }} placeholder="NEXT DROP · CITYBOY" />
@@ -285,6 +294,7 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
         wide
         tip="The short about at the bottom of every page, under Join the list: a heading (PAUSE) and a few lines about the brand. Leave a box empty to go back to the built-in words."
       >
+        <DraftNote draft={keptFooter} />
         <label className="pf-field">
           <span className="hm-flabel mono">HEADING</span>
           <input value={footer.heading} maxLength={40} onChange={(e) => { setFooter({ ...footer, heading: e.target.value }); setNote({}) }} placeholder={DEFAULT_FOOTER_ABOUT.heading} />

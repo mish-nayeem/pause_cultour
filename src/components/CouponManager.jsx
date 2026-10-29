@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import InfoTip from './InfoTip.jsx'
 import { unsold } from '../lib/admin.js'
 import { fetchCoupons, createCoupon, setCouponActive, deleteCoupon, describeCoupon } from '../lib/coupons.js'
@@ -43,6 +45,8 @@ export default function CouponManager({ orders }) {
   const [draft, setDraft] = useState(BLANK)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // A half-made coupon stays in this browser until it's created.
+  const kept = useDraft('coupon:new', draft, setDraft)
 
   async function load() {
     const { coupons } = await fetchCoupons()
@@ -120,6 +124,7 @@ export default function CouponManager({ orders }) {
 
   return (
     <>
+      <DraftNote draft={kept} />
       <form className="pform cp-form" onSubmit={handleCreate}>
         <div className="pform-head"><h3 className="display">New coupon</h3><InfoTip>Codes are secret until someone types one. To show a code on the website, write it in a coupon box in Website → Banners — customers can copy it from there.</InfoTip></div>
         <div className="pf-grid">

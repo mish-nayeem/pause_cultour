@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { fetchSetting, saveSetting, fetchTickerSpeed, DEFAULT_TICKER, DEFAULT_TICKER_SPEED, TICKER_SPEEDS } from '../lib/siteSettings.js'
 import './ticker-manager.css'
 
@@ -13,8 +15,12 @@ export default function TickerManager() {
   const [speed, setSpeed] = useState(DEFAULT_TICKER_SPEED)
   const [savedSpeed, setSavedSpeed] = useState(DEFAULT_TICKER_SPEED)
 
+  const [speedLoaded, setSpeedLoaded] = useState(false)
+  // Unsaved lines and speed stay in this browser until Save.
+  const kept = useDraft('ticker', { lines, speed }, (v) => { setLines(v.lines); setSpeed(v.speed) }, { enabled: !loading && speedLoaded })
+
   useEffect(() => {
-    fetchTickerSpeed().then((n) => { setSpeed(n); setSavedSpeed(n) })
+    fetchTickerSpeed().then((n) => { setSpeed(n); setSavedSpeed(n); setSpeedLoaded(true) })
     fetchSetting('ticker').then(({ value, error }) => {
       const list = Array.isArray(value) && value.length ? value.map(String) : DEFAULT_TICKER
       setLines(list)
@@ -61,6 +67,7 @@ export default function TickerManager() {
     const shown = clean.length ? clean : DEFAULT_TICKER
     setLines(shown)
     setSaved(shown)
+    kept.saved({ lines: shown, speed })
     setNote(clean.length ? 'Saved — live on the homepage now.' : 'Empty, so the homepage shows the default lines.')
   }
 
@@ -69,6 +76,7 @@ export default function TickerManager() {
   return (
     <section className="panel tk-panel">
       <div className="panel-label mono">TICKER</div>
+      <DraftNote draft={kept} />
       <p className="tk-help">
         The strip that scrolls under the homepage photos. Use it for a sale or a coupon code —
         e.g. <b>EID SALE 20% OFF</b> or <b>USE CODE EID10</b>. Shown in capitals. Slide

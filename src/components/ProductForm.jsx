@@ -10,6 +10,8 @@ import { sendRestockAlert } from '../lib/email.js'
 import { parseDetails, serializeDetails, mergeLabels, rememberedLabels, rememberLabels } from '../lib/details.js'
 import InfoTip from './InfoTip.jsx'
 import QuickColours from './QuickColours.jsx'
+import DraftNote from './DraftNote.jsx'
+import useDraft from '../lib/useDraft.js'
 import './product-form.css'
 
 const BLANK = {
@@ -276,6 +278,20 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   const [extraSizes, setExtraSizes] = useState(() => (p.sizes || []).filter((z) => !STANDARD_SIZES.includes(z)))
   const sizeChoices = [...STANDARD_SIZES, ...extraSizes.filter((z) => !STANDARD_SIZES.includes(z))]
 
+  // Everything typed is kept in this browser until it's saved, so a form
+  // left half done (tab closed, connection gone) opens again where it was.
+  // A new product whose number was taken meanwhile gets the next free one.
+  const draft = useDraft(
+    existing ? `product:${existing.id}` : copyFrom ? `product:copy:${copyFrom.id}` : 'product:new',
+    { p, detailRows, extraSizes },
+    (v) => {
+      const id = !existing && existingIds.map(String).includes(String(v.p.id)) ? nextProductId(existingIds) : v.p.id
+      setP({ ...v.p, id })
+      setDetailRows(v.detailRows)
+      setExtraSizes(v.extraSizes)
+    },
+  )
+
   function toggleSize(z) {
     const on = p.sizes.includes(z)
     const next = on ? p.sizes.filter((x) => x !== z) : sizeChoices.filter((x) => x === z || p.sizes.includes(x))
@@ -464,6 +480,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     makeShareImage(id, Array.isArray(p.images) ? p.images[0] : null)
 
     setSaving(false)
+    draft.clear()
 
     // A new product goes straight on to its other colours, if it has any.
     if (isNewRecord) {
@@ -483,6 +500,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       return
     }
 
+    draft.clear()
     onDone()
   }
 
@@ -504,9 +522,11 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               + Add another colour
             </button>
           )}
-          <button className="pf-ghost mono" onClick={onCancel}>Cancel</button>
+          <button className="pf-ghost mono" onClick={() => { draft.clear(); onCancel() }}>Cancel</button>
         </div>
       </div>
+
+      <DraftNote draft={draft} />
 
       {copyFrom && (
         <div className="pf-copy-note mono">

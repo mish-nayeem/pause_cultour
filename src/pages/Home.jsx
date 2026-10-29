@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
@@ -38,6 +39,8 @@ export default function Home() {
   const [calm] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
   usePageMeta()
+  // Ticks when the admin changes something: the effects below re-read.
+  const live = useLive()
 
   // Hero slides live in the database so a new drop is an upload in the admin
   // panel, not a code change and redeploy.
@@ -60,7 +63,7 @@ export default function Home() {
       setCountdown(countdown)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [live])
 
   // Auto-advance. Skipped entirely for a single slide so we don't run a timer
   // that can never change anything.

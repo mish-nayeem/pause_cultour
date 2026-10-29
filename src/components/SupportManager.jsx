@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import { INFO_PAGES, SUPPORT_TABS } from '../content/info-pages.js'
@@ -45,9 +47,11 @@ export function SupportPages() {
     })
   }, [])
 
+  // Unsaved words on a page stay in this browser until Save (one draft per page).
+  const kept = useDraft(`support:${slug}`, draft, setDraft, { enabled: !loading && Boolean(draft) })
+
   function pick(next) {
     if (next === slug) return
-    if (dirty && !window.confirm('You have changes on this page that aren\'t saved. Leave them?')) return
     setSlug(next)
     setDraft(clone(saved[next] && Array.isArray(saved[next].blocks) ? { ...INFO_PAGES[next], ...saved[next] } : INFO_PAGES[next]))
     setNote('')
@@ -82,12 +86,13 @@ export function SupportPages() {
     set({ blocks: [...draft.blocks, block] })
   }
 
-  async function persist(next, done) {
+  async function persist(next, done, shown) {
     setBusy(true)
     const { error } = await saveSupportPages(next)
     setBusy(false)
     if (error) return setNote(`Couldn't save — ${MIGRATION}`)
     setSaved(next)
+    kept.saved(shown)
     setNote(done)
   }
 
@@ -98,14 +103,15 @@ export function SupportPages() {
       intro: (draft.intro || '').trim(),
     }
     setDraft(clean)
-    persist({ ...saved, [slug]: clean }, 'Saved — live on the Support page now.')
+    persist({ ...saved, [slug]: clean }, 'Saved — live on the Support page now.', clean)
   }
 
   function reset() {
     const next = { ...saved }
     delete next[slug]
-    setDraft(clone(INFO_PAGES[slug]))
-    persist(next, 'Back to the built-in copy.')
+    const fresh = clone(INFO_PAGES[slug])
+    setDraft(fresh)
+    persist(next, 'Back to the built-in copy.', fresh)
   }
 
   if (loading || !draft) return <div className="ab-empty mono">Loading…</div>
@@ -118,6 +124,7 @@ export function SupportPages() {
 
   return (
     <div className="sm-layout">
+      <DraftNote draft={kept} />
       {/* ---- Which page ---- */}
       <AdminBox
         title="PAGES"

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import {
@@ -19,6 +21,9 @@ export default function AboutManager() {
   const [error, setError] = useState('')
   const [newHeading, setNewHeading] = useState('')
   const [newText, setNewText] = useState('')
+  // The words of a half-made block stay in this browser (the photo has to
+  // be picked again — a browser can't keep a file for later).
+  const kept = useDraft('about:new', { newHeading, newText }, (v) => { setNewHeading(v.newHeading); setNewText(v.newText) })
   const [confirmId, setConfirmId] = useState(null)
   // The photo picked for the next block, shown before it's uploaded.
   const [pick, setPick] = useState(null) // { file, url }
@@ -142,6 +147,7 @@ export default function AboutManager() {
 
   return (
     <div className="ab-grid stretch about-m">
+      <DraftNote draft={kept} />
       {error && <div className="err-banner mono ab-wide">{error}</div>}
 
       {/* ---- Add a block ---- */}

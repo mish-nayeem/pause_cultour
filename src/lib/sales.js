@@ -11,6 +11,11 @@ let cachedAt = 0
 // else; the filters matter when the admin, who can read every row, is
 // browsing the shop). Kept for a minute so a shop page
 // and a product page opened together share one request.
+// Forget the kept copy — the admin just changed something (liveSite.js).
+export function clearSalesCache() {
+  cached = null
+}
+
 export async function fetchLiveSales() {
   if (cached && Date.now() - cachedAt < 60_000) return cached
 

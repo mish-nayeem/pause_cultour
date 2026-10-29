@@ -87,6 +87,8 @@ import {
   IconImage,
 } from '../components/Icons.jsx'
 import { SupportPages, SupportPortal } from '../components/SupportManager.jsx'
+import { hasDraft } from '../lib/useDraft.js'
+import '../components/draft-note.css'
 import ReturnsManager from '../components/ReturnsManager.jsx'
 import AnalyticsManager from '../components/AnalyticsManager.jsx'
 import { isNewRequest } from '../lib/support.js'
@@ -1889,6 +1891,16 @@ export default function Admin() {
                 + Add product
               </button>
             </div>
+
+            {/* A new product left half done is still here, as it was. */}
+            {hasDraft('product:new') && (
+              <div className="draft-note mono" role="status">
+                <span>↺ A new product you started isn't saved yet.</span>
+                <button type="button" onClick={() => { setCopyFrom(null); setNewProductDrop(''); setNewProductLaunch(''); setEditing('new') }}>
+                  Continue it
+                </button>
+              </div>
+            )}
 
             <ImageMigration onDone={reload} />
 
