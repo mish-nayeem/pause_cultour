@@ -74,6 +74,10 @@
 
 .qa-sizes button:hover { background: var(--ink); color: #fff; }
 
+/* Out of stock: struck through, can't be picked. */
+.qa-sizes button.out,
+.qa-sizes button.out:hover { text-decoration: line-through; text-decoration-thickness: 1.5px; opacity: 0.45; background: #fff; color: var(--ink); cursor: not-allowed; }
+
 .qa-note {
   align-self: center;
   font-size: 10.5px;

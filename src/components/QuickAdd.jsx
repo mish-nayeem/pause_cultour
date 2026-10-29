@@ -7,8 +7,9 @@ import { flyToCart } from '../lib/flyToCart.js'
 import './quick-add.css'
 
 // The + in the corner of a product photo on the grid: adds to the cart
-// without opening the product. One size left → straight in. Several → a row
-// of sizes across the bottom of the photo to pick from. It sits inside the
+// without opening the product. A product made in one size → straight in.
+// Otherwise → a row of every size across the bottom of the photo, the ones
+// out of stock struck through and not tappable, so you see what's left. It sits inside the
 // card's link, so every tap here stops the link from opening the product.
 export default function QuickAdd({ product }) {
   const { items, addItem } = useCart()
@@ -16,6 +17,8 @@ export default function QuickAdd({ product }) {
   const [note, setNote] = useState('') // '' | 'added' | 'max'
   const ref = useRef(null)
   const sizes = sortSizes(availableSizes(product))
+  const all = sortSizes(product.sizes || [])
+  const left = new Set(sizes)
   // Black + on a light photo, white + on a dark one.
   const tone = useCornerTone(product.images?.[0])
 
@@ -60,11 +63,21 @@ export default function QuickAdd({ product }) {
     <div className="qa" ref={ref} onClick={stop}>
       {open && (
         <div className="qa-sizes mono" role="group" aria-label={`Add ${product.name} — pick a size`}>
-          {sizes.map((s) => (
-            <button key={s} type="button" onClick={(e) => { stop(e); add(s) }}>
-              {s}
-            </button>
-          ))}
+          {all.map((s) => {
+            const out = !left.has(s)
+            return (
+              <button
+                key={s}
+                type="button"
+                className={out ? 'out' : ''}
+                disabled={out}
+                aria-label={out ? `${s} — sold out` : `Add size ${s}`}
+                onClick={(e) => { stop(e); if (!out) add(s) }}
+              >
+                {s}
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -73,11 +86,11 @@ export default function QuickAdd({ product }) {
       <button
         type="button"
         className={`qa-plus ${open ? 'on' : ''} ${tone ? `on-${tone}` : ''}`}
-        aria-label={sizes.length === 1 ? `Add ${product.name} to cart` : `Add ${product.name} to cart — choose a size`}
-        aria-expanded={sizes.length > 1 ? open : undefined}
+        aria-label={all.length === 1 ? `Add ${product.name} to cart` : `Add ${product.name} to cart — choose a size`}
+        aria-expanded={all.length > 1 ? open : undefined}
         onClick={(e) => {
           stop(e)
-          if (sizes.length === 1) add(sizes[0])
+          if (all.length <= 1) add(sizes[0])
           else setOpen((o) => !o)
         }}
       >

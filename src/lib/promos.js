@@ -117,6 +117,28 @@ export async function fetchPromos() {
   return cache
 }
 
+// Coupon boxes follow the coupons themselves (Marketing → Coupons): a box
+// whose code was deleted is emptied, and one whose coupon is switched off
+// stops showing — so the shop never shows a code checkout won't take.
+export async function pruneCouponBoxes(coupons) {
+  const { value } = await fetchSetting('promo_boxes')
+  if (!Array.isArray(value)) return
+  const all = new Map(coupons.map((c) => [String(c.code).trim().toUpperCase(), c]))
+  let changed = false
+  const next = value.map((b) => {
+    const code = String(b?.code || '').trim().toUpperCase()
+    if (!code) return b
+    const c = all.get(code)
+    if (!c) { changed = true; return { ...b, code: '', text: '', on: false } }
+    if (!c.active && b.on) { changed = true; return { ...b, on: false } }
+    return b
+  })
+  if (changed) {
+    await saveSetting('promo_boxes', next)
+    clearPromoCache()
+  }
+}
+
 export function clearPromoCache() {
   cache = null
 }
