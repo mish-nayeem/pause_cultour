@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import InfoTip from './InfoTip.jsx'
 import { listSales, createSale, setSaleActive, deleteSale, salePrice } from '../lib/sales.js'
 import './coupon-manager.css'
@@ -29,6 +31,8 @@ export default function SaleManager({ products }) {
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // A half-made sale stays in this browser until it's created.
+  const kept = useDraft('sale:new', draft, setDraft)
 
   async function load() {
     const { sales } = await listSales()
@@ -129,6 +133,7 @@ export default function SaleManager({ products }) {
 
   return (
     <>
+      <DraftNote draft={kept} />
       <form className="pform cp-form" onSubmit={handleCreate}>
         <div className="pform-head"><h3 className="display">New sale</h3><InfoTip>A running sale makes its own banner on the website — on a drop with the drop's banner photo (Products → Collections), on chosen products with the product's photo, with a countdown to the end. Website → Banners says which pages it shows on.</InfoTip></div>
         <div className="pf-grid">

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { createManualOrder, extractOrderFromMessage, orderErrorMessage } from '../lib/admin.js'
 import { sendOrderConfirmation } from '../lib/email.js'
 import { DISTRICTS, quote, isTrxId, cleanTrxId } from '../lib/delivery.js'
@@ -138,6 +140,20 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
   const [pickedImage, setPickedImage] = useState(null) // { base64, mimeType, name }
   const [extracting, setExtracting] = useState(false)
   const [extractNote, setExtractNote] = useState('')
+
+  // A half-typed order stays in this browser until it's placed or cancelled.
+  const kept = useDraft(
+    'manual-order',
+    { form, source, trxId, items, draft, pasteText },
+    (v) => {
+      setForm(v.form)
+      setSource(v.source)
+      setTrxId(v.trxId)
+      setItems(v.items)
+      setDraft(v.draft)
+      setPasteText(v.pasteText)
+    },
+  )
 
   // place_order charges a running sale's price on manual orders too, so the
   // lines here have to carry it.
@@ -307,6 +323,7 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
     if (form.email.trim()) await sendOrderConfirmation(orderId)
 
     setSubmitting(false)
+    kept.clear()
     onDone()
   }
 
@@ -320,8 +337,10 @@ export default function ManualOrderForm({ products, onCancel, onDone }) {
           New order
           <InfoTip>For a sale agreed over DM or a call. It takes stock off the shelf and counts everywhere a website order does, tagged with where it came from instead of a tracked link. Its ID starts with PM.</InfoTip>
         </h3>
-        <button type="button" className="pf-ghost mono" onClick={onCancel}>Cancel</button>
+        <button type="button" className="pf-ghost mono" onClick={() => { kept.clear(); onCancel() }}>Cancel</button>
       </div>
+
+      <DraftNote draft={kept} />
 
       <div className="mof-layout">
         <div className="mof-main">
