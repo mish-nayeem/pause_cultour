@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import InfoTip from './InfoTip.jsx'
 import { imgUrl } from '../lib/images.js'
 import { createReturn, processReturn } from '../lib/admin.js'
-import { EXCHANGE_FEE, EXCHANGE_REASONS, REFUND_WRONG_SIZE, exchangeIsFree, isNewRequest, markRequestsSeen, updateRequest } from '../lib/support.js'
+import { EXCHANGE_FEE, EXCHANGE_REASONS, REFUND_WRONG_SIZE, emailCustomer, exchangeDiff, exchangeIsFree, isNewRequest, markExchangeRefund, markRequestsSeen, updateRequest } from '../lib/support.js'
 import { stockMap } from '../lib/stock.js'
 import './returns-manager.css'
 
@@ -16,6 +16,69 @@ function when(iso) {
   if (!iso) return ''
   const d = new Date(iso)
   return `${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })} · ${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+}
+
+// The email to the customer once an exchange is accepted (or done), written
+// out ready to send — the admin can change any of it first. `lines`: what
+// goes back and what comes instead; `diff`: + they owe it, − we owe it.
+function exchangeEmail({ order, lines, diff, fee, feePaid, refundTo, done = false }) {
+  const first = String(order?.customer_name || '').trim().split(/\s+/)[0] || 'there'
+  const swap = lines.map((l) => `• ${l.from} ×${l.qty} → ${l.to}`).join('\n')
+  const owesFee = fee > 0 && feePaid
+  const parts = [
+    `Hi ${first},`,
+    done
+      ? `Your exchange for order ${order?.id} is done — here's what changed.`
+      : `Good news — we've accepted your exchange request for order ${order?.id}.`,
+    `The exchange:\n${swap}`,
+  ]
+  if (diff > 0) {
+    parts.push(`The new piece costs ${taka(diff)} more. Please pay the rider ${taka(diff + (owesFee ? fee : 0))} when it arrives (price difference ${taka(diff)}${owesFee ? ` + delivery ${taka(fee)}` : ''}).`)
+  } else if (diff < 0) {
+    parts.push(refundTo
+      ? `The new piece costs ${taka(-diff)} less, so we'll send ${taka(-diff)} to your bKash ${refundTo} (Send Money) once we have your piece back.`
+      : `The new piece costs ${taka(-diff)} less, so we'll send ${taka(-diff)} back to you by bKash. Please reply with the bKash number we should send it to.`)
+    if (owesFee) parts.push(`The delivery charge for the exchange, ${taka(fee)}, is paid to the rider.`)
+  } else if (owesFee) {
+    parts.push(`The delivery charge for the exchange, ${taka(fee)}, is paid to the rider when the new piece arrives.`)
+  } else {
+    parts.push(`There's nothing to pay — the exchange delivery is on us.`)
+  }
+  if (!done) parts.push('Our rider will bring the new piece and take the old one — please keep it ready with its tags on.')
+  parts.push('Thanks,\nPAUSE')
+  return { subject: `${done ? 'Your exchange is done' : 'Your exchange is accepted'} · order ${order?.id}`, text: parts.join('\n\n') }
+}
+
+// The email, open to edit, then sent to the order's customer.
+function EmailComposer({ orderId, email, start, onClose }) {
+  const [subject, setSubject] = useState(start.subject)
+  const [text, setText] = useState(start.text)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState('')
+  async function send() {
+    setBusy(true)
+    setNote('')
+    const { error, to } = await emailCustomer(orderId, subject, text)
+    setBusy(false)
+    if (error) return setNote(`Couldn't send — ${error}`)
+    setNote(`Sent to ${to}.`)
+    setTimeout(onClose, 1200)
+  }
+  return (
+    <div className="rm-mail">
+      <div className="rm-mail-head mono">
+        EMAIL TO THE CUSTOMER {email ? `· ${email}` : '· no email on this order'}
+        <InfoTip>Written out from the exchange — change anything, then Send. It goes from the shop's email address in the PAUSE letter style.</InfoTip>
+      </div>
+      <input className="rm-note" value={subject} onChange={(e) => setSubject(e.target.value)} aria-label="Subject" />
+      <textarea className="rm-note rm-mail-text" rows={12} value={text} onChange={(e) => setText(e.target.value)} aria-label="Email" />
+      {note && <div className="mono rm-mail-note">{note}</div>}
+      <div className="rm-actions">
+        <button type="button" className="courier-btn ghost mono" onClick={onClose} disabled={busy}>Close</button>
+        <button type="button" className="courier-btn mono" onClick={send} disabled={busy || !email || !subject.trim() || !text.trim()}>{busy ? 'Sending…' : 'Send email'}</button>
+      </div>
+    </div>
+  )
 }
 
 const FILTERS = [
@@ -164,17 +227,25 @@ function RequestCard({ r, fresh, order, productsById, onReload }) {
           {r.items.map((it, i) => (
             <li key={i}>
               Asked: {it.product_name} · <span className="mono">{it.size} × {it.qty}</span>
-              {it.exchange_size && <span className="mono rm-want"> → wants {it.exchange_size}</span>}
+              {(it.exchange_size || it.exchange_product_name) && (
+                <span className="mono rm-want"> → wants {it.exchange_product_name ? `${it.exchange_product_name} ` : ''}{it.exchange_size}</span>
+              )}
+              {it.exchange_price != null && Number(it.exchange_price) !== Number(it.price) && (
+                <span className="mono rm-want">
+                  {' '}({Number(it.exchange_price) > Number(it.price) ? '+' : '−'} {taka(Math.abs(Number(it.exchange_price) - Number(it.price)) * (Number(it.qty) || 1))})
+                </span>
+              )}
             </li>
           ))}
         </ul>
       )}
       {r.details && <p className="rm-details">“{r.details}”</p>}
+      {r.refund_to && <p className="rm-details mono">Refund the difference to bKash: <b>{r.refund_to}</b></p>}
 
       {open ? (
         <Complete r={r} order={order} productsById={productsById} onReload={onReload} />
       ) : (
-        <Resolution r={r} />
+        <Resolution r={r} order={order} onReload={onReload} />
       )}
     </article>
   )
@@ -228,7 +299,7 @@ function Complete({ r, order, productsById, onReload }) {
     const init = {}
     for (const it of lines) {
       const a = askedFor(r, it)
-      init[it.id] = { on: !!a || lines.length === 1, qty: Math.min(Number(a?.qty || it.qty), Number(it.qty)), to: a?.exchange_size || '' }
+      init[it.id] = { on: !!a || lines.length === 1, qty: Math.min(Number(a?.qty || it.qty), Number(it.qty)), to: a?.exchange_size || '', prod: a?.exchange_product_id || '' }
     }
     return init
   })
@@ -264,6 +335,28 @@ function Complete({ r, order, productsById, onReload }) {
     : []
   const suggested = chosen.reduce((sum, it) => sum + Number(it.price) * Number(pick[it.id].qty || 0), 0)
 
+  // The exchange's price difference: each ticked piece moving to another
+  // product, at that product's price (a running sale is taken off on save).
+  const targetOf = (it) => {
+    const id = pick[it.id]?.prod
+    return id && String(id) !== String(it.product_id) ? productsById.get(String(id)) : null
+  }
+  const diffTotal = chosen.reduce((sum, it) => {
+    const t = targetOf(it)
+    return t ? sum + (Number(t.price) - Number(it.price)) * (Number(pick[it.id].qty) || 1) : sum
+  }, 0)
+  const feeNow = Math.max(0, Number(fee) || 0)
+  // The email, ready to edit, from the exchange as it's set up here.
+  const [mail, setMail] = useState(null)
+  function draftMail() {
+    const lines = chosen.map((it) => {
+      const t = targetOf(it)
+      const to = pick[it.id].to || '?'
+      return { from: `${it.product_name} ${it.size}`, to: t ? `${t.name}${t.variant ? ` · ${t.variant}` : ''} ${to}` : `${it.product_name} ${to}`, qty: Number(pick[it.id].qty) || 1 }
+    })
+    return exchangeEmail({ order, lines, diff: diffTotal, fee: feeNow, feePaid, refundTo: r.refund_to })
+  }
+
   async function run(action) {
     setError('')
     let items = []
@@ -272,7 +365,7 @@ function Complete({ r, order, productsById, onReload }) {
       items = chosen.map((it) => ({
         item_id: it.id,
         qty: Number(pick[it.id].qty) || 1,
-        ...(action === 'exchange' ? { to_size: pick[it.id].to } : {}),
+        ...(action === 'exchange' ? { to_size: pick[it.id].to, ...(pick[it.id].prod && String(pick[it.id].prod) !== String(it.product_id) ? { to_product_id: String(pick[it.id].prod) } : {}) } : {}),
       }))
       if (action === 'exchange' && items.some((x) => !x.to_size)) return setError('Pick the new size for every ticked piece.')
     }
@@ -283,7 +376,7 @@ function Complete({ r, order, productsById, onReload }) {
       action === 'reject'
         ? 'Reject this request? Nothing in stock or sales changes.'
         : action === 'exchange'
-          ? `Complete the exchange? The order changes to the new sizes, the old sizes go back into stock and the new ones come out.${feeAmount ? ` Delivery ${taka(feeAmount)} — ${feePaid ? 'paid by the customer' : 'paid by us, off revenue'}.` : ''}`
+          ? `Complete the exchange? The order changes to the new pieces, the old ones go back into stock and the new ones come out.${feeAmount ? ` Delivery ${taka(feeAmount)} — ${feePaid ? 'paid by the customer' : 'paid by us, off revenue'}.` : ''}${diffTotal > 0 ? ` The customer owes ${taka(diffTotal)} more — the rider collects it, and it's added to revenue.` : diffTotal < 0 ? ` We owe the customer ${taka(-diffTotal)} — send it by bKash${r.refund_to ? ` to ${r.refund_to}` : ''}; it comes off revenue.` : ''}`
           : `Complete the refund of ${taka(amount)}? The pieces go back into stock and the money comes off revenue.${feeAmount ? ` Pickup delivery ${taka(feeAmount)} — paid by us, off revenue.` : ''}`
     if (!window.confirm(ask)) return
 
@@ -297,12 +390,14 @@ function Complete({ r, order, productsById, onReload }) {
     onReload()
   }
 
+  // Accepted: the email to the customer opens, written out, to edit and send.
   async function accept() {
     setBusy(true)
     const { error } = await updateRequest(r.id, 'approved', note.trim())
     setBusy(false)
     if (error) return setError("Couldn't save. Try again.")
-    onReload()
+    if (mode === 'exchange' && order?.customer_email) setMail(draftMail())
+    else onReload()
   }
 
   if (!order) {
@@ -328,8 +423,15 @@ function Complete({ r, order, productsById, onReload }) {
           {lines.map((it) => {
             const p = pick[it.id] || {}
             const product = productsById.get(String(it.product_id))
-            const stock = product ? stockMap(product) : null
-            const sizes = (product?.sizes || []).filter((z) => z !== it.size)
+            // Exchange to: this product, or another at the same price.
+            const swapTo = p.prod && String(p.prod) !== String(it.product_id) ? productsById.get(String(p.prod)) : null
+            const target = swapTo || product
+            const stock = target ? stockMap(target) : null
+            const sizes = (target?.sizes || []).filter((z) => swapTo || z !== it.size)
+            // Any other product — same price first, then the nearest.
+            const others = [...productsById.values()]
+              .filter((x) => String(x.id) !== String(it.product_id))
+              .sort((a, b) => Math.abs(Number(a.price) - Number(it.price)) - Math.abs(Number(b.price) - Number(it.price)))
             return (
               <div className={`rm-line ${p.on ? 'on' : ''}`} key={it.id}>
                 <label className="rm-line-pick">
@@ -350,6 +452,18 @@ function Complete({ r, order, productsById, onReload }) {
                         {Array.from({ length: Number(it.qty) }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
                       </select>
                     </label>
+                    {mode === 'exchange' && others.length > 0 && (
+                      <label>
+                        Product
+                        <select value={p.prod || ''} onChange={(e) => set(it.id, { prod: e.target.value, to: '' })}>
+                          <option value="">Same product</option>
+                          {others.map((x) => {
+                            const d = Number(x.price) - Number(it.price)
+                            return <option key={x.id} value={x.id}>{x.name}{x.variant ? ` · ${x.variant}` : ''} · {taka(x.price)}{d ? ` (${d > 0 ? '+' : '−'}${taka(Math.abs(d))})` : ''}</option>
+                          })}
+                        </select>
+                      </label>
+                    )}
                     {mode === 'exchange' && (
                       <label>
                         New size
@@ -403,6 +517,25 @@ function Complete({ r, order, productsById, onReload }) {
         </div>
       )}
 
+      {/* Another product at a different price: who owes what. */}
+      {mode === 'exchange' && diffTotal !== 0 && (
+        <div className={`rm-diff mono ${diffTotal > 0 ? 'pay' : 'back'}`}>
+          <span className="rm-fee-head">
+            {diffTotal > 0 ? `Price difference · customer pays + ${taka(diffTotal)}` : `Price difference · we refund ${taka(-diffTotal)}`}
+            <InfoTip>
+              <p><b>Dearer product</b> — the customer pays the difference to the rider with the new piece (plus the delivery charge when they pay it). It's added to this order's revenue; the courier keeps its 1% of the cash it collects, as on any order.</p>
+              <p><b>Cheaper product</b> — we owe the customer the difference. Send it by bKash (Send Money) to the number they gave, then mark it sent once the exchange is done. It comes off this order's revenue.</p>
+              <p>Prices are the products' prices now; a running sale is taken off when you complete it.</p>
+            </InfoTip>
+          </span>
+          {diffTotal > 0 ? (
+            <span>Rider collects {taka(diffTotal + (feePaid ? feeNow : 0))} = difference {taka(diffTotal)}{feePaid && feeNow ? ` + delivery ${taka(feeNow)}` : ''}.</span>
+          ) : (
+            <span>Send {taka(-diffTotal)} by bKash to <b>{r.refund_to || 'the number they give you'}</b>{feePaid && feeNow ? `; the rider still collects the delivery ${taka(feeNow)}` : ''}.</span>
+          )}
+        </div>
+      )}
+
       {mode === 'refund' && inStockInstead.length > 0 && (
         <div className="rm-error mono">
           The size they needed is in stock: {inStockInstead.join(', ')}. Our policy is to exchange a wrong size when the right one is available — switch to Exchange, unless you've agreed otherwise on the call.
@@ -440,7 +573,16 @@ function Complete({ r, order, productsById, onReload }) {
 
       {error && <div className="rm-error mono">{error}</div>}
 
+      {mail && (
+        <EmailComposer orderId={order.id} email={order.customer_email} start={mail} onClose={() => { setMail(null); onReload() }} />
+      )}
+
       <div className="rm-actions">
+        {mode === 'exchange' && !mail && order?.customer_email && (
+          <button type="button" className="courier-btn ghost mono" disabled={busy} onClick={() => setMail(draftMail())} title="Write the customer an email about this exchange">
+            ✉ Email the customer
+          </button>
+        )}
         {r.status === 'open' && mode !== 'reject' && (
           <button type="button" className="courier-btn ghost mono" disabled={busy} onClick={accept} title="Told the customer yes — waiting for the piece to come back">
             Accept, waiting for the piece
@@ -467,8 +609,33 @@ function Complete({ r, order, productsById, onReload }) {
 }
 
 // What was done, once a request is closed — kept for good.
-function Resolution({ r }) {
+function Resolution({ r, order, onReload }) {
   const res = r.resolution
+  const [trx, setTrx] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [mail, setMail] = useState(null)
+  const [note, setNote] = useState('')
+  const refundDue = Number(res?.refund_due) || 0
+  const extraDue = Number(res?.extra_due) || 0
+  const refundTo = res?.refund_to || r.refund_to
+
+  async function markSent() {
+    setBusy(true)
+    const { error } = await markExchangeRefund(r.id, trx.trim())
+    setBusy(false)
+    if (error) return setNote("Couldn't save — has the exchange SQL run?")
+    onReload()
+  }
+
+  function draft() {
+    const lines = (res.items || []).map((x) => ({
+      from: `${x.product_name} ${x.from_size}`,
+      to: `${x.to_product_name && String(x.to_product_id) !== String(x.product_id) ? x.to_product_name : x.product_name} ${x.to_size}`,
+      qty: x.qty,
+    }))
+    return exchangeEmail({ order, lines, diff: Number(res.price_diff) || exchangeDiff(res.items), fee: Number(res.fee) || 0, feePaid: res.fee_paid !== false, refundTo, done: true })
+  }
+
   return (
     <div className={`rm-done ${res?.action || r.status}`}>
       {!res && <div className="mono">{r.status === 'rejected' ? 'Rejected' : 'Closed'} {r.resolved_at ? `· ${when(r.resolved_at)}` : ''} (before stock updates were added)</div>}
@@ -481,12 +648,40 @@ function Resolution({ r }) {
           </div>
           {(res.items || []).map((x, i) => (
             <div key={i} className="rm-done-line">
-              {x.product_name}: <b className="mono">{x.from_size} → {x.to_size}</b> × {x.qty}
+              {x.to_product_name && String(x.to_product_id) !== String(x.product_id)
+                ? <>{x.product_name} {x.from_size} → <b className="mono">{x.to_product_name} {x.to_size}</b> × {x.qty}</>
+                : <>{x.product_name}: <b className="mono">{x.from_size} → {x.to_size}</b> × {x.qty}</>}
               <span className="mono dim">
                 {' '}· stock now {x.from_size} {x.from_left ?? '—'}, {x.to_size} {x.to_left ?? '—'}
               </span>
             </div>
           ))}
+          {extraDue > 0 && (
+            <div className="rm-done-line mono">Price difference + {taka(extraDue)} · the rider collects it with the new piece · in revenue</div>
+          )}
+          {refundDue > 0 && (
+            <div className={`rm-refund mono ${res.refund_sent_at ? 'sent' : ''}`}>
+              {res.refund_sent_at ? (
+                <>✓ Refund {taka(refundDue)} sent to bKash {refundTo || '—'} · {when(res.refund_sent_at)}{res.refund_trx ? ` · TrxID ${res.refund_trx}` : ''}</>
+              ) : (
+                <>
+                  <span>
+                    Refund {taka(refundDue)} by bKash (Send Money) to <b>{refundTo || 'ask the customer for a number'}</b>
+                    <InfoTip>Send the difference from the shop's bKash, then paste the TrxID from the SMS here and Mark sent. It's already taken off this order's revenue.</InfoTip>
+                  </span>
+                  <span className="rm-refund-row">
+                    <input value={trx} onChange={(e) => setTrx(e.target.value.toUpperCase())} placeholder="TrxID (optional)" maxLength={40} />
+                    <button type="button" className="courier-btn mono" disabled={busy} onClick={markSent}>{busy ? 'Saving…' : 'Mark sent'}</button>
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+          {note && <div className="rm-error mono">{note}</div>}
+          {order?.customer_email && !mail && (
+            <button type="button" className="courier-btn ghost mono rm-mail-btn" onClick={() => setMail(draft())}>✉ Email the customer</button>
+          )}
+          {mail && <EmailComposer orderId={order.id} email={order.customer_email} start={mail} onClose={() => setMail(null)} />}
         </>
       )}
       {res?.action === 'refund' && (

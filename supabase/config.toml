@@ -1,6 +1,6 @@
 # Supabase CLI settings for the GitHub Actions in .github/workflows/supabase.yml.
-# Every function checks its own caller (admin email, webhook signature, or
-# nothing it needs to), so none relies on the gateway's JWT check — and the
+# Every function checks its own caller (the database's is_admin(), a webhook
+# signature, or nothing it needs to), so none relies on the gateway's JWT check — and the
 # database trigger (notify) and Auth's email hook (send-auth-email) call
 # without one. Same as turning "Verify JWT" off in the dashboard.
 
@@ -22,6 +22,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-auth-email]
+verify_jwt = false
+
+[functions.send-customer-email]
 verify_jwt = false
 
 [functions.send-order-confirmation]

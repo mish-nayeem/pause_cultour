@@ -16,9 +16,23 @@
 //
 // No secrets to add: the notification keys (VAPID) are made by this function
 // the first time and kept in the push_config table, which only it can read.
-// ADMIN_EMAIL (already set) says who the admin is.
+// Who the admin is comes from the database's is_admin().
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// Whether the caller is the admin — asked of the database's own is_admin(),
+// the same check every admin-only table and function uses, so the admin's
+// address lives in one place (a changed admin email can't lock this out).
+async function callerIsAdmin(req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization') ?? ''
+  if (!/^Bearer\s+\S+/i.test(auth)) return false
+  const asCaller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: auth } },
+  })
+  const { data, error } = await asCaller.rpc('is_admin')
+  return !error && data === true
+}
+
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -212,11 +226,7 @@ Deno.serve(async (req) => {
     if (action === 'order') return json(await newOrder(db, String(body.order_id || '')))
 
     // Everything else is the admin's.
-    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-    const adminEmail = (Deno.env.get('ADMIN_EMAIL') ?? Deno.env.get('ADMIN_NOTIFY_EMAIL') ?? '').trim().toLowerCase()
-    if (!adminEmail) return json({ error: 'Not configured' }, 500)
-    const { data: caller } = await db.auth.getUser(token)
-    if ((caller?.user?.email ?? '').toLowerCase() !== adminEmail) return json({ error: 'Not allowed' }, 403)
+    if (!(await callerIsAdmin(req))) return json({ error: 'Not allowed' }, 403)
 
     if (action === 'key') return json({ publicKey: (await vapidKeys(db)).publicKey })
 

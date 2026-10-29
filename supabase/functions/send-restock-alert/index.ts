@@ -22,6 +22,20 @@
 //   ADMIN_EMAIL (falls back to ADMIN_NOTIFY_EMAIL), SITE_URL
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// Whether the caller is the admin — asked of the database's own is_admin(),
+// the same check every admin-only table and function uses, so the admin's
+// address lives in one place (a changed admin email can't lock this out).
+async function callerIsAdmin(req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization') ?? ''
+  if (!/^Bearer\s+\S+/i.test(auth)) return false
+  const asCaller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: auth } },
+  })
+  const { data, error } = await asCaller.rpc('is_admin')
+  return !error && data === true
+}
+
 import * as Sentry from 'npm:@sentry/deno@^8'
 
 // defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
@@ -122,32 +136,14 @@ Deno.serve(async (req) => {
     // ---- Admin only ----
     // The anon key on its own is a valid JWT, so the caller's own token is
     // what gets checked here, not just that a token exists.
-    const authHeader = req.headers.get('Authorization') ?? ''
-    const token = authHeader.replace(/^Bearer\s+/i, '')
-    const adminEmail = (
-      Deno.env.get('ADMIN_EMAIL') ??
-      Deno.env.get('ADMIN_NOTIFY_EMAIL') ??
-      ''
-    )
-      .trim()
-      .toLowerCase()
-
-    if (!adminEmail) {
-      console.error('[send-restock-alert] ADMIN_EMAIL is not set')
-      return json({ error: 'Not configured' }, 500)
+    if (!(await callerIsAdmin(req))) {
+      return json({ error: 'Not allowed' }, 403)
     }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
-
-    const { data: caller } = await supabase.auth.getUser(token)
-    const callerEmail = (caller?.user?.email ?? '').trim().toLowerCase()
-
-    if (!callerEmail || callerEmail !== adminEmail) {
-      return json({ error: 'Not allowed' }, 403)
-    }
 
     // ---- Who is waiting ----
     let query = supabase

@@ -69,10 +69,14 @@ export async function getSession() {
 // (ordered_qty, paid_subtotal, paid_total) for the order's own details.
 function netOfRefunds(o) {
   const refunded = Number(o.refunded_amount) || 0
+  // An exchange to a dearer product: the difference the rider collected with
+  // the second parcel is revenue too. (A cheaper one's difference was
+  // refunded, so it's in refunded_amount.)
+  const extra = Number(o.exchange_extra) || 0
   // Pieces handed back to the rider at the door (✕ on the item): never
   // paid for, so they come off what's collected as well as what's sold.
   let rejectedValue = 0
-  let changed = refunded > 0
+  let changed = refunded > 0 || extra > 0
   const items = (o.order_items || []).map((it) => {
     const refundedBack = Number(it.returned_qty) || 0
     const doorBack = Number(it.rejected_qty) || 0
@@ -82,11 +86,12 @@ function netOfRefunds(o) {
     return { ...it, ordered_qty: it.qty, qty: Math.max(0, Number(it.qty) - refundedBack - doorBack) }
   })
   if (!changed) return o
-  const off = refunded + rejectedValue
+  const off = refunded + rejectedValue - extra
   return {
     ...o,
     order_items: items,
     refunded,
+    exchange_extra: extra,
     rejected_value: rejectedValue,
     paid_subtotal: o.subtotal,
     paid_total: o.total,
@@ -357,7 +362,8 @@ export function orderMoney(o) {
     const items = itemsNet(o)
     // The courier's 1% was taken on what the rider collected — before any
     // refund given back later — so it's worked out on that, not on what's
-    // left after the refund.
+    // left after the refund. That includes an exchange's price difference
+    // the rider collected with the second parcel (already in `items`).
     const collected = items + (Number(o.refunded) || 0)
     const codFee = Math.round(collected * COD_FEE_RATE * 100) / 100
     // An exchange's second parcel: its delivery charge is the courier's
