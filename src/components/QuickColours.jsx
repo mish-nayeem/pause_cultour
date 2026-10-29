@@ -10,8 +10,8 @@ import { IconX } from './Icons.jsx'
 import { nextProductId as nextId, tagOf } from './ProductForm.jsx'
 
 // Add another colour, right after a product is added (or from its edit
-// form). The piece is the lead: the shop shows its card only, and its
-// product page shows every colour as a small photo. Each colour here needs
+// form). Every colour is its own card in the shop, sliding through its own
+// photos; each colour's product page shows the others as small photos. Each colour here needs
 // just its photos and how many there are — everything else (name, price,
 // sizes, chart, details) is the lead's. A colour name is optional.
 export default function QuickColours({ base, existingIds, onDone }) {
@@ -94,8 +94,8 @@ export default function QuickColours({ base, existingIds, onDone }) {
         <h3 className="display">
           {base.name}
           <InfoTip>
-            <p>The shop shows one card for this piece — this colour, the lead — sliding through its own photos only.</p>
-            <p>Open it and every colour shows as a small photo under the price; tapping one shows that colour's photos.</p>
+            <p>Every colour is its own card in the shop, sliding through its own photos when the pointer rests on it.</p>
+            <p>Open one and it's the big one; the other colours show as small photos under the price — tap one to go to it.</p>
             <p>Colours belong together by name: anything named {base.name} is a colour of this piece.</p>
           </InfoTip>
         </h3>
@@ -106,7 +106,7 @@ export default function QuickColours({ base, existingIds, onDone }) {
         <div className="qc-colour lead">
           <span className="qc-thumb">{base.images?.[0] && <img src={imgUrl(base.images[0], { w: 160 })} alt="" />}</span>
           <span className="qc-cname mono">{base.variant || 'Lead colour'}</span>
-          <span className="qc-tag mono">LEAD · ON THE SHOP</span>
+          <span className="qc-tag mono">FIRST COLOUR</span>
         </div>
         {added.map((c) => (
           <div className="qc-colour" key={c.id}>

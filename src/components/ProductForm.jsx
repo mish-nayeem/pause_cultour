@@ -225,6 +225,15 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     String(r.id) !== String(p.id) && p.name.trim() && (r.name || '').trim().toLowerCase() === p.name.trim().toLowerCase()
   )
 
+  // Editing one colour: the piece's other colours, found by the name it had
+  // when the form opened (a rename takes them along). Saving passes the
+  // shared details on to them — each keeps its own photos, colour name and
+  // stock.
+  const siblings = existing
+    ? allProducts.filter((r) => String(r.id) !== String(existing.id) && (r.name || '').trim().toLowerCase() === (existing.name || '').trim().toLowerCase())
+    : []
+  const [shareWithColours, setShareWithColours] = useState(true)
+
   const knownLabels = mergeLabels(detailLabels, rememberedLabels())
   const [detailRows, setDetailRows] = useState(() => {
     const last = rememberedLabels()
@@ -440,6 +449,27 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       { ...p, id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) },
       isNewRecord
     )
+
+    // The other colours take the same details: name, price, category,
+    // collection, description, details, size chart and sizes. Their photos,
+    // colour name, stock and launch time stay their own; a size added here
+    // starts at 0 for them, a size dropped here leaves them too.
+    if (!saveError && shareWithColours && siblings.length) {
+      await Promise.all(siblings.map((r) => supabase.from('products').update({
+        name: p.name.trim(),
+        price: Number(p.price),
+        cost: p.cost === '' || p.cost == null ? null : Number(p.cost),
+        category: p.category || null,
+        drop_name: p.drop?.trim() || null,
+        description: p.description ?? '',
+        details: p.details ?? '',
+        size_chart: p.sizeChart ?? null,
+        sizes: p.sizes,
+        sizes_out: (r.sizes_out || []).filter((z) => p.sizes.includes(z)),
+        stock: stockMap(r) ? stockForSizes(r, p.sizes) : r.stock ?? null,
+        colour_group: link.group || r.colour_group || null,
+      }).eq('id', r.id)))
+    }
 
     // The same-named products that weren't linked yet join this one's group.
     if (!saveError && link.group && link.relink.length) {
@@ -1025,6 +1055,16 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       </div>
 
       {/* ---- Actions ---- */}
+      {siblings.length > 0 && (
+        <label className="pf-share mono">
+          <input type="checkbox" checked={shareWithColours} onChange={(e) => setShareWithColours(e.target.checked)} />
+          <span>
+            Use these details for the other {siblings.length === 1 ? 'colour' : `${siblings.length} colours`} too
+            ({siblings.map((c) => c.variant || c.id).join(', ')}) — their photos, colour name and stock stay their own.
+          </span>
+        </label>
+      )}
+
       <div className="pf-actions">
         <button className="pf-save mono" onClick={handleSave} disabled={saving || uploading}>
           {saving ? 'Saving…' : isNewRecord ? 'Create product' : 'Save changes'}

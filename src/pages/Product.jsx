@@ -513,7 +513,8 @@ export default function Product() {
             <div className="colours">
               <div className="field-label mono">COLOUR</div>
               <div className="colour-row">
-                {colours.map((c) => {
+                {/* The colour you're on first, then the others as small photos. */}
+                {[...colours].sort((a, b) => (b.id === product.id) - (a.id === product.id)).map((c) => {
                   const on = c.id === product.id
                   return (
                     <div className={`colour-opt ${on ? 'on' : ''}`} key={c.id}>
