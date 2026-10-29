@@ -76,6 +76,33 @@
 .sub-msg.good { color: var(--ink); }
 .sub-msg.bad { color: var(--signal); }
 
+/* ---------- Help links ---------- */
+
+/* One row, each word its own page: Track order, Support, Privacy policy,
+   Terms of service, Return & exchange portal. */
+.foot-help {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: start;
+  gap: 18px 36px;
+}
+
+.foot-help a {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color 0.2s ease;
+}
+
+.foot-help a:hover { border-bottom-color: var(--ink); }
+
 /* ---------- Link columns ---------- */
 
 .foot-cols {
@@ -264,6 +291,9 @@
   .foot-cols { grid-template-columns: repeat(3, auto); justify-content: space-between; gap: 30px 12px; }
   .site-footer .foot-label { margin-bottom: 0; }
   .foot-col a { font-size: 11px; line-height: 1.4; }
+  /* Two to a row on a phone. */
+  .foot-help { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; }
+  .foot-help a { font-size: 11px; justify-self: start; }
 
   /* The base row stacks: the @pause.cultour lockup, the socials, the fine
      print — never wider than the screen. */

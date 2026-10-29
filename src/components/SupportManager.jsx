@@ -3,14 +3,17 @@ import useDraft from '../lib/useDraft.js'
 import DraftNote from './DraftNote.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
-import { INFO_PAGES, SUPPORT_TABS } from '../content/info-pages.js'
+import { OWN_PAGES, basePage } from '../content/info-pages.js'
 import {
   DEFAULT_PORTAL,
   fetchPortal,
   fetchSupportPages,
+  fetchSupportTabs,
   savePortal,
   saveSupportPages,
+  saveSupportTabs,
 } from '../lib/support.js'
+import useDragSort from '../lib/useDragSort.js'
 import AdminBox from './AdminBox.jsx'
 import InfoTip from './InfoTip.jsx'
 import './support-manager.css'
@@ -20,11 +23,15 @@ const MIGRATION = 'has supabase-migration-support.sql been run?'
 // ---------------------------------------------------------------------------
 // Admin → Support → Support pages
 // ---------------------------------------------------------------------------
-// Every tab on /support except the portal: title, intro and its sections
-// (text, a table, or contact cards). A page never saved here shows the
-// built-in copy; "Back to default" drops the saved one again.
+// The tabs on /support — rename, hide, reorder (drag ⋮⋮), add your own —
+// and every page's copy: title, intro and its sections (text, a table, or
+// contact cards), the tabs' and the footer's own pages (Privacy policy,
+// Terms of service). A page never saved here shows the built-in copy;
+// "Back to default" drops the saved one again. About us is the About us
+// page's blocks (Website → About us); the portal has its own box below.
 
-const EDITABLE = SUPPORT_TABS.filter((t) => t.slug !== 'portal')
+const OWN_EDITABLE = OWN_PAGES.filter((t) => t.slug !== 'portal')
+const isCustom = (slug) => slug.startsWith('page-')
 
 function clone(v) {
   return JSON.parse(JSON.stringify(v))
@@ -32,28 +39,84 @@ function clone(v) {
 
 export function SupportPages() {
   const [saved, setSaved] = useState({})
-  const [slug, setSlug] = useState(EDITABLE[0].slug)
+  const [tabs, setTabs] = useState([])
+  const [slug, setSlug] = useState(null)
   const [draft, setDraft] = useState(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const [tabNote, setTabNote] = useState('')
+  const [newTab, setNewTab] = useState('')
+
+  const labelOf = (s, list = tabs) => list.find((t) => t.slug === s)?.label || OWN_PAGES.find((t) => t.slug === s)?.label || s
+  // A page as it is now: the saved copy over its built-in one.
+  const pageFor = (s, sv = saved, list = tabs) => {
+    const base = basePage(s, labelOf(s, list))
+    return clone(sv[s] && Array.isArray(sv[s].blocks) ? { ...base, ...sv[s] } : base)
+  }
 
   useEffect(() => {
-    fetchSupportPages().then(({ pages, saved, error }) => {
+    Promise.all([fetchSupportPages(), fetchSupportTabs()]).then(([{ saved, error }, { tabs }]) => {
       setSaved(saved)
-      setDraft(clone(pages[EDITABLE[0].slug]))
+      setTabs(tabs)
+      const first = tabs.find((t) => t.slug !== 'about')?.slug || OWN_EDITABLE[0].slug
+      setSlug(first)
+      setDraft(pageFor(first, saved, tabs))
       setLoading(false)
       if (error) setNote(`Couldn't load the saved pages — ${MIGRATION}`)
     })
   }, [])
 
+  // The tab row is saved the moment it changes.
+  async function saveTabs(next, done = 'Saved — the tab row is live.') {
+    setTabs(next)
+    const { error } = await saveSupportTabs(next)
+    setTabNote(error ? "Couldn't save the tabs — try again." : done)
+  }
+  const drag = useDragSort(tabs, setTabs, (next) => saveTabs(next))
+
+  function addTab(e) {
+    e.preventDefault()
+    const label = newTab.trim()
+    if (!label) return
+    const s = `page-${Date.now().toString(36)}`
+    const next = [...tabs, { slug: s, label, on: true }]
+    setNewTab('')
+    saveTabs(next, `Added ${label} — write its page on the right, then Save.`)
+    setSlug(s)
+    setDraft(clone(basePage(s, label)))
+    setNote('')
+  }
+
+  function renameTab(s, label) {
+    const clean = label.trim()
+    if (!clean || clean === labelOf(s)) return
+    saveTabs(tabs.map((t) => (t.slug === s ? { ...t, label: clean } : t)))
+  }
+
+  function removeTab(s) {
+    if (!window.confirm(`Delete the ${labelOf(s)} tab and its page?`)) return
+    const next = tabs.filter((t) => t.slug !== s)
+    saveTabs(next, 'Deleted.')
+    if (saved[s]) {
+      const pages = { ...saved }
+      delete pages[s]
+      saveSupportPages(pages).then(({ error }) => { if (!error) setSaved(pages) })
+    }
+    if (slug === s) {
+      const first = next.find((t) => t.slug !== 'about')?.slug || OWN_EDITABLE[0].slug
+      setSlug(first)
+      setDraft(pageFor(first, saved, next))
+    }
+  }
+
   // Unsaved words on a page stay in this browser until Save (one draft per page).
   const kept = useDraft(`support:${slug}`, draft, setDraft, { enabled: !loading && Boolean(draft) })
 
   function pick(next) {
-    if (next === slug) return
+    if (next === slug || next === 'about') return
     setSlug(next)
-    setDraft(clone(saved[next] && Array.isArray(saved[next].blocks) ? { ...INFO_PAGES[next], ...saved[next] } : INFO_PAGES[next]))
+    setDraft(pageFor(next))
     setNote('')
   }
 
@@ -99,7 +162,7 @@ export function SupportPages() {
   function save() {
     const clean = {
       ...draft,
-      title: (draft.title || '').trim() || INFO_PAGES[slug].title,
+      title: (draft.title || '').trim() || basePage(slug, labelOf(slug)).title,
       intro: (draft.intro || '').trim(),
     }
     setDraft(clean)
@@ -109,17 +172,19 @@ export function SupportPages() {
   function reset() {
     const next = { ...saved }
     delete next[slug]
-    const fresh = clone(INFO_PAGES[slug])
+    const fresh = clone(basePage(slug, labelOf(slug)))
     setDraft(fresh)
     persist(next, 'Back to the built-in copy.', fresh)
   }
 
   if (loading || !draft) return <div className="ab-empty mono">Loading…</div>
 
-  const label = EDITABLE.find((t) => t.slug === slug)?.label
-  const current = saved[slug] && Array.isArray(saved[slug].blocks) ? { ...INFO_PAGES[slug], ...saved[slug] } : INFO_PAGES[slug]
+  const label = labelOf(slug)
+  const base = basePage(slug, label)
+  const current = saved[slug] && Array.isArray(saved[slug].blocks) ? { ...base, ...saved[slug] } : base
   // Merged onto the built-in page both sides, so key order can't count as a change.
-  const dirty = JSON.stringify({ ...INFO_PAGES[slug], ...draft }) !== JSON.stringify(current)
+  const dirty = JSON.stringify({ ...base, ...draft }) !== JSON.stringify(current)
+  const onRow = tabs.some((t) => t.slug === slug)
   const KIND = { table: 'TABLE', contact: 'CONTACT CARDS', text: 'TEXT' }
 
   return (
@@ -128,11 +193,42 @@ export function SupportPages() {
       {/* ---- Which page ---- */}
       <AdminBox
         title="PAGES"
-        tip="Every tab on the storefront's Support page. Pick one to change its words. A dot means it's been edited here; the others show the built-in copy."
+        tip={
+          <>
+            <p><b>Support tabs</b>: the row on top of the Support page (the footer's SUPPORT opens the first). Drag ⋮⋮ to reorder, On / Off to take one off the row, ✕ to delete one you added, and + Add for a new one. Pick one to write its page.</p>
+            <p><b>Own pages</b>: Privacy policy and Terms of service open from the footer on their own, without the row.</p>
+            <p>A dot means it's been edited here; the others show the built-in copy. About Us shows the About us page (Website → About us).</p>
+          </>
+        }
         className="sm-nav"
       >
+        <span className="ab-label">SUPPORT TABS</span>
         <div className="sm-pages mono">
-          {EDITABLE.map((t) => (
+          {tabs.map((t, i) => (
+            <div className={`sm-tab ${t.on === false ? 'off' : ''} ${drag.dragging === i ? 'dragging' : ''}`} key={t.slug} {...drag.row(i)}>
+              <span className="sm-grip" {...drag.handle(i)}>⋮⋮</span>
+              <button type="button" className={slug === t.slug ? 'on' : ''} onClick={() => pick(t.slug)} title={t.slug === 'about' ? 'Written in Website → About us' : undefined}>
+                <span>{t.label}</span>
+                {saved[t.slug] && <em><i className="sm-dot" /></em>}
+              </button>
+              <button type="button" className={`ab-switch mono ${t.on === false ? '' : 'on'}`} title={t.on === false ? 'Hidden — tap to show it on the row' : 'On the row — tap to hide it'} onClick={() => saveTabs(tabs.map((x) => (x.slug === t.slug ? { ...x, on: x.on === false } : x)))}>
+                {t.on === false ? 'Off' : 'On'}
+              </button>
+              {isCustom(t.slug) && (
+                <button type="button" className="ab-tool danger" onClick={() => removeTab(t.slug)} aria-label={`Delete ${t.label}`}>✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+        <form className="sm-addtab" onSubmit={addTab}>
+          <input className="ab-input" value={newTab} onChange={(e) => setNewTab(e.target.value)} placeholder="New support option, e.g. Care guide" maxLength={40} />
+          <button type="submit" className="ab-btn mono" disabled={!newTab.trim()}>+ Add</button>
+        </form>
+        {tabNote && <div className="ab-note mono">{tabNote}</div>}
+
+        <span className="ab-label" style={{ marginTop: 16 }}>OWN PAGES</span>
+        <div className="sm-pages mono">
+          {OWN_EDITABLE.map((t) => (
             <button key={t.slug} type="button" className={slug === t.slug ? 'on' : ''} onClick={() => pick(t.slug)}>
               <span>{t.label}</span>
               <em>{saved[t.slug] ? <><i className="sm-dot" /> Edited</> : 'Built-in'}</em>
@@ -154,6 +250,12 @@ export function SupportPages() {
         }
         className="sm-edit"
       >
+        {onRow && (
+          <>
+            <span className="ab-label">TAB NAME</span>
+            <input className="ab-input" key={`tab-${slug}`} defaultValue={label} maxLength={40} onBlur={(e) => renameTab(slug, e.target.value)} />
+          </>
+        )}
         <span className="ab-label">PAGE TITLE</span>
         <input className="ab-input" value={draft.title || ''} onChange={(e) => set({ title: e.target.value })} />
         <span className="ab-label">INTRO</span>

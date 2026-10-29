@@ -171,3 +171,15 @@
   padding: 1px 6px;
   border-radius: 999px;
 }
+
+/* A support tab: ⋮⋮ to drag, the page, Showing / Hidden, ✕ for one you added. */
+.sm-tab { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto auto; gap: 6px; align-items: center; }
+.sm-tab.off > button:nth-child(2) { opacity: 0.5; }
+.sm-tab.dragging > button:nth-child(2) { border-color: var(--cobalt); }
+.sm-grip { font-size: 13px; color: var(--steel); letter-spacing: -2px; user-select: none; text-align: center; }
+.admin .main .sm-pages .sm-tab .ab-switch,
+.admin .main .sm-pages .sm-tab .ab-tool { padding: 5px 9px; font-size: 10.5px; border-radius: 999px; justify-content: center; }
+.admin .main .sm-pages .sm-tab .ab-tool { border-radius: 8px; }
+.sm-addtab { display: flex; gap: 6px; margin-top: 10px; }
+.sm-addtab .ab-input { flex: 1; min-width: 0; }
+@media (max-width: 760px) { .sm-pages .sm-tab { width: 100%; } }

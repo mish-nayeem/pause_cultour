@@ -14,10 +14,22 @@ function paragraphs(text) {
 }
 
 export default function About() {
+  usePageMeta('About us', 'The people and the process behind PAUSE.')
+  return (
+    <>
+      <Nav />
+      <AboutBody />
+      <Footer />
+    </>
+  )
+}
+
+// The About us blocks (Website → About us) — the page above, and the About
+// us tab on /support.
+export function AboutBody() {
   const [blocks, setBlocks] = useState([])
   const [loading, setLoading] = useState(true)
 
-  usePageMeta('About us', 'The people and the process behind PAUSE.')
   // Ticks when the admin changes something: re-read below.
   const live = useLive()
 
@@ -32,44 +44,38 @@ export default function About() {
   }, [live])
 
   return (
-    <>
-      <Nav />
-
-      <div className="about-page">
-        {/* The @pause.cultour mark from the footer stands in for a page title. */}
-        <div className="about-head">
-          <h1>
-            <img src="/footer-handle.png" alt="@pause.cultour — About us" width="668" height="128" />
-          </h1>
-        </div>
-
-        {loading && <p className="about-msg mono">Loading…</p>}
-
-        {!loading && blocks.length === 0 && (
-          <p className="about-msg mono">This story is still being written.</p>
-        )}
-
-        {/* Photo on the left, heading and text on the right; stacked on a phone. */}
-        {blocks.map((b) => (
-          <section className="about-block" key={b.id}>
-            <div className="about-shot">
-              <img src={imgUrl(b.image_url, { w: 1400 })} alt={b.heading || ''} loading="lazy" />
-            </div>
-            {(b.heading || b.description) && (
-              <div className="about-copy">
-                {b.heading && <h2 className="about-heading">{b.heading}</h2>}
-                {paragraphs(b.description).map((t, i) => (
-                  <p className="about-text" key={i}>{t}</p>
-                ))}
-              </div>
-            )}
-          </section>
-        ))}
-
-        <Link to="/shop" className="back-link mono">← BACK TO SHOP</Link>
+    <div className="about-page">
+      {/* The @pause.cultour mark from the footer stands in for a page title. */}
+      <div className="about-head">
+        <h1>
+          <img src="/footer-handle.png" alt="@pause.cultour — About us" width="668" height="128" />
+        </h1>
       </div>
 
-      <Footer />
-    </>
+      {loading && <p className="about-msg mono">Loading…</p>}
+
+      {!loading && blocks.length === 0 && (
+        <p className="about-msg mono">This story is still being written.</p>
+      )}
+
+      {/* Photo on the left, heading and text on the right; stacked on a phone. */}
+      {blocks.map((b) => (
+        <section className="about-block" key={b.id}>
+          <div className="about-shot">
+            <img src={imgUrl(b.image_url, { w: 1400 })} alt={b.heading || ''} loading="lazy" />
+          </div>
+          {(b.heading || b.description) && (
+            <div className="about-copy">
+              {b.heading && <h2 className="about-heading">{b.heading}</h2>}
+              {paragraphs(b.description).map((t, i) => (
+                <p className="about-text" key={i}>{t}</p>
+              ))}
+            </div>
+          )}
+        </section>
+      ))}
+
+      <Link to="/shop" className="back-link mono">← BACK TO SHOP</Link>
+    </div>
   )
 }
