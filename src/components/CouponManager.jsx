@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { pruneCouponBoxes } from '../lib/promos.js'
 import useDraft from '../lib/useDraft.js'
 import DraftNote from './DraftNote.jsx'
 import InfoTip from './InfoTip.jsx'
@@ -49,8 +50,10 @@ export default function CouponManager({ orders }) {
   const kept = useDraft('coupon:new', draft, setDraft)
 
   async function load() {
-    const { coupons } = await fetchCoupons()
+    const { coupons, error } = await fetchCoupons()
     setCoupons(coupons)
+    // A coupon gone or switched off takes its banner box with it.
+    if (!error) pruneCouponBoxes(coupons)
   }
 
   useEffect(() => { load() }, [])

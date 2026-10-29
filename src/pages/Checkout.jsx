@@ -134,6 +134,8 @@ export default function Checkout() {
   const [coupon, setCoupon] = useState(null) // { code, discount }
   const [couponError, setCouponError] = useState('')
   const [couponBusy, setCouponBusy] = useState(false)
+  // "Pay in full now" by bKash instead of the usual advance / cash on delivery.
+  const [payFull, setPayFull] = useState(false)
 
   useEffect(() => {
     refreshPrices()
@@ -175,7 +177,8 @@ export default function Checkout() {
 
   // The district decides everything below it: the delivery charge, whether an
   // advance is owed, and how much the rider still collects.
-  const bill = quote(subtotal, form.district, coupon?.discount || 0)
+  const bill = quote(subtotal, form.district, coupon?.discount || 0, payFull)
+  const usual = quote(subtotal, form.district, coupon?.discount || 0)
   const needsAdvance = bill.advance > 0
 
   async function applyCoupon(e) {
@@ -207,7 +210,7 @@ export default function Checkout() {
     setForm((prev) => ({
       ...prev,
       district,
-      trxId: district && district !== 'Dhaka' ? prev.trxId : '',
+      trxId: district && (district !== 'Dhaka' || payFull) ? prev.trxId : '',
     }))
     setErrors((prev) => ({ ...prev, district: undefined, trxId: undefined }))
   }
@@ -291,6 +294,7 @@ export default function Checkout() {
           advance_amount: bill.advance,
           advance_method: needsAdvance ? 'bkash' : null,
           advance_trx_id: trxId,
+          pay_full: payFull,
           coupon_code: coupon?.code || null,
           discount_amount: bill.discount,
           utm_source: attribution.utm_source || null,
@@ -500,14 +504,45 @@ export default function Checkout() {
               {errors.address && <em className="err mono">{errors.address}</em>}
             </label>
 
+            {/* How to pay: the usual (cash on delivery in Dhaka, a small
+                advance elsewhere) or the whole order now by bKash. */}
+            {bill.zone && (
+              <div className="pay-choice" role="radiogroup" aria-label="How to pay">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!payFull}
+                  className={`pay-opt ${!payFull ? 'on' : ''}`}
+                  onClick={() => setPayFull(false)}
+                >
+                  <span className="pay-opt-title mono">
+                    {usual.advance > 0 ? `ADVANCE ${money(usual.advance)} NOW` : 'CASH ON DELIVERY'}
+                  </span>
+                  <span className="pay-opt-sub mono">
+                    {usual.advance > 0 ? `${money(usual.due)} cash on delivery` : `Pay ${money(usual.total)} to the rider`}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={payFull}
+                  className={`pay-opt ${payFull ? 'on' : ''}`}
+                  onClick={() => setPayFull(true)}
+                >
+                  <span className="pay-opt-title mono">PAY IN FULL NOW</span>
+                  <span className="pay-opt-sub mono">{money(usual.total)} by bKash · nothing on delivery</span>
+                </button>
+              </div>
+            )}
+
             {/* Picked a district, so the charge is known — Dhaka shows its ৳80
                 and everywhere else swaps it for the advance that has to be
                 paid before the order is taken. */}
             {bill.zone && (
               <div className={`advance-head ${needsAdvance ? 'pay' : 'cod'}`}>
                 <div>
-                  <div className="advance-title mono">{bill.zone.title}</div>
-                  <div className="advance-sub mono">{bill.zone.note}</div>
+                  <div className="advance-title mono">{payFull ? 'PAY IN FULL BY BKASH' : bill.zone.title}</div>
+                  <div className="advance-sub mono">{payFull ? 'The whole order now — nothing to pay the rider.' : bill.zone.note}</div>
                 </div>
                 <div className="advance-amount">
                   {money(needsAdvance ? bill.advance : bill.fee)}
@@ -564,9 +599,11 @@ export default function Checkout() {
 
             <div className="payment-note mono">
               <span className="dot"></span>
-              {needsAdvance
-                ? `ADVANCE ${money(bill.advance)} BY BKASH · ${money(bill.due)} CASH ON DELIVERY`
-                : 'PAYMENT METHOD: CASH ON DELIVERY'}
+              {payFull && bill.zone
+                ? `PAID IN FULL BY BKASH · ${money(bill.advance)} · NOTHING ON DELIVERY`
+                : needsAdvance
+                  ? `ADVANCE ${money(bill.advance)} BY BKASH · ${money(bill.due)} CASH ON DELIVERY`
+                  : 'PAYMENT METHOD: CASH ON DELIVERY'}
             </div>
 
             {submitError && <em className="err mono" style={{ display: 'block', marginBottom: '14px' }}>{submitError}</em>}
@@ -658,7 +695,7 @@ export default function Checkout() {
             {needsAdvance && (
               <div className="summary-split">
                 <div className="summary-row mono">
-                  <span>ADVANCE (BKASH)</span>
+                  <span>{payFull ? 'PAID NOW (BKASH)' : 'ADVANCE (BKASH)'}</span>
                   <span>− {money(bill.advance)}</span>
                 </div>
                 <div className="summary-row mono due">

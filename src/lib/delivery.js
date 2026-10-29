@@ -119,7 +119,10 @@ export function zoneForDistrict(district) {
 // the rider collects — by then the advance, if there was one, is already paid.
 // `discount` is a coupon's money off the items (never the delivery charge);
 // place_order does the same sum and refuses an order whose numbers differ.
-export function quote(subtotal, district, discount = 0) {
+// `payFull`: the shopper pays the whole order now by bKash (checkout's
+// "Pay in full") — the advance is the total and nothing is due on delivery.
+// place_order applies the same rule (pay_full).
+export function quote(subtotal, district, discount = 0, payFull = false) {
   const zone = getZone(zoneForDistrict(district))
   const items = subtotal - discount
 
@@ -129,7 +132,7 @@ export function quote(subtotal, district, discount = 0) {
 
   const total = items + zone.fee
   // Never ask for more up front than the order is even worth.
-  const advance = Math.min(zone.advance, total)
+  const advance = payFull ? total : Math.min(zone.advance, total)
 
   return { zone, fee: zone.fee, advance, discount, total, due: total - advance }
 }
