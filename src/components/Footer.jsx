@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLive } from '../lib/liveSite.js'
 import { DockSlot } from './BottomDock.jsx'
 import { Link } from 'react-router-dom'
@@ -7,34 +7,7 @@ import { INSTAGRAM, FACEBOOK, TIKTOK } from '../content/info-pages.js'
 import { DEFAULT_FOOTER_ABOUT, fetchFooterAbout } from '../lib/siteSettings.js'
 import './footer.css'
 
-// One list of footer links. Its heading has a thin + beside it; a tap on the
-// heading — or, with a mouse, just pointing at it — slides the links open
-// under it (the + turns to ×), one list at a time.
-function FootCol({ id, label, open, onToggle, children }) {
-  const isOpen = open === id
-  return (
-    <div className={`foot-col ${isOpen ? 'open' : ''}`}>
-      <button
-        type="button"
-        className="foot-label foot-toggle mono"
-        aria-expanded={isOpen}
-        aria-controls={`foot-${id}`}
-        onClick={() => onToggle(id)}
-      >
-        {label}
-        <span className="foot-plus" aria-hidden="true" />
-      </button>
-      <div className="foot-links" id={`foot-${id}`}>
-        <div className="foot-links-inner">{children}</div>
-      </div>
-    </div>
-  )
-}
-
 export default function Footer() {
-  // The footer list open on a phone, if any.
-  const [open, setOpen] = useState(null)
-
   // The short about under the newsletter: the built-in words until the
   // saved ones arrive (or for good, if none are saved).
   const [about, setAbout] = useState(DEFAULT_FOOTER_ABOUT)
@@ -45,18 +18,6 @@ export default function Footer() {
     fetchFooterAbout().then((a) => { if (live) setAbout(a) })
     return () => { live = false }
   }, [changed])
-  const colsRef = useRef(null)
-  const toggle = (id) => setOpen((cur) => (cur === id ? null : id))
-
-  // A touch anywhere outside the lists closes the open one.
-  useEffect(() => {
-    if (!open) return
-    function away(e) {
-      if (colsRef.current && !colsRef.current.contains(e.target)) setOpen(null)
-    }
-    document.addEventListener('pointerdown', away)
-    return () => document.removeEventListener('pointerdown', away)
-  }, [open])
 
   const [email, setEmail] = useState('')
   const [state, setState] = useState('idle') // idle | saving | done | error
@@ -134,27 +95,15 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="foot-cols" ref={colsRef}>
-          <FootCol id="shop" label="SHOP" open={open} onToggle={toggle}>
-            <Link to="/shop">All products</Link>
-            <Link to="/shop?c=NEW">New arrivals</Link>
-            <Link to="/cart">Your cart</Link>
-            <Link to="/track">Track order</Link>
-          </FootCol>
-
-          <FootCol id="support" label="SUPPORT" open={open} onToggle={toggle}>
-            <Link to="/support/portal">Return &amp; exchange</Link>
-            <Link to="/support/delivery">Delivery info</Link>
-            <Link to="/support/contact">Contact us</Link>
-          </FootCol>
-
-          <FootCol id="policies" label="POLICIES" open={open} onToggle={toggle}>
-            <Link to="/support/refunds">Return &amp; refund</Link>
-            <Link to="/support/exchange">Exchange policy</Link>
-            <Link to="/support/privacy">Privacy policy</Link>
-            <Link to="/support/terms">Terms of service</Link>
-          </FootCol>
-        </div>
+        {/* One row of help links: each opens its own page. SUPPORT opens the
+            support pages with their tab row (Admin → Support → Support pages). */}
+        <nav className="foot-help" aria-label="Help">
+          <Link to="/track">Track order</Link>
+          <Link to="/support">Support</Link>
+          <Link to="/support/privacy">Privacy policy</Link>
+          <Link to="/support/terms">Terms of service</Link>
+          <Link to="/support/portal">Return &amp; exchange portal</Link>
+        </nav>
       </div>
 
       <div className="foot-base">

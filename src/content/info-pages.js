@@ -250,15 +250,28 @@ export const INFO_PAGES = {
   },
 }
 
-// The tab row on /support, left to right. `portal` isn't a page of copy —
-// it's the refund / exchange request form (src/components/ReturnPortal.jsx).
+// The tab row on /support, left to right, until the admin sets its own
+// (Admin → Support → Support pages: rename, hide, reorder, add more).
+// `about` shows the About us page's blocks (Website → About us).
 export const SUPPORT_TABS = [
   { slug: 'refunds', label: 'Return & Refund' },
   { slug: 'exchange', label: 'Exchange Policy' },
   { slug: 'delivery', label: 'Delivery Info' },
-  { slug: 'size-guide', label: 'Size Guide' },
   { slug: 'contact', label: 'Contact Info' },
+  { slug: 'about', label: 'About Us' },
+]
+
+// Pages of their own, each from the footer, without the tab row. `portal`
+// isn't a page of copy — it's the refund / exchange request form
+// (src/components/ReturnPortal.jsx).
+export const OWN_PAGES = [
   { slug: 'privacy', label: 'Privacy Policy' },
   { slug: 'terms', label: 'Terms of Service' },
   { slug: 'portal', label: 'Return & Exchange Portal' },
 ]
+
+// The copy a page starts from: its built-in one, or for a page the admin
+// added, an empty page with its name.
+export function basePage(slug, label = '') {
+  return INFO_PAGES[slug] || { eyebrow: 'SUPPORT', title: label || 'Support', intro: '', blocks: [{ type: 'text', heading: '', body: '' }] }
+}

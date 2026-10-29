@@ -3,26 +3,44 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import ReturnPortal from '../components/ReturnPortal.jsx'
-import { INFO_PAGES, SUPPORT_TABS } from '../content/info-pages.js'
-import { fetchSupportPages } from '../lib/support.js'
+import { AboutBody } from './About.jsx'
+import { INFO_PAGES, SUPPORT_TABS, OWN_PAGES } from '../content/info-pages.js'
+import { fetchSupportPages, fetchSupportTabs } from '../lib/support.js'
+import { useLive } from '../lib/liveSite.js'
 import usePageMeta from '../lib/usePageMeta.js'
 import './info.css'
 import './support.css'
+import './about.css'
 
-// /support/<tab> — every policy page and the Return & Exchange Portal behind
-// one tab row. The old addresses (/refunds, /delivery, …) redirect here.
+// /support/<tab> — the support pages behind one tab row (Return & Refund,
+// Exchange, Delivery, Contact, About us, and any the admin adds), each set
+// up in Admin → Support → Support pages. Privacy policy, Terms of service
+// and the Return & Exchange Portal are pages of their own at /support/<slug>
+// without the row. The old addresses (/refunds, /delivery, …) redirect here.
 export default function Support() {
-  const { slug = 'refunds' } = useParams()
-  const tab = SUPPORT_TABS.find((t) => t.slug === slug)
+  const { slug: asked } = useParams()
   // Built-in copy straight away, the admin's edits as soon as they load.
   const [pages, setPages] = useState(INFO_PAGES)
+  const [tabs, setTabs] = useState(() => SUPPORT_TABS.map((t) => ({ ...t, on: true })))
+  const [ready, setReady] = useState(false)
   const tabsRef = useRef(null)
+  const live = useLive()
 
   useEffect(() => {
     let alive = true
-    fetchSupportPages().then(({ pages }) => alive && setPages(pages))
+    Promise.all([fetchSupportPages(), fetchSupportTabs()]).then(([{ pages }, { tabs }]) => {
+      if (!alive) return
+      setPages(pages)
+      setTabs(tabs)
+      setReady(true)
+    })
     return () => { alive = false }
-  }, [])
+  }, [live])
+
+  const row = tabs.filter((t) => t.on !== false)
+  const slug = asked || row[0]?.slug || 'refunds'
+  const own = OWN_PAGES.find((t) => t.slug === slug)
+  const tab = tabs.find((t) => t.slug === slug)
 
   // On a phone the row scrolls sideways — keep the open tab in view.
   useEffect(() => {
@@ -30,33 +48,39 @@ export default function Support() {
     if (on) tabsRef.current.scrollTo({ left: on.offsetLeft - 20, behavior: 'smooth' })
   }, [slug])
 
-  const page = slug === 'portal' ? null : pages[slug]
-  usePageMeta(tab?.label || 'Support', page?.intro)
+  const page = slug === 'portal' || slug === 'about' ? null : pages[slug]
+  usePageMeta(own?.label || tab?.label || page?.title || 'Support', page?.intro)
 
-  if (!tab) return <Navigate to="/support" replace />
+  // An address with nothing behind it (a tab since deleted) goes to the
+  // first tab — once the admin's tabs are in, so a new tab isn't bounced.
+  if (ready && !own && !page && slug !== 'about') return <Navigate to="/support" replace />
 
   return (
     <>
       <Nav />
 
       <div className="support-page">
-        <div className="support-tabs-wrap">
-          <nav className="support-tabs mono" aria-label="Support" ref={tabsRef}>
-            {SUPPORT_TABS.map((t) => (
-              <Link
-                key={t.slug}
-                to={`/support/${t.slug}`}
-                className={t.slug === slug ? 'on' : ''}
-                aria-current={t.slug === slug ? 'page' : undefined}
-              >
-                {t.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+        {!own && (
+          <div className="support-tabs-wrap">
+            <nav className="support-tabs mono" aria-label="Support" ref={tabsRef}>
+              {row.map((t) => (
+                <Link
+                  key={t.slug}
+                  to={`/support/${t.slug}`}
+                  className={t.slug === slug ? 'on' : ''}
+                  aria-current={t.slug === slug ? 'page' : undefined}
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
 
         {slug === 'portal' ? (
           <ReturnPortal />
+        ) : slug === 'about' ? (
+          <AboutBody />
         ) : (
           page && <InfoBody page={page} />
         )}

@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { fetchSetting, saveSetting } from './siteSettings.js'
-import { INFO_PAGES } from '../content/info-pages.js'
+import { INFO_PAGES, SUPPORT_TABS } from '../content/info-pages.js'
 
 // The Support page: its copy (built-in defaults from src/content/info-pages.js,
 // overridden page by page from Admin → Support → Support pages) and the
@@ -8,6 +8,19 @@ import { INFO_PAGES } from '../content/info-pages.js'
 
 export const PAGES_KEY = 'support_pages'
 export const PORTAL_KEY = 'support_portal'
+export const TABS_KEY = 'support_tabs'
+
+// The tab row: [{ slug, label, on }] in order — the admin's, or the built-in
+// one. `on: false` keeps a tab (and its copy) but off the row.
+export async function fetchSupportTabs() {
+  const { value, error } = await fetchSetting(TABS_KEY)
+  const list = Array.isArray(value) ? value.filter((t) => t && t.slug && t.label) : null
+  return { tabs: list && list.length ? list : SUPPORT_TABS.map((t) => ({ ...t, on: true })), error }
+}
+
+export async function saveSupportTabs(tabs) {
+  return saveSetting(TABS_KEY, tabs)
+}
 
 export const DEFAULT_PORTAL = {
   heading: 'Return & Exchange',
