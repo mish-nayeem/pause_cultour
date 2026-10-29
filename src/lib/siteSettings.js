@@ -39,6 +39,17 @@ export async function fetchTicker() {
   return lines.length ? lines : DEFAULT_TICKER
 }
 
+// How fast the ticker runs, 1 (slow) to 10 (fast) — Admin → Homepage →
+// Ticker. Each step is the seconds one loop takes; 5 is the old pace.
+export const TICKER_SPEEDS = [90, 75, 62, 52, 40, 33, 27, 22, 17, 13]
+export const DEFAULT_TICKER_SPEED = 5
+
+export async function fetchTickerSpeed() {
+  const { value } = await fetchSetting('ticker_speed')
+  const n = Math.round(Number(value))
+  return n >= 1 && n <= TICKER_SPEEDS.length ? n : DEFAULT_TICKER_SPEED
+}
+
 // The homepage hero's button and its optional drop countdown — Admin →
 // Homepage. Stored as site_settings 'hero_button' and 'hero_countdown'.
 export const DEFAULT_HERO_BUTTON = { label: 'VIEW SHOP', link: '/shop' }

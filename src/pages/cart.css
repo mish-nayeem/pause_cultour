@@ -14,9 +14,7 @@
 }
 @keyframes empty-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-.empty-mark { font-size: 11px; letter-spacing: 0.18em; color: var(--steel); }
-.empty-title { font-size: clamp(34px, 6vw, 56px); line-height: 1; margin: 12px 0 14px; }
-.empty-line { font-size: 14px; line-height: 1.65; color: var(--steel); max-width: 36ch; margin: 0 auto 26px; }
+.empty-title { font-size: clamp(34px, 6vw, 56px); line-height: 1; margin: 12px 0 26px; }
 
 .empty-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .empty-btn {

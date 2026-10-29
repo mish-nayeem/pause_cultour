@@ -1395,14 +1395,6 @@ export default function Admin() {
     // every rule written for the dark theme holds for it too.
     <div className={`admin ${mini ? 'mini' : ''}`} data-theme={theme === 'orange' ? 'dark' : theme} data-accent={theme === 'orange' ? 'orange' : undefined} data-tab={tab}>
       <div className="admin-topbar">
-        {/* Phones: one step back inside the panel, like the phone's own Back. */}
-        {panelHistory.depth > 0 && (
-          <button type="button" className="admin-back" onClick={panelHistory.back} aria-label="Back">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-        )}
         <button
           type="button"
           className="admin-burger"
@@ -1474,6 +1466,16 @@ export default function Admin() {
       <div className="tab-wrap" key={tab}>
         <header className="top">
           <div>
+            {/* One step back inside the panel — Products → Collections → Back
+                lands on Products again. The browser's Back does the same. */}
+            {panelHistory.depth > 0 && (
+              <button type="button" className="admin-back" onClick={panelHistory.back}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                Back
+              </button>
+            )}
             <div className="admin-crumb mono">
               ADMIN / {SITE_KEYS.includes(tab) ? `WEBSITE / ${TAB_LABELS[tab].toUpperCase()}` : TAB_LABELS[tab].toUpperCase()}
               {tab === 'overview' &&

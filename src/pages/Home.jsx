@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import { fetchHeroSlides, slidesFor, PHONE_QUERY } from '../lib/hero.js'
-import { fetchTicker, fetchHeroExtras, fetchHeroVideo, DEFAULT_HERO_BUTTON } from '../lib/siteSettings.js'
+import { fetchTicker, fetchTickerSpeed, TICKER_SPEEDS, fetchHeroExtras, fetchHeroVideo, DEFAULT_HERO_BUTTON } from '../lib/siteSettings.js'
 import DropCountdown from '../components/DropCountdown.jsx'
 import PromoBanners from '../components/PromoBanners.jsx'
 import { imgUrl } from '../lib/images.js'
@@ -29,6 +29,7 @@ export default function Home() {
   // Admin → Homepage → Ticker. Empty until loaded, so the old lines never
   // flash up before a sale announcement.
   const [ticker, setTicker] = useState(null)
+  const [tickerSpeed, setTickerSpeed] = useState(null)
   // Admin → Homepage: the hero's button and the drop countdown.
   const [button, setButton] = useState(DEFAULT_HERO_BUTTON)
   const [countdown, setCountdown] = useState(null)
@@ -47,8 +48,10 @@ export default function Home() {
       setAllSlides(slides)
       setActive(0)
     })
-    fetchTicker().then((lines) => {
-      if (!cancelled) setTicker(lines)
+    Promise.all([fetchTicker(), fetchTickerSpeed()]).then(([lines, speed]) => {
+      if (cancelled) return
+      setTickerSpeed(speed)
+      setTicker(lines)
     })
     fetchHeroVideo().then(({ video }) => { if (!cancelled) setHeroVideo(video) })
     fetchHeroExtras().then(({ button, countdown }) => {
@@ -142,7 +145,11 @@ export default function Home() {
             phones work out the slide distance (-50% of the track) once, when
             the animation starts, so starting it on the empty placeholder
             left the strip standing still. */}
-        <div className={`ticker-track ${ticker ? 'run' : ''}`} key={ticker ? ticker.join('|') : 'empty'}>
+        <div
+          className={`ticker-track ${ticker ? 'run' : ''}`}
+          key={ticker ? ticker.join('|') : 'empty'}
+          style={tickerSpeed ? { '--tk-dur': `${TICKER_SPEEDS[tickerSpeed - 1]}s` } : undefined}
+        >
           {[0, 1].map((half) => (
             <div className="ticker-half" key={half}>
               {/* Repeated so even one short line fills a wide screen. */}

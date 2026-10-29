@@ -11,21 +11,6 @@
   .admin .admin-topbar { padding: 12px 16px; }
   .admin .admin-burger span { background: currentColor; }
 
-  .admin .admin-back {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    margin-left: -6px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    color: inherit;
-    cursor: pointer;
-  }
-
   /* Header: title on the left, theme dots on the right, one row. The email
      and the date are already shown elsewhere, so they are hidden here. */
   .admin .top {
