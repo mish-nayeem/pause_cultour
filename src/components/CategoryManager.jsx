@@ -227,7 +227,11 @@ export default function CategoryManager({ menu = SHOP_MENU, products = [] }) {
                 className="cm-name mono"
                 defaultValue={c.label}
                 aria-label="Name on the menu"
-                onBlur={(e) => rename(c, e.target.value)}
+                // A collection's name is on its products too, so it's renamed in
+                // Products → Collections, which moves everything along with it.
+                readOnly={menu === 'drops'}
+                title={menu === 'drops' ? 'Rename it in Products → Collections' : undefined}
+                onBlur={(e) => menu !== 'drops' && rename(c, e.target.value)}
               />
               <span className={`cm-count mono ${count === 0 ? 'zero' : ''}`} title={count === 0 ? 'Opens an empty page — check the spelling' : ''}>
                 {count === 0 ? '0 · empty' : count}

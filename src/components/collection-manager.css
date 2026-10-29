@@ -68,6 +68,23 @@
 
 .cl-rename:focus { outline: none; }
 
+/* Inside an open collection: the name with its Edit button beside it. */
+.cl-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.admin .main .cl-title-edit {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.admin .main .cl-title-edit:hover { border-color: var(--cobalt); color: var(--cobalt); }
+.cl-rename.cl-rename-title { margin: 6px 0 4px; font-size: 20px; font-weight: 700; width: min(360px, 100%); }
+
 .cl-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 14px; }
 
 .admin .main .cl-actions button {
