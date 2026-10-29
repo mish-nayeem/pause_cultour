@@ -164,7 +164,9 @@ function RequestCard({ r, fresh, order, productsById, onReload }) {
           {r.items.map((it, i) => (
             <li key={i}>
               Asked: {it.product_name} · <span className="mono">{it.size} × {it.qty}</span>
-              {it.exchange_size && <span className="mono rm-want"> → wants {it.exchange_size}</span>}
+              {(it.exchange_size || it.exchange_product_name) && (
+                <span className="mono rm-want"> → wants {it.exchange_product_name ? `${it.exchange_product_name} ` : ''}{it.exchange_size}</span>
+              )}
             </li>
           ))}
         </ul>
@@ -228,7 +230,7 @@ function Complete({ r, order, productsById, onReload }) {
     const init = {}
     for (const it of lines) {
       const a = askedFor(r, it)
-      init[it.id] = { on: !!a || lines.length === 1, qty: Math.min(Number(a?.qty || it.qty), Number(it.qty)), to: a?.exchange_size || '' }
+      init[it.id] = { on: !!a || lines.length === 1, qty: Math.min(Number(a?.qty || it.qty), Number(it.qty)), to: a?.exchange_size || '', prod: a?.exchange_product_id || '' }
     }
     return init
   })
@@ -272,7 +274,7 @@ function Complete({ r, order, productsById, onReload }) {
       items = chosen.map((it) => ({
         item_id: it.id,
         qty: Number(pick[it.id].qty) || 1,
-        ...(action === 'exchange' ? { to_size: pick[it.id].to } : {}),
+        ...(action === 'exchange' ? { to_size: pick[it.id].to, ...(pick[it.id].prod && String(pick[it.id].prod) !== String(it.product_id) ? { to_product_id: String(pick[it.id].prod) } : {}) } : {}),
       }))
       if (action === 'exchange' && items.some((x) => !x.to_size)) return setError('Pick the new size for every ticked piece.')
     }
@@ -328,8 +330,12 @@ function Complete({ r, order, productsById, onReload }) {
           {lines.map((it) => {
             const p = pick[it.id] || {}
             const product = productsById.get(String(it.product_id))
-            const stock = product ? stockMap(product) : null
-            const sizes = (product?.sizes || []).filter((z) => z !== it.size)
+            // Exchange to: this product, or another at the same price.
+            const swapTo = p.prod && String(p.prod) !== String(it.product_id) ? productsById.get(String(p.prod)) : null
+            const target = swapTo || product
+            const stock = target ? stockMap(target) : null
+            const sizes = (target?.sizes || []).filter((z) => swapTo || z !== it.size)
+            const samePrice = [...productsById.values()].filter((x) => String(x.id) !== String(it.product_id) && Number(x.price) === Number(it.price))
             return (
               <div className={`rm-line ${p.on ? 'on' : ''}`} key={it.id}>
                 <label className="rm-line-pick">
@@ -350,6 +356,15 @@ function Complete({ r, order, productsById, onReload }) {
                         {Array.from({ length: Number(it.qty) }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
                       </select>
                     </label>
+                    {mode === 'exchange' && samePrice.length > 0 && (
+                      <label>
+                        Product
+                        <select value={p.prod || ''} onChange={(e) => set(it.id, { prod: e.target.value, to: '' })}>
+                          <option value="">Same product</option>
+                          {samePrice.map((x) => <option key={x.id} value={x.id}>{x.name}{x.variant ? ` · ${x.variant}` : ''}</option>)}
+                        </select>
+                      </label>
+                    )}
                     {mode === 'exchange' && (
                       <label>
                         New size
@@ -481,7 +496,9 @@ function Resolution({ r }) {
           </div>
           {(res.items || []).map((x, i) => (
             <div key={i} className="rm-done-line">
-              {x.product_name}: <b className="mono">{x.from_size} → {x.to_size}</b> × {x.qty}
+              {x.to_product_name && String(x.to_product_id) !== String(x.product_id)
+                ? <>{x.product_name} {x.from_size} → <b className="mono">{x.to_product_name} {x.to_size}</b> × {x.qty}</>
+                : <>{x.product_name}: <b className="mono">{x.from_size} → {x.to_size}</b> × {x.qty}</>}
               <span className="mono dim">
                 {' '}· stock now {x.from_size} {x.from_left ?? '—'}, {x.to_size} {x.to_left ?? '—'}
               </span>

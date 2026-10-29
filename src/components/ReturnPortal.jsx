@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { DEFAULT_PORTAL, EXCHANGE_FEE, EXCHANGE_REASONS, REFUND_REASONS, REFUND_WRONG_SIZE, exchangeIsFree, fetchPortal, findOrder, sendRequest } from '../lib/support.js'
 import { imgUrl } from '../lib/images.js'
+import { fetchProducts } from '../lib/products.js'
+import { availableSizes } from '../lib/stock.js'
+import { sortSizes } from './ShopFilter.jsx'
 import './return-portal.css'
 
 const REASONS = {
@@ -18,6 +21,93 @@ const STATUS_NOTE = {
 
 function taka(n) {
   return '৳ ' + Number(n).toLocaleString()
+}
+
+// A product's price before any sale — what an exchange is matched on.
+const shelf = (p) => Number(p.originalPrice ?? p.price)
+
+// An exchange: the sizes of the same piece, the ones out of stock struck
+// through — and, when the size wanted isn't there, another product at the
+// same price to swap to instead.
+function ExchangePick({ item, pick, products, onChange }) {
+  const own = products.find((p) => String(p.id) === String(item.product_id))
+  const others = products.filter((p) =>
+    String(p.id) !== String(item.product_id) && shelf(p) === Number(item.price) && availableSizes(p).length > 0
+  )
+  const target = pick.exchange_product_id ? products.find((p) => String(p.id) === String(pick.exchange_product_id)) : own
+  const swapping = Boolean(pick.exchange_product_id) || pick.other
+
+  function sizesOf(p, skip) {
+    if (!p) return null
+    const left = new Set(availableSizes(p))
+    return (
+      <div className="rp-sizes mono" role="radiogroup" aria-label="Size you want">
+        {sortSizes(p.sizes || []).map((z) => {
+          const out = !left.has(z) || z === skip
+          return (
+            <button
+              key={z}
+              type="button"
+              role="radio"
+              aria-checked={pick.exchange_size === z}
+              className={`${pick.exchange_size === z ? 'on' : ''} ${out ? 'out' : ''}`}
+              disabled={out}
+              title={z === skip ? 'The size you have' : out ? 'Out of stock' : undefined}
+              onClick={() => onChange({ exchange_size: z })}
+            >
+              {z}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div className="rp-swap rp-ex mono">
+      {!swapping && (
+        <>
+          SIZE YOU WANT
+          {own ? sizesOf(own, item.size) : (
+            <input value={pick.exchange_size || ''} onChange={(e) => onChange({ exchange_size: e.target.value.toUpperCase() })} placeholder="e.g. L" maxLength={20} />
+          )}
+          {others.length > 0 && (
+            <button type="button" className="rp-other-btn" onClick={() => onChange({ other: true, exchange_size: '' })}>
+              Size not there? Choose another product at {taka(item.price)} →
+            </button>
+          )}
+        </>
+      )}
+
+      {swapping && (
+        <>
+          ANOTHER PRODUCT AT {taka(item.price)}
+          <div className="rp-others">
+            {others.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`rp-other ${String(pick.exchange_product_id) === String(p.id) ? 'on' : ''}`}
+                onClick={() => onChange({ exchange_product_id: p.id, exchange_size: '' })}
+              >
+                <span className="rp-other-img">{p.images?.[0] && <img src={imgUrl(p.images[0], { w: 160 })} alt="" />}</span>
+                <span className="rp-other-name">{p.name}{p.variant ? ` · ${p.variant}` : ''}</span>
+              </button>
+            ))}
+          </div>
+          {pick.exchange_product_id && target && (
+            <>
+              SIZE
+              {sizesOf(target, null)}
+            </>
+          )}
+          <button type="button" className="rp-other-btn" onClick={() => onChange({ other: false, exchange_product_id: '', exchange_size: '' })}>
+            ← Back to the same product
+          </button>
+        </>
+      )}
+    </div>
+  )
 }
 
 // Support → Return & Exchange Portal. Order number + the email or phone the
@@ -42,9 +132,12 @@ export default function ReturnPortal() {
   // parcel's delivery — they say they understand before sending.
   const [feeOk, setFeeOk] = useState(false)
   const [sent, setSent] = useState(null)
+  // The shop's products, for the sizes in stock and same-price swaps.
+  const [products, setProducts] = useState([])
 
   useEffect(() => {
     fetchPortal().then(({ portal }) => setPortal(portal))
+    fetchProducts().then(({ products }) => setProducts(products || []))
   }, [])
 
   useEffect(() => {
@@ -92,11 +185,13 @@ export default function ReturnPortal() {
         // Exchange: the size wanted. Refund for a wrong size: the size they
         // needed, so we can check it's really out of stock.
         exchange_size: needsSize ? (p.exchange_size || '').trim() : '',
+        // Another product at the same price, in place of this one.
+        ...(kind === 'exchange' && p.exchange_product_id ? { exchange_product_id: String(p.exchange_product_id) } : {}),
       }))
 
     if (!items.length) return setError('Pick at least one item.')
     if (kind === 'exchange' && items.some((it) => !it.exchange_size)) {
-      return setError('Write the size you want for every piece you are exchanging.')
+      return setError('Pick the size you want for every piece you are exchanging.')
     }
     if (!reason) return setError('Choose a reason.')
     if (kind === 'refund' && reason === REFUND_WRONG_SIZE && items.some((it) => !it.exchange_size)) {
@@ -228,7 +323,10 @@ export default function ReturnPortal() {
                             </span>
                             <span className="mono rp-price">{taka(it.price * it.qty)}</span>
                           </label>
-                          {p.on && needsSize && (
+                          {p.on && kind === 'exchange' && (
+                            <ExchangePick item={it} pick={p} products={products} onChange={(patch) => toggle(i, patch)} />
+                          )}
+                          {p.on && needsSize && kind !== 'exchange' && (
                             <label className="rp-swap mono">
                               {kind === 'exchange' ? 'SIZE YOU WANT' : 'SIZE YOU NEEDED'}
                               <input

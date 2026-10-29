@@ -35,6 +35,20 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// Whether the caller is the admin — asked of the database's own is_admin(),
+// the same check every admin-only table and function uses, so the admin's
+// address lives in one place (a changed admin email can't lock this out).
+async function callerIsAdmin(req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization') ?? ''
+  if (!/^Bearer\s+\S+/i.test(auth)) return false
+  const asCaller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: auth } },
+  })
+  const { data, error } = await asCaller.rpc('is_admin')
+  return !error && data === true
+}
+
 import * as Sentry from 'npm:@sentry/deno@^8'
 
 // defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
@@ -342,17 +356,7 @@ Deno.serve(async (req) => {
     // ---- Admin only ----
     // Booking parcels and reading customer addresses is not something an
     // anonymous caller gets to do, and the anon key alone is a valid JWT.
-    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-    const adminEmail = (env('ADMIN_EMAIL') ?? env('ADMIN_NOTIFY_EMAIL') ?? '').toLowerCase()
-
-    if (!adminEmail) {
-      console.error('[courier] ADMIN_EMAIL is not set')
-      return json({ error: 'Not configured' }, 500)
-    }
-
-    const { data: caller } = await supabase.auth.getUser(token)
-
-    if ((caller?.user?.email ?? '').toLowerCase() !== adminEmail) {
+    if (!(await callerIsAdmin(req))) {
       return json({ error: 'Not allowed' }, 403)
     }
 

@@ -30,6 +30,20 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Whether the caller is the admin — asked of the database's own is_admin(),
+// the same check every admin-only table and function uses, so the admin's
+// address lives in one place (a changed admin email can't lock this out).
+async function callerIsAdmin(req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization') ?? ''
+  if (!/^Bearer\s+\S+/i.test(auth)) return false
+  const asCaller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: auth } },
+  })
+  const { data, error } = await asCaller.rpc('is_admin')
+  return !error && data === true
+}
+
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
@@ -354,11 +368,7 @@ Deno.serve(async (req) => {
     const cron = env('MARKETING_CRON_SECRET')
     const isCron = Boolean(cron) && req.headers.get('x-cron-secret') === cron
     if (!isCron || action !== 'meta_sync') {
-      const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-      const adminEmail = (env('ADMIN_EMAIL') ?? env('ADMIN_NOTIFY_EMAIL') ?? '').toLowerCase()
-      if (!adminEmail) return json({ error: 'Not configured' }, 500)
-      const { data: caller } = await db.auth.getUser(token)
-      if ((caller?.user?.email ?? '').toLowerCase() !== adminEmail) return json({ error: 'Not allowed' }, 403)
+      if (!(await callerIsAdmin(req))) return json({ error: 'Not allowed' }, 403)
     }
 
     if (action === 'check') return json({ services: await check() })
