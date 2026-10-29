@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
@@ -17,6 +18,8 @@ export default function About() {
   const [loading, setLoading] = useState(true)
 
   usePageMeta('About us', 'The people and the process behind PAUSE.')
+  // Ticks when the admin changes something: re-read below.
+  const live = useLive()
 
   useEffect(() => {
     let cancelled = false
@@ -26,7 +29,7 @@ export default function About() {
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [live])
 
   return (
     <>

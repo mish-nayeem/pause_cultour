@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { Link } from 'react-router-dom'
 import { imgUrl } from '../lib/images.js'
 import { fetchPromos, promoCards, colorOf } from '../lib/promos.js'
@@ -63,12 +64,14 @@ export function PromoCard({ card }) {
 // `data` can be passed in (the admin preview); otherwise it's fetched.
 export default function PromoBanners({ place, data: given, className = '' }) {
   const [data, setData] = useState(given || null)
+  // Ticks when the admin changes something: fetched again.
+  const live = useLive()
   useEffect(() => {
     if (given) return setData(given)
     let off = false
     fetchPromos().then((d) => { if (!off) setData(d) }).catch(() => {})
     return () => { off = true }
-  }, [given])
+  }, [given, live])
 
   const cards = promoCards(data, place)
   if (!cards.length) return null

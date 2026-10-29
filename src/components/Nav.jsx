@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext.jsx'
 import { fetchMenuCategories, fetchMenuDrops } from '../lib/navCategories.js'
@@ -95,6 +96,7 @@ export default function Nav({ overlay = false }) {
 
   // Both menus are admin-managed lists, so an entry can be pulled the day it
   // sells out without touching the products behind it.
+  const live = useLive()
   useEffect(() => {
     let active = true
 
@@ -105,7 +107,7 @@ export default function Nav({ overlay = false }) {
     })
 
     return () => { active = false }
-  }, [])
+  }, [live])
 
   // Any navigation closes both menus — otherwise the mobile panel stays open
   // over the page it just took you to.

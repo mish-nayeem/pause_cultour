@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { Link, useParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
@@ -23,9 +24,15 @@ export default function Lookbook() {
 
   usePageMeta(drop ? `${drop} — Lookbook` : 'Lookbook', drop ? `The ${drop} lookbook from PAUSE.` : undefined)
 
+  // Ticks when the admin changes something: the looks re-read in place.
+  const live = useLive()
+  const shownDrop = useRef(drop)
+
   useEffect(() => {
     let cancelled = false
-    setLooks(null)
+    // A different drop starts empty; the same one keeps its looks on screen.
+    if (shownDrop.current !== drop) setLooks(null)
+    shownDrop.current = drop
     setOpenId(null)
 
     Promise.all([fetchLooks(drop), fetchProducts()]).then(([{ looks: rows }, { products }]) => {
@@ -47,7 +54,7 @@ export default function Lookbook() {
     })
 
     return () => { cancelled = true }
-  }, [drop])
+  }, [drop, live])
 
   return (
     <>

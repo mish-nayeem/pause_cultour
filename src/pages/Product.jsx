@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
@@ -150,6 +151,16 @@ export default function Product() {
     // Landing at the top on a new product is handled site-wide (SmoothScroll).
     return () => { active = false }
   }, [id])
+
+  // The admin changed something: the product re-read in place, keeping the
+  // size picked and the page where it is.
+  const live = useLive()
+  useEffect(() => {
+    if (!live) return
+    let active = true
+    fetchProductById(id).then(({ product }) => { if (active && product) setProduct(product) })
+    return () => { active = false }
+  }, [live])
 
   // Its other colours: every product with the same name.
   const productName = product?.name

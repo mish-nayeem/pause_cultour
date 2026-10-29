@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { Link, useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
@@ -51,7 +52,9 @@ export default function Shop() {
 
   // Website → Banners, and each drop's own banner photo (Products → Collections).
   const [promos, setPromos] = useState(null)
-  useEffect(() => { fetchPromos().then(setPromos).catch(() => {}) }, [])
+  // Ticks when the admin changes something: the effects below re-read.
+  const live = useLive()
+  useEffect(() => { fetchPromos().then(setPromos).catch(() => {}) }, [live])
 
   useEffect(() => {
     let cancelled = false
@@ -62,7 +65,7 @@ export default function Shop() {
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [live])
 
   // Same list the nav dropdown shows, so a category pulled from the menu in
   // the admin panel disappears from these filters too.
@@ -72,7 +75,7 @@ export default function Shop() {
       if (!cancelled) setCategories(found)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [live])
 
   // ALL follows the order set in the admin; every other view is newest
   // upload first. A drop is its own view of the catalog, so it replaces the

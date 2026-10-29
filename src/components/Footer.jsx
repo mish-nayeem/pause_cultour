@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLive } from '../lib/liveSite.js'
 import { DockSlot } from './BottomDock.jsx'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient.js'
@@ -37,11 +38,13 @@ export default function Footer() {
   // The short about under the newsletter: the built-in words until the
   // saved ones arrive (or for good, if none are saved).
   const [about, setAbout] = useState(DEFAULT_FOOTER_ABOUT)
+  // Ticks when the admin changes something: re-read below.
+  const changed = useLive()
   useEffect(() => {
     let live = true
     fetchFooterAbout().then((a) => { if (live) setAbout(a) })
     return () => { live = false }
-  }, [])
+  }, [changed])
   const colsRef = useRef(null)
   const toggle = (id) => setOpen((cur) => (cur === id ? null : id))
 

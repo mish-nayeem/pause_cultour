@@ -20,6 +20,7 @@ import RecoveryRedirect from './components/RecoveryRedirect.jsx'
 import SmoothScroll from './components/SmoothScroll.jsx'
 import ScrollReveal from './components/ScrollReveal.jsx'
 import PageFade from './components/PageFade.jsx'
+import { LiveSite } from './lib/liveSite.js'
 import { captureAttribution } from './lib/attribution.js'
 import { startSessionPolicy } from './lib/sessionPolicy.js'
 import { Sentry } from './lib/sentry.js'
@@ -48,6 +49,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       }
     >
       <BrowserRouter>
+        {/* Admin changes and new deploys show up without a reload. */}
+        <LiveSite>
         <CartProvider>
           <PageViewTracker />
           <SmoothScroll />
@@ -88,6 +91,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           </Routes>
           </PageFade>
         </CartProvider>
+        </LiveSite>
       </BrowserRouter>
     </Sentry.ErrorBoundary>
   </React.StrictMode>,

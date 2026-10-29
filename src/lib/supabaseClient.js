@@ -11,4 +11,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// The tables the storefront shows. A change to one of them from the admin
+// panel is announced to every open shop tab (liveSite.js), which then shows
+// it without a reload.
+const SHOP_TABLES = /\/rest\/v1\/(products|site_settings|hero_slides|nav_categories|lookbook_looks|about_blocks|sales|product_reviews)\b/
+
+async function watchedFetch(input, init) {
+  const res = await fetch(input, init)
+  try {
+    const method = (init?.method || (typeof input === 'object' && input.method) || 'GET').toUpperCase()
+    const url = typeof input === 'string' ? input : input.url
+    if (res.ok && method !== 'GET' && method !== 'HEAD' && SHOP_TABLES.test(url) && window.location.pathname.startsWith('/admin')) {
+      window.dispatchEvent(new CustomEvent('pause:shop-changed'))
+    }
+  } catch { /* never let the watch break a request */ }
+  return res
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { fetch: watchedFetch } })

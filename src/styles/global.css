@@ -251,3 +251,22 @@ a.cart-bump:not(.search-btn) { display: inline-block; }
 .page-in > :not(.nav-wrap) { animation: page-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 @keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .page-in > :not(.nav-wrap) { animation: none; } }
+
+/* The admin's "a newer build is out" pill (lib/liveSite.js). */
+.live-refresh {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 200;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #16160f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
