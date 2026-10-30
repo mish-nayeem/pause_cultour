@@ -344,3 +344,9 @@
 .rp-bkash { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .rp-bkash span { font-size: 10.5px; letter-spacing: 0.07em; color: var(--steel); }
 .rp-bkash input { border: 1px solid var(--steel-line); background: transparent; padding: 11px 13px; border-radius: 10px; font-size: 14px; color: var(--ink); font-family: 'JetBrains Mono', monospace; }
+
+/* The size they already have: shown, not struck through. */
+.rp-sizes button.yours { display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; border-style: dashed; color: var(--ink); cursor: default; opacity: 1; line-height: 1.1; }
+.rp-sizes button.yours small { font-size: 7.5px; letter-spacing: 0.08em; }
+.rp-none { font-size: 12px; letter-spacing: 0; color: var(--ink); margin-top: 8px; line-height: 1.5; font-family: 'Inter', sans-serif; }
+.rp-other-btn.big { margin-top: 8px; padding: 12px 14px; border: 1px solid var(--ink); border-radius: 10px; color: var(--ink); font-weight: 700; text-align: center; }

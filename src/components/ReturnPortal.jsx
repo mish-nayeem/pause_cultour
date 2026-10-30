@@ -40,6 +40,8 @@ function ExchangePick({ item, pick, products, onChange }) {
     .filter((p) => String(p.id) !== String(item.product_id) && availableSizes(p).length > 0)
     .sort((a, b) => Math.abs(Number(a.price) - item.price) - Math.abs(Number(b.price) - item.price))
   const target = pick.exchange_product_id ? products.find((p) => String(p.id) === String(pick.exchange_product_id)) : own
+  // No other size of this piece to swap to.
+  const noneLeft = own && !availableSizes(own).some((z) => z !== item.size)
   const swapping = Boolean(pick.exchange_product_id) || pick.other
 
   function sizesOf(p, skip) {
@@ -48,19 +50,21 @@ function ExchangePick({ item, pick, products, onChange }) {
     return (
       <div className="rp-sizes mono" role="radiogroup" aria-label="Size you want">
         {sortSizes(p.sizes || []).map((z) => {
-          const out = !left.has(z) || z === skip
+          const yours = z === skip
+          const out = !yours && !left.has(z)
           return (
             <button
               key={z}
               type="button"
               role="radio"
               aria-checked={pick.exchange_size === z}
-              className={`${pick.exchange_size === z ? 'on' : ''} ${out ? 'out' : ''}`}
-              disabled={out}
-              title={z === skip ? 'The size you have' : out ? 'Out of stock' : undefined}
+              className={`${pick.exchange_size === z ? 'on' : ''} ${out ? 'out' : ''} ${yours ? 'yours' : ''}`}
+              disabled={out || yours}
+              title={yours ? 'You already have this size' : out ? 'Out of stock' : undefined}
               onClick={() => onChange({ exchange_size: z })}
             >
               {z}
+              {yours && <small>YOURS</small>}
             </button>
           )
         })}
@@ -76,9 +80,14 @@ function ExchangePick({ item, pick, products, onChange }) {
           {own ? sizesOf(own, item.size) : (
             <input value={pick.exchange_size || ''} onChange={(e) => onChange({ exchange_size: e.target.value.toUpperCase() })} placeholder="e.g. L" maxLength={20} />
           )}
+          {noneLeft && (
+            <span className="rp-none">
+              No other size of this piece is in stock right now.{others.length > 0 ? ' You can swap it for another product instead:' : ''}
+            </span>
+          )}
           {others.length > 0 && (
-            <button type="button" className="rp-other-btn" onClick={() => onChange({ other: true, exchange_size: '' })}>
-              Size not there? Choose another product instead →
+            <button type="button" className={`rp-other-btn ${noneLeft ? 'big' : ''}`} onClick={() => onChange({ other: true, exchange_size: '' })}>
+              {noneLeft ? 'Choose another product →' : 'Size not there? Choose another product instead →'}
             </button>
           )}
         </>
@@ -210,8 +219,11 @@ export default function ReturnPortal() {
       return setError('Tick the box to confirm you will pay the exchange delivery charge.')
     }
     const bkash = refundTo.replace(/[^\d]/g, '')
-    if (priceDiff < 0 && !/^01\d{9}$/.test(bkash)) {
-      return setError('Give the bKash number we should send the difference to (11 digits, 01…).')
+    const needsBkash = priceDiff < 0 || kind === 'refund'
+    if (needsBkash && !/^01\d{9}$/.test(bkash)) {
+      return setError(kind === 'refund'
+        ? 'Give the bKash number we should send your refund to (11 digits, 01…).'
+        : 'Give the bKash number we should send the difference to (11 digits, 01…).')
     }
 
     setBusy(true)
@@ -223,11 +235,11 @@ export default function ReturnPortal() {
       reason,
       items,
       details: details.trim(),
-      refundTo: priceDiff < 0 ? bkash : '',
+      refundTo: needsBkash ? bkash : '',
     })
     setBusy(false)
     if (error) return setError(error)
-    setSent({ id, kind, fee: kind === 'exchange' && !exchangeIsFree(reason), diff: priceDiff, bkash: priceDiff < 0 ? bkash : '' })
+    setSent({ id, kind, fee: kind === 'exchange' && !exchangeIsFree(reason), diff: priceDiff, bkash: needsBkash ? bkash : '' })
   }
 
   // The price difference over the pieces swapped to another product.
@@ -377,10 +389,15 @@ export default function ReturnPortal() {
                     <div className="rp-fee free mono">
                       <b>HOW A REFUND WORKS</b>
                       <span>
-                        We call you first. A refund is only for a faulty or damaged piece, or a wrong size we sent
-                        when your size is out of stock — if it's in stock we exchange it instead. We collect the piece
-                        at our cost; the first delivery charge isn't refunded.
+                        A refund is for our mistake only — a faulty or damaged piece, the wrong item, or a wrong size we
+                        sent when your size is out of stock (if it's in stock we exchange it instead). A size you ordered
+                        wrong can be exchanged, not refunded. We call you first, collect the piece at our cost, then send
+                        the money to your bKash. The first delivery charge isn't refunded.
                       </span>
+                      <label className="rp-bkash">
+                        <span className="mono">YOUR BKASH NUMBER — THE REFUND GOES HERE</span>
+                        <input value={refundTo} onChange={(e) => { setRefundTo(e.target.value); setError('') }} inputMode="tel" placeholder="01XXXXXXXXX" maxLength={14} />
+                      </label>
                     </div>
                   )}
                   {/* Swapped to a dearer or a cheaper product: what that means. */}
@@ -457,7 +474,7 @@ export default function ReturnPortal() {
               <p>
                 Your {sent.kind} request for {order.id} is with us. We'll call or message you within one
                 working day to arrange the {sent.kind === 'exchange' ? 'swap' : 'pickup'}.
-                {sent.kind === 'refund' && ' If the size you needed is in stock, we will offer an exchange instead.'}
+                {sent.kind === 'refund' && ` If the size you needed is in stock, we will offer an exchange instead. Otherwise the refund goes to bKash ${sent.bkash} once we have the piece.`}
                 {sent.diff > 0 && ` The new piece costs ${taka(sent.diff)} more — you pay it to the rider with the new piece.`}
                 {sent.diff < 0 && ` We'll send ${taka(-sent.diff)} to bKash ${sent.bkash} once the exchange is done.`}
                 {sent.fee && ` Keep the delivery charge ready for the rider: ৳${EXCHANGE_FEE.inside} inside Dhaka, ৳${EXCHANGE_FEE.outside} outside.`}
