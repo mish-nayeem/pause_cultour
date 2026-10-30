@@ -350,3 +350,5 @@
 .rp-sizes button.yours small { font-size: 7.5px; letter-spacing: 0.08em; }
 .rp-none { font-size: 12px; letter-spacing: 0; color: var(--ink); margin-top: 8px; line-height: 1.5; font-family: 'Inter', sans-serif; }
 .rp-other-btn.big { margin-top: 8px; padding: 12px 14px; border: 1px solid var(--ink); border-radius: 10px; color: var(--ink); font-weight: 700; text-align: center; }
+.rp-sum { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 12px; padding: 8px 0; border-top: 1px solid var(--steel-line); border-bottom: 1px solid var(--steel-line); }
+.rp-sum span:nth-child(even) { text-align: right; white-space: nowrap; }

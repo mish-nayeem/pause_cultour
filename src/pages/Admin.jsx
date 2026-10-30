@@ -91,7 +91,7 @@ import { hasDraft } from '../lib/useDraft.js'
 import '../components/draft-note.css'
 import ReturnsManager from '../components/ReturnsManager.jsx'
 import AnalyticsManager from '../components/AnalyticsManager.jsx'
-import { isNewRequest } from '../lib/support.js'
+import { isNewRequest, EXCHANGE_FEE, exchangeIsFree, exchangeDiff } from '../lib/support.js'
 import NoticeCenter from '../components/NoticeCenter.jsx'
 import TodayPanel from '../components/TodayPanel.jsx'
 import CommandSearch from '../components/CommandSearch.jsx'
@@ -841,6 +841,8 @@ export default function Admin() {
   function renderOrderSheet(o) {
     const h = lookupCustomer(customers, o.customer_phone)
     const history = returns.filter((r) => r.order_id === o.id && r.resolution && r.resolution.action !== 'reject')
+    // Requests still open on this order (asked, or accepted and waiting).
+    const asked = returns.filter((r) => r.order_id === o.id && (r.status === 'open' || r.status === 'approved'))
     const advance = Number(o.advance_amount) || 0
     return (
       <>
@@ -929,6 +931,27 @@ export default function Admin() {
             )
           })}
           {(!o.order_items || o.order_items.length === 0) && <div className="mono dim">No line items recorded.</div>}
+          {/* An exchange or refund asked for and not done yet: what, and the money it means. */}
+          {asked.map((r) => {
+            const diff = r.kind === 'exchange' ? exchangeDiff(r.items) : 0
+            const fee = r.kind === 'exchange' && !exchangeIsFree(r.reason) ? (o.delivery_zone === 'outside' ? EXCHANGE_FEE.outside : EXCHANGE_FEE.inside) : 0
+            const refund = r.kind === 'refund' ? (r.items || []).reduce((n, x) => n + Number(x.price || 0) * (Number(x.qty) || 1), 0) : 0
+            return (
+              <div className="ditem-history ditem-asked mono" key={`ask-${r.id}`}>
+                {r.status === 'approved' ? 'Accepted' : 'Requested'} {r.kind === 'refund' ? 'refund' : 'exchange'} · {r.reason}
+                {(r.items || []).map((x, i) => (
+                  <div key={i}>
+                    {x.product_name} {x.size} ×{x.qty}
+                    {(x.exchange_product_name || x.exchange_size) && ` → ${x.exchange_product_name || x.product_name} ${x.exchange_size || ''}`}
+                  </div>
+                ))}
+                {r.kind === 'exchange' && diff > 0 && <div>Rider to collect {taka(diff + fee)} (difference {taka(diff)}{fee ? ` + delivery ${taka(fee)}` : ''})</div>}
+                {r.kind === 'exchange' && diff < 0 && <div>We refund {taka(-diff)} by bKash to {r.refund_to || '—'}{fee ? ` · rider collects delivery ${taka(fee)}` : ''}</div>}
+                {r.kind === 'exchange' && diff === 0 && <div>{fee ? `Rider collects delivery ${taka(fee)}` : 'Nothing to collect — delivery on us'}</div>}
+                {r.kind === 'refund' && <div>Refund about {taka(refund)} by bKash to {r.refund_to || '—'}</div>}
+              </div>
+            )
+          })}
           {/* Every exchange and refund on this order: what changed, and its money. */}
           {history.map((r) => {
             const res = r.resolution
