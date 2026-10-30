@@ -239,7 +239,7 @@ export default function ReturnPortal() {
     })
     setBusy(false)
     if (error) return setError(error)
-    setSent({ id, kind, fee: kind === 'exchange' && !exchangeIsFree(reason), diff: priceDiff, bkash: needsBkash ? bkash : '' })
+    setSent({ id, kind, fee: kind === 'exchange' && !exchangeIsFree(reason), parcelFee, diff: priceDiff, bkash: needsBkash ? bkash : '' })
   }
 
   // The price difference over the pieces swapped to another product.
@@ -249,6 +249,11 @@ export default function ReturnPortal() {
       return p?.on && p.exchange_product_id && p.exchange_price != null ? sum + (Number(p.exchange_price) - Number(it.price)) * Number(it.qty || 1) : sum
     }, 0)
     : 0
+
+  // The second parcel's delivery: the order's own zone, nothing when the
+  // reason is our mistake.
+  const zoneFee = order?.delivery_zone === 'outside' ? EXCHANGE_FEE.outside : EXCHANGE_FEE.inside
+  const parcelFee = reason && exchangeIsFree(reason) ? 0 : zoneFee
 
   const open = order?.open_request
   const canRequest = order && order.status === 'delivered' && !open
@@ -405,13 +410,22 @@ export default function ReturnPortal() {
                     <div className={`rp-diff ${priceDiff > 0 ? 'pay' : 'back'}`}>
                       {priceDiff > 0 ? (
                         <>
-                          <b className="mono">PRICE DIFFERENCE · + {taka(priceDiff)}</b>
-                          <span>The new piece costs more. You pay the rider {taka(priceDiff)} when the new piece arrives, together with any delivery charge below. We'll email you the new invoice.</span>
+                          <b className="mono">YOU PAY THE RIDER {taka(priceDiff + parcelFee)}</b>
+                          <span className="rp-sum mono">
+                            <span>Price difference</span><span>+ {taka(priceDiff)}</span>
+                            <span>Delivery of the new piece{parcelFee ? '' : ' (free — our mistake)'}</span><span>{parcelFee ? `+ ${taka(parcelFee)}` : taka(0)}</span>
+                            <span><b>Total, cash to the rider</b></span><span><b>{taka(priceDiff + parcelFee)}</b></span>
+                          </span>
+                          <span>The new piece costs more, so you pay the difference with the delivery when it arrives. We'll email you the invoice.</span>
                         </>
                       ) : (
                         <>
-                          <b className="mono">PRICE DIFFERENCE · {taka(-priceDiff)} BACK TO YOU</b>
-                          <span>The new piece costs less. We send you {taka(-priceDiff)} by bKash (Send Money) once the exchange is done.</span>
+                          <b className="mono">WE SEND YOU {taka(-priceDiff)} BY BKASH</b>
+                          <span className="rp-sum mono">
+                            <span>Price difference, back to you</span><span>{taka(-priceDiff)}</span>
+                            <span>Delivery of the new piece, to the rider{parcelFee ? '' : ' (free — our mistake)'}</span><span>{taka(parcelFee)}</span>
+                          </span>
+                          <span>The new piece costs less. We send you {taka(-priceDiff)} by bKash (Send Money) once the exchange is done, and email you when it's sent.</span>
                           <label className="rp-bkash">
                             <span className="mono">YOUR BKASH NUMBER</span>
                             <input value={refundTo} onChange={(e) => { setRefundTo(e.target.value); setError('') }} inputMode="tel" placeholder="01XXXXXXXXX" maxLength={14} />
@@ -431,9 +445,9 @@ export default function ReturnPortal() {
                       <div className="rp-fee mono">
                         <b>EXCHANGE DELIVERY CHARGE</b>
                         <span>
-                          The new size comes in a second parcel: <b>৳{EXCHANGE_FEE.inside}</b> inside Dhaka,
-                          {' '}<b>৳{EXCHANGE_FEE.outside}</b> outside Dhaka — paid to the rider when it arrives.
-                          Free if we sent the wrong size, the wrong item or a faulty piece.
+                          The new piece comes in a second parcel: <b>৳{zoneFee}</b>
+                          {order?.delivery_zone ? ` (your order is ${order.delivery_zone === 'outside' ? 'outside' : 'inside'} Dhaka)` : ` inside Dhaka, ৳${EXCHANGE_FEE.outside} outside`} — paid to
+                          the rider when it arrives. Free if we sent the wrong size, the wrong item or a faulty piece.
                         </span>
                         {reason && (
                           <label className="rp-fee-ok">
@@ -475,9 +489,9 @@ export default function ReturnPortal() {
                 Your {sent.kind} request for {order.id} is with us. We'll call or message you within one
                 working day to arrange the {sent.kind === 'exchange' ? 'swap' : 'pickup'}.
                 {sent.kind === 'refund' && ` If the size you needed is in stock, we will offer an exchange instead. Otherwise the refund goes to bKash ${sent.bkash} once we have the piece.`}
-                {sent.diff > 0 && ` The new piece costs ${taka(sent.diff)} more — you pay it to the rider with the new piece.`}
+                {sent.diff > 0 && ` The new piece costs ${taka(sent.diff)} more — pay the rider ${taka(sent.diff + (sent.fee ? sent.parcelFee : 0))} with the new piece${sent.fee ? ' (difference + delivery)' : ''}.`}
                 {sent.diff < 0 && ` We'll send ${taka(-sent.diff)} to bKash ${sent.bkash} once the exchange is done.`}
-                {sent.fee && ` Keep the delivery charge ready for the rider: ৳${EXCHANGE_FEE.inside} inside Dhaka, ৳${EXCHANGE_FEE.outside} outside.`}
+                {sent.fee && sent.diff <= 0 && ` Keep the delivery charge ready for the rider: ${taka(sent.parcelFee)}.`}
               </p>
               <Link to="/shop" className="rp-btn mono">Back to shop</Link>
             </div>

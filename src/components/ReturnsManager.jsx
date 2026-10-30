@@ -25,6 +25,21 @@ function exchangeEmail({ order, lines, diff, fee, feePaid, refundTo, done = fals
   const first = String(order?.customer_name || '').trim().split(/\s+/)[0] || 'there'
   const swap = lines.map((l) => `• ${l.from} ×${l.qty} → ${l.to}`).join('\n')
   const owesFee = fee > 0 && feePaid
+  // The invoice: each piece back and its price, each new one and its price,
+  // the difference, the delivery and what's paid or refunded.
+  const priced = lines.every((l) => l.fromPrice != null && l.toPrice != null)
+  const invoice = priced ? [
+    `INVOICE · Exchange for order ${order?.id}`,
+    ...lines.map((l) => `Returned: ${l.from} ×${l.qty} — ${taka(l.fromPrice * l.qty)}`),
+    ...lines.map((l) => `New: ${l.to} ×${l.qty} — ${taka(l.toPrice * l.qty)}`),
+    `Price difference: ${diff > 0 ? '+ ' : diff < 0 ? '− ' : ''}${taka(Math.abs(diff))}`,
+    `Delivery of the new piece: ${owesFee ? taka(fee) : `${taka(0)} (on us)`}`,
+    diff > 0
+      ? `To pay the rider: ${taka(diff + (owesFee ? fee : 0))}`
+      : diff < 0
+        ? `Refund to you by bKash: ${taka(-diff)}${owesFee ? `\nTo pay the rider: ${taka(fee)}` : ''}`
+        : `To pay the rider: ${taka(owesFee ? fee : 0)}`,
+  ].join('\n') : null
   const parts = [
     `Hi ${first},`,
     done
@@ -44,20 +59,27 @@ function exchangeEmail({ order, lines, diff, fee, feePaid, refundTo, done = fals
   } else {
     parts.push(`There's nothing to pay — the exchange delivery is on us.`)
   }
+  if (invoice) parts.push(invoice)
   if (!done) parts.push('Our rider will bring the new piece and take the old one — please keep it ready with its tags on.')
   parts.push('Thanks,\nPAUSE')
   return { subject: `${done ? 'Your exchange is done' : 'Your exchange is accepted'} · order ${order?.id}`, text: parts.join('\n\n') }
 }
 
 // The email once a refund has gone out by bKash — the money, where it went.
-function refundSentEmail({ order, amount, refundTo, trx }) {
+function refundSentEmail({ order, amount, refundTo, trx, res }) {
   const first = String(order?.customer_name || '').trim().split(/\s+/)[0] || 'there'
+  // What the refund is for: the pieces exchanged (with their prices) or
+  // the pieces returned.
+  const forWhat = res?.action === 'exchange'
+    ? (res.items || []).map((x) => `• ${x.product_name} ${x.from_size} (${taka(x.from_price)}) → ${x.to_product_name || x.product_name} ${x.to_size} (${taka(x.to_price)})`).join('\n')
+    : (res?.items || []).map((x) => `• ${x.product_name} ${x.size} ×${x.qty} — ${taka(x.price * x.qty)}`).join('\n')
   return {
     subject: `Your refund has been sent · order ${order?.id}`,
     text: [
       `Hi ${first},`,
       `Your refund for order ${order?.id} has been sent successfully.`,
-      `Amount: ${taka(amount)}\nSent to bKash: ${refundTo || '—'}${trx ? `\nTrxID: ${trx}` : ''}`,
+      ...(forWhat ? [`${res?.action === 'exchange' ? 'Exchange' : 'Returned'}:\n${forWhat}`] : []),
+      `Amount refunded: ${taka(amount)}\nSent to bKash: ${refundTo || '—'}${trx ? `\nTrxID: ${trx}` : ''}`,
       `It should already show in your bKash account. If it doesn't, reply to this email with your order number.`,
       'Thanks,\nPAUSE',
     ].join('\n\n'),
@@ -367,7 +389,13 @@ function Complete({ r, order, productsById, onReload }) {
     const lines = chosen.map((it) => {
       const t = targetOf(it)
       const to = pick[it.id].to || '?'
-      return { from: `${it.product_name} ${it.size}`, to: t ? `${t.name}${t.variant ? ` · ${t.variant}` : ''} ${to}` : `${it.product_name} ${to}`, qty: Number(pick[it.id].qty) || 1 }
+      return {
+        from: `${it.product_name} ${it.size}`,
+        to: t ? `${t.name}${t.variant ? ` · ${t.variant}` : ''} ${to}` : `${it.product_name} ${to}`,
+        qty: Number(pick[it.id].qty) || 1,
+        fromPrice: Number(it.price),
+        toPrice: t ? Number(t.price) : Number(it.price),
+      }
     })
     return exchangeEmail({ order, lines, diff: diffTotal, fee: feeNow, feePaid, refundTo: r.refund_to })
   }
@@ -641,7 +669,7 @@ function Resolution({ r, order, onReload }) {
     const { error } = await markExchangeRefund(r.id, trx.trim())
     setBusy(false)
     if (error) return setNote("Couldn't save — has the exchange SQL run?")
-    if (order?.customer_email) setMail({ ...refundSentEmail({ order, amount: refundDue, refundTo, trx: trx.trim() }), after: true })
+    if (order?.customer_email) setMail({ ...refundSentEmail({ order, amount: refundDue, refundTo, trx: trx.trim(), res }), after: true })
     else onReload()
   }
 
@@ -669,6 +697,8 @@ function Resolution({ r, order, onReload }) {
       from: `${x.product_name} ${x.from_size}`,
       to: `${x.to_product_name && String(x.to_product_id) !== String(x.product_id) ? x.to_product_name : x.product_name} ${x.to_size}`,
       qty: x.qty,
+      fromPrice: x.from_price != null ? Number(x.from_price) : null,
+      toPrice: x.to_price != null ? Number(x.to_price) : null,
     }))
     return exchangeEmail({ order, lines, diff: Number(res.price_diff) || exchangeDiff(res.items), fee: Number(res.fee) || 0, feePaid: res.fee_paid !== false, refundTo, done: true })
   }
@@ -719,7 +749,7 @@ function Resolution({ r, order, onReload }) {
           {refundBox}
           {note && <div className="rm-error mono">{note}</div>}
           {order?.customer_email && !mail && res.refund_sent_at && (
-            <button type="button" className="courier-btn ghost mono rm-mail-btn" onClick={() => setMail(refundSentEmail({ order, amount: refundDue, refundTo, trx: res.refund_trx }))}>✉ Email the customer</button>
+            <button type="button" className="courier-btn ghost mono rm-mail-btn" onClick={() => setMail(refundSentEmail({ order, amount: refundDue, refundTo, trx: res.refund_trx, res }))}>✉ Email the customer</button>
           )}
           {mail && <EmailComposer orderId={order.id} email={order.customer_email} start={mail} onClose={() => { const after = mail.after; setMail(null); if (after) onReload() }} />}
         </>
