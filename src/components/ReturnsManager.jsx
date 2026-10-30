@@ -49,6 +49,21 @@ function exchangeEmail({ order, lines, diff, fee, feePaid, refundTo, done = fals
   return { subject: `${done ? 'Your exchange is done' : 'Your exchange is accepted'} · order ${order?.id}`, text: parts.join('\n\n') }
 }
 
+// The email once a refund has gone out by bKash — the money, where it went.
+function refundSentEmail({ order, amount, refundTo, trx }) {
+  const first = String(order?.customer_name || '').trim().split(/\s+/)[0] || 'there'
+  return {
+    subject: `Your refund has been sent · order ${order?.id}`,
+    text: [
+      `Hi ${first},`,
+      `Your refund for order ${order?.id} has been sent successfully.`,
+      `Amount: ${taka(amount)}\nSent to bKash: ${refundTo || '—'}${trx ? `\nTrxID: ${trx}` : ''}`,
+      `It should already show in your bKash account. If it doesn't, reply to this email with your order number.`,
+      'Thanks,\nPAUSE',
+    ].join('\n\n'),
+  }
+}
+
 // The email, open to edit, then sent to the order's customer.
 function EmailComposer({ orderId, email, start, onClose }) {
   const [subject, setSubject] = useState(start.subject)
@@ -565,7 +580,7 @@ function Complete({ r, order, productsById, onReload }) {
             value={refund === '' ? String(suggested) : refund}
             onChange={(e) => setRefund(e.target.value.replace(/[^\d.]/g, ''))}
           />
-          <span className="dim">Ticked pieces come to {taka(suggested)}. The first delivery charge isn't refunded.</span>
+          <span className="dim">Ticked pieces come to {taka(suggested)}. The first delivery charge isn't refunded. Goes to bKash <b>{r.refund_to || '— ask the customer for a number'}</b>; mark it sent once you've sent it.</span>
         </label>
       )}
 
@@ -615,17 +630,39 @@ function Resolution({ r, order, onReload }) {
   const [busy, setBusy] = useState(false)
   const [mail, setMail] = useState(null)
   const [note, setNote] = useState('')
-  const refundDue = Number(res?.refund_due) || 0
+  // Money owed back by bKash: a refund, or a cheaper exchange's difference.
+  const refundDue = res?.action === 'refund' ? Number(res.refund) || 0 : Number(res?.refund_due) || 0
   const extraDue = Number(res?.extra_due) || 0
   const refundTo = res?.refund_to || r.refund_to
 
+  // Sent: marked here, then the "refund sent" email opens, ready to send.
   async function markSent() {
     setBusy(true)
     const { error } = await markExchangeRefund(r.id, trx.trim())
     setBusy(false)
     if (error) return setNote("Couldn't save — has the exchange SQL run?")
-    onReload()
+    if (order?.customer_email) setMail({ ...refundSentEmail({ order, amount: refundDue, refundTo, trx: trx.trim() }), after: true })
+    else onReload()
   }
+
+  const refundBox = refundDue > 0 && (
+    <div className={`rm-refund mono ${res.refund_sent_at ? 'sent' : ''}`}>
+      {res.refund_sent_at ? (
+        <>✓ Refund {taka(refundDue)} sent to bKash {refundTo || '—'} · {when(res.refund_sent_at)}{res.refund_trx ? ` · TrxID ${res.refund_trx}` : ''}</>
+      ) : (
+        <>
+          <span>
+            Refund {taka(refundDue)} by bKash (Send Money) to <b>{refundTo || 'ask the customer for a number'}</b>
+            <InfoTip>Send it from the shop's bKash, paste the TrxID from the SMS here and Mark sent — then the "refund sent" email opens, ready to send. It's already taken off this order's revenue.</InfoTip>
+          </span>
+          <span className="rm-refund-row">
+            <input value={trx} onChange={(e) => setTrx(e.target.value.toUpperCase())} placeholder="TrxID (optional)" maxLength={40} />
+            <button type="button" className="courier-btn mono" disabled={busy} onClick={markSent}>{busy ? 'Saving…' : 'Mark sent'}</button>
+          </span>
+        </>
+      )}
+    </div>
+  )
 
   function draft() {
     const lines = (res.items || []).map((x) => ({
@@ -659,29 +696,12 @@ function Resolution({ r, order, onReload }) {
           {extraDue > 0 && (
             <div className="rm-done-line mono">Price difference + {taka(extraDue)} · the rider collects it with the new piece · in revenue</div>
           )}
-          {refundDue > 0 && (
-            <div className={`rm-refund mono ${res.refund_sent_at ? 'sent' : ''}`}>
-              {res.refund_sent_at ? (
-                <>✓ Refund {taka(refundDue)} sent to bKash {refundTo || '—'} · {when(res.refund_sent_at)}{res.refund_trx ? ` · TrxID ${res.refund_trx}` : ''}</>
-              ) : (
-                <>
-                  <span>
-                    Refund {taka(refundDue)} by bKash (Send Money) to <b>{refundTo || 'ask the customer for a number'}</b>
-                    <InfoTip>Send the difference from the shop's bKash, then paste the TrxID from the SMS here and Mark sent. It's already taken off this order's revenue.</InfoTip>
-                  </span>
-                  <span className="rm-refund-row">
-                    <input value={trx} onChange={(e) => setTrx(e.target.value.toUpperCase())} placeholder="TrxID (optional)" maxLength={40} />
-                    <button type="button" className="courier-btn mono" disabled={busy} onClick={markSent}>{busy ? 'Saving…' : 'Mark sent'}</button>
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+          {refundBox}
           {note && <div className="rm-error mono">{note}</div>}
           {order?.customer_email && !mail && (
             <button type="button" className="courier-btn ghost mono rm-mail-btn" onClick={() => setMail(draft())}>✉ Email the customer</button>
           )}
-          {mail && <EmailComposer orderId={order.id} email={order.customer_email} start={mail} onClose={() => setMail(null)} />}
+          {mail && <EmailComposer orderId={order.id} email={order.customer_email} start={mail} onClose={() => { const after = mail.after; setMail(null); if (after) onReload() }} />}
         </>
       )}
       {res?.action === 'refund' && (
@@ -696,6 +716,12 @@ function Resolution({ r, order, onReload }) {
               <span className="mono dim">{x.left != null ? ` · ${x.size} now ${x.left}` : ''}</span>
             </div>
           ))}
+          {refundBox}
+          {note && <div className="rm-error mono">{note}</div>}
+          {order?.customer_email && !mail && res.refund_sent_at && (
+            <button type="button" className="courier-btn ghost mono rm-mail-btn" onClick={() => setMail(refundSentEmail({ order, amount: refundDue, refundTo, trx: res.refund_trx }))}>✉ Email the customer</button>
+          )}
+          {mail && <EmailComposer orderId={order.id} email={order.customer_email} start={mail} onClose={() => { const after = mail.after; setMail(null); if (after) onReload() }} />}
         </>
       )}
       {r.admin_note && <div className="rm-done-note">Note: {r.admin_note}</div>}

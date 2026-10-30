@@ -175,8 +175,10 @@ export function exchangeIsFree(reason) {
   return !CUSTOMER_PAYS.includes(reason)
 }
 
-// Refunds happen for two reasons only: a faulty piece, or a wrong size we
-// sent when the right size is out of stock (otherwise it's exchanged).
-// The first delivery stays the customer's; the pickup parcel is ours.
-export const REFUND_REASONS = ['Wrong size received', 'Faulty or damaged product received']
+// Refunds are only for our mistakes — a faulty piece, the wrong item, or a
+// wrong size we sent when the right size is out of stock (otherwise it's
+// exchanged). A size the customer ordered wrong is exchanged, never
+// refunded. The first delivery stays the customer's; the pickup parcel is
+// ours. The money goes back by bKash to the number they give.
+export const REFUND_REASONS = ['Wrong size received', 'Wrong item received', 'Faulty or damaged product received']
 export const REFUND_WRONG_SIZE = 'Wrong size received'
